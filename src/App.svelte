@@ -328,21 +328,22 @@ SmoothGPT
               {/if}
             </div>
             <div class="toolbelt flex space-x-2 pl-20 mb-2 tools">
-              {#if message.role === 'assistant'}
-                {#if !isAudioMessage(message) && !isImageUrl(message.content)}
-                  <button class="copyButton w-5" on:click={() => copyTextToClipboard(message.content)}>
-                    <img class="copy-icon" alt="Copy" src={CopyIcon} />
-                  </button>
-                {/if}
-                <button class="deleteButton w-5" on:click={() => deleteMessageFromConversation(i)}>
-                  <img class="delete-icon" alt="Delete" src={DeleteIcon} />
+            {#if message.role === 'assistant'}
+            {/if}
+            {#if message.role === 'user'}
+            {/if}
+              <!-- Moved all the buttons so they apply to all messages -->             
+              {#if !isAudioMessage(message) && !isImageUrl(message.content)}
+                <button class="copyButton w-5" on:click={() => copyTextToClipboard(message.content)}>
+                  <img class="copy-icon" alt="Copy" src={CopyIcon} />
                 </button>
               {/if}
-            {#if message.role === 'user'}
               <button class="editButton w-5" on:click={() => startEditMessage(i)}>
                 <img class="edit-icon" alt="edit" src={EditIcon} />
               </button>
-            {/if}
+              <button class="deleteButton w-5" on:click={() => deleteMessageFromConversation(i)}>
+                <img class="delete-icon" alt="Delete" src={DeleteIcon} />
+              </button>
             </div>
 
             {/if}
