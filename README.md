@@ -1,5 +1,20 @@
 # SmoothGPT - a ChatGPT API Enhanced UI
 
+## Build notes
+
+To build for production:
+
+```
+npm run build
+```
+
+To run locally for dev:
+
+```
+npm run dev
+```
+
+## Older Information
 This is my overhauled and improved ChatGPT API UI, forked from patrikzudel ([PatrikZeros-ChatGPT-API-UI](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI)). Firstly, a **HUGE thank you** to Patrik for his fantastic work in the original version.
 
 There were a number of improvements I wanted to make. This was initially done for only my personal use, but now I am offering it publicly.
