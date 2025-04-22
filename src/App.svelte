@@ -104,7 +104,8 @@ function clearFiles() {
   
     chatContainerObserver = new MutationObserver((mutationsList, observer) => {  
       // Trigger scroll if any relevant mutations observed  
-      scrollChatToEnd();  
+      // Disabled scroll to end of chat
+      // scrollChatToEnd();  
     });  
   
     chatContainerObserver.observe(chatContainer, config);    
@@ -166,7 +167,8 @@ function autoExpand(event) {
   afterUpdate(() => {
     const currentMessageCount = $conversations[$chosenConversationId]?.history.length || 0;
     if (currentMessageCount > lastMessageCount) {
-      scrollChat();
+      // disable scroll to bottom on update
+      // scrollChat();
     }
     lastMessageCount = currentMessageCount; // Update the count after every update
   });
