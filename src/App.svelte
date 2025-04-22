@@ -420,15 +420,6 @@ on:change="{event => uploadPDF(event)}" bind:this={pdfInputElement} class="file-
   </div>
 
 
-  <div class="flex justify-center bg-primary px-4">
-  <div class="max-w-3xl">
-  <a href="https://ko-fi.com/loreteller" rel="noreferrer" target="_blank" class="block">
-    <div class="font-normal text-sm border-green-800 border-2 text-gray-200 px-5 py-3 rounded-full mb-3">
-        Enjoying SmoothGPT? Contribute to hosting costs & check out my creative work: <span class="underline font-bold">ko-fi.com/loreteller</span>
-    </div>
-</a>
-</div>
-</div>
   
 </div>
 </main>
