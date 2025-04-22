@@ -1,0 +1,21 @@
+name: Publish /dist to gh-pages branch  
+  
+on:  
+  push:  
+    branches:  
+      - main  
+  
+jobs:  
+  deploy-dist:  
+    runs-on: ubuntu-latest  
+    steps:  
+      - name: Checkout main branch  
+        uses: actions/checkout@v3  
+  
+      - name: Copy dist contents to gh-pages branch  
+        uses: peaceiris/actions-gh-pages@v4  
+        with:  
+          github_token: ${{ secrets.GITHUB_TOKEN }}  
+          publish_branch: gh-pages  
+          publish_dir: ./dist  
+          force_orphan: true  # This clears out the old contents  
