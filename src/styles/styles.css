@@ -115,3 +115,110 @@ filter: none;
 padding-bottom: 0.5rem;
 
 }
+
+/* ===========================
+   Markdown Table Styling
+   =========================== */
+
+/* Apply to tables within the rendered markdown */
+.message-display table {
+  border-collapse: collapse; /* Essential for clean borders */
+  width: auto; /* Let table size itself, or use 100% to fill width */
+  margin-top: 1em;    /* Space above the table */
+  margin-bottom: 1em; /* Space below the table */
+  color: inherit;     /* Use the surrounding text color */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Optional: Border around the whole table */
+}
+
+/* Style header and data cells */
+.message-display th,
+.message-display td {
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Light border for dark theme */
+  padding: 0.5rem 0.75rem; /* Padding inside cells (adjust as needed) */
+  text-align: left;     /* Align text to the left */
+}
+
+/* Style header cells specifically */
+.message-display th {
+  background-color: rgba(255, 255, 255, 0.08); /* Slightly different background for headers */
+  font-weight: bold; /* Make header text bold */
+}
+
+/* ===========================
+   Layout & Responsive Fixes
+   =========================== */
+
+/* Ensure universal border-box sizing */
+* {
+  box-sizing: border-box;
+}
+
+/* Prevent horizontal scroll on the main content area */
+/* Ensure this class is on the div wrapping Topbar, chat container, input */
+.main-content-area {
+  overflow-x: hidden;
+  /* width: 100%; */ /* Usually not needed here if it's a flex child */
+}
+
+/* Ensure the inner chat message list respects boundaries */
+.max-w-3xl { /* Container for messages AND the input box */
+  width: 100%; /* Make it use the available width of its parent */
+               /* It will still be capped by max-width: 3xl */
+}
+
+/* Text Wrapping Fixes - Keep these */
+.message-display pre,
+.message-display code,
+.message-display p,
+.message-display li {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%; /* Prevent these specific elements from overflowing */
+}
+
+/* --- Responsive Padding --- */
+/* Apply horizontal padding ONLY on smaller screens (e.g., below md breakpoint) */
+@media (max-width: 767px) { /* Tailwind's 'md' breakpoint is 768px. This targets below that. */
+  .main-content-area {
+     /* Padding on the main wrapper affects chat area positioning */
+     padding-left: 0.75rem;  /* e.g., 12px padding */
+     padding-right: 0.75rem;
+  }
+  /* Also pad the input container directly if needed, though padding the parent
+     (.main-content-area) might be sufficient if .inputbox-container is width: 100% */
+  .inputbox-container {
+      /* padding-left: 0.75rem; */ /* Uncomment if padding main-content-area isn't enough */
+      /* padding-right: 0.75rem; */
+  }
+}
+/* No padding rules for .main-content-area or .inputbox-container outside the media query */
+
+
+/* --- Table Styles (Keep as is) --- */
+/* ... (your existing table styles) ... */
+.message-display table {
+  border-collapse: collapse;
+  width: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.message-display th,
+.message-display td {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+.message-display th {
+  background-color: rgba(255, 255, 255, 0.08);
+  font-weight: bold;
+}
+
+/* --- Input Box Specific --- */
+/* Ensure the input box itself doesn't cause issues */
+.inputbox { /* The div with flex, flex-1, max-w-3xl */
+   width: 100%; /* Make sure it fills the .inputbox-container */
+               /* max-w-3xl will still cap it */
+}

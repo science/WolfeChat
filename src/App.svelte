@@ -234,7 +234,7 @@ SmoothGPT
 
 <main class="bg-primary overflow-hidden">
   <Sidebar on:new-chat={() => newChat()} />
-    <div class="h-screen flex justify-stretch flex-col md:ml-[260px] bg-secondary text-white/80 height-manager">
+    <div class="h-screen flex justify-stretch flex-col md:ml-[260px] bg-secondary text-white/80 height-manager main-content-area">
       <Topbar bind:conversation_title={conversationTitle} on:new-chat={newChat} />
       <div class="py-5 bg-primary px-5 flex flex-row justify-between flex-wrap-reverse">
         
@@ -301,7 +301,7 @@ SmoothGPT
           </div>
         {:else}
 
-        {#if message.role === 'assistant'}
+        {#if message.role === 'assistant' || message.role === 'user'}
                 <SvelteMarkdown renderers={{
                   code: CodeRenderer,
                   em: EmRenderer,
@@ -310,18 +310,6 @@ SmoothGPT
                   paragraph: ParagraphRenderer,
                   html: HtmlRenderer,
                 }} source={formatMessageForMarkdown(message.content.toString())} />
-{:else}
-
-                <SvelteMarkdown renderers={{  
-                  code: UserCodeRenderer,
-                  codespan: CodeSpanRenderer,
-                  em: EmRenderer,  
-                  list: ListRenderer,  
-                  listitem: ListItemRenderer,  
-                  paragraph: ParagraphRenderer,  
-                  html: HtmlRenderer,  
-                }} source={formatMessageForMarkdown(message.content.toString())} />  
-
 
 {/if}
 
