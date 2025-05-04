@@ -3,6 +3,7 @@
   import {
     settingsVisible,
     helpVisible,
+    debugVisible,
     conversations,
     chosenConversationId,
     menuVisible,
@@ -26,11 +27,19 @@
 
   function openSettings() {
     helpVisible.set(false);
+    debugVisible.set(false);
     settingsVisible.set(true);
   }
   function openHelp() {
     settingsVisible.set(false);
     helpVisible.set(true);
+    debugVisible.set(false);
+  }
+
+  function openDebug() {
+    settingsVisible.set(false);
+    helpVisible.set(false);
+    debugVisible.set(true);
   }
 
   async function deleteConversation(i: number) {
@@ -193,9 +202,14 @@ let editingTitleId = null;
   </button>
 </div>
 
-        <button on:click={openHelp} class="flex border border-white/50 py-3 px-3 items-center font-bold gap-3 rounded-md hover:bg-hover transition-colors duration-200 cursor-pointer text-sm mt-auto z-20">
-          Help
-        </button>
+        <div class="flex flex-row gap-2">
+          <button on:click={openHelp} class="flex flex-1 border border-white/50 py-3 px-3 items-center font-bold gap-3 rounded-md hover:bg-hover transition-colors duration-200 cursor-pointer text-sm mt-auto z-20">
+            Help
+          </button>
+          <button on:click={openDebug} class="flex flex-1 border border-white/50 py-3 px-3 items-center font-bold gap-3 rounded-md hover:bg-hover transition-colors duration-200 cursor-pointer text-sm mt-auto z-20">
+            Debug
+          </button>
+        </div>
         <button on:click={openSettings} class="flex border border-white/50 py-3 px-3 items-center font-bold gap-3 rounded-md hover:bg-hover transition-colors duration-200 cursor-pointer text-sm mt-auto z-20">
           Settings {$apiKey === null ? "(Insert API key)" : ""}
         </button>

@@ -27,7 +27,7 @@
   import  PDFIcon from "./assets/pdf-icon.svg";
   import { afterUpdate } from "svelte";
   import { processPDF } from './managers/pdfManager';
-  import { conversations, chosenConversationId, settingsVisible, helpVisible, clearFileInputSignal, clearPDFInputSignal } from "./stores/stores";
+  import { conversations, chosenConversationId, settingsVisible, helpVisible, debugVisible, clearFileInputSignal, clearPDFInputSignal } from "./stores/stores";
   import { isAudioMessage, formatMessageForMarkdown } from "./utils/generalUtils";
   import { routeMessage, newChat, deleteMessageFromConversation } from "./managers/conversationManager";
   import { copyTextToClipboard } from './utils/generalUtils';
@@ -36,6 +36,7 @@
   import { handleImageUpload, onSendVisionMessageComplete } from './managers/imageManager';
   import { base64Images } from './stores/stores';
   import { closeStream } from './services/openaiService';  
+  import DebugPanel from './lib/DebugPanel.svelte';
 
   let fileInputElement; 
   let pdfInputElement; 
@@ -419,6 +420,10 @@ on:change="{event => uploadPDF(event)}" bind:this={pdfInputElement} class="file-
     </div>
   </div>
 
+  <!-- Debug Panel - only show in development -->
+  {#if $debugVisible}
+    <DebugPanel />
+  {/if}
 
   
 </div>

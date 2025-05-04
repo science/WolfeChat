@@ -151,12 +151,45 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
 
 function parseJSONChunks(rawData) {
   try {
-    // Match and parse JSON objects from the concatenated stream data
+    // First, let's log the raw data to see what we're getting
+    console.log('Raw SSE data:', rawData);
+    
+    // Handle the case where data might be a single JSON object
+    if (rawData.trim().startsWith('{') && rawData.trim().endsWith('}')) {
+      try {
+        return [JSON.parse(rawData)];
+      } catch (e) {
+        console.error('Failed to parse single JSON object:', e);
+      }
+    }
+    
+    // Handle the case where data might be multiple JSON objects concatenated
     const jsonRegex = /\{"id".*?\]\}/g;
-    return (rawData.match(jsonRegex) || []).map(JSON.parse);
+    const matches = rawData.match(jsonRegex);
+    
+    if (matches) {
+      return matches.map(chunk => {
+        try {
+          return JSON.parse(chunk);
+        } catch (e) {
+          console.error('Failed to parse JSON chunk:', chunk, e);
+          return null;
+        }
+      }).filter(Boolean);
+    }
+    
+    // If no matches found, try to parse as a single object
+    try {
+      const parsed = JSON.parse(rawData);
+      return [parsed];
+    } catch (e) {
+      console.error('Failed to parse raw data as JSON:', e);
+      return [];
+    }
   } catch (error) {
     console.error("Error parsing JSON chunk:", error);
-    return null;
+    console.error("Raw data was:", rawData);
+    return [];
   }
 }
 

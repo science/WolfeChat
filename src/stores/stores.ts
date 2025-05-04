@@ -15,6 +15,7 @@ export interface DefaultAssistantRole {
 
 export const settingsVisible = writable(false)
 export const helpVisible = writable(false)
+export const debugVisible = writable(false)
 export const menuVisible = writable(false)
 
 let storedApiKey = localStorage.getItem("api_key")
