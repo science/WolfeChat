@@ -538,7 +538,7 @@ function supportsReasoning(model: string): boolean {
 function buildResponsesPayload(model: string, input: any[], stream: boolean) {
   const payload: any = { model, input, store: false, stream };
   if (supportsReasoning(model)) {
-    payload.reasoning = { effort: 'medium' };
+    payload.reasoning = { summary: 'detailed', effort: 'medium' };
   }
   // "text" tool is widely supported for text outputs; keep enabled.
   payload.text = { verbosity: 'medium' };
