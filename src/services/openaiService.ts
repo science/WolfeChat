@@ -6,58 +6,42 @@ import { apiKey} from "../stores/stores";
 import { selectedModel, selectedVoice, audioUrls, selectedSize, selectedQuality, defaultAssistantRole, isStreaming, streamContext } from '../stores/stores';
 import { conversations, chosenConversationId, combinedTokens, userRequestedStreamClosure } from "../stores/stores";
 import { setHistory, countTokens, estimateTokens, displayAudioMessage, cleanseMessage } from '../managers/conversationManager';
-import { SSE } from 'sse.js'; // Assuming SSE library is used
 import { countTicks } from '../utils/generalUtils';
 import { saveAudioBlob, getAudioBlob } from '../idb';
 import { onSendVisionMessageComplete } from '../managers/imageManager';
 
 let configuration: Configuration | null = null;
 let openai: OpenAIApi | null = null;
-
-  // A global variable to hold the stream source  
-  let globalSource: EventSource | null = null;  
+let globalAbortController: AbortController | null = null;
 
 
-export const closeStream = async () => {  
-  if (globalSource) {  
-      globalSource.close();  
-      console.log("Stream closed by user.");  
-      isStreaming.set(false);  
 
-      const { streamText, convId } = get(streamContext); // Get the current stream context  
-      if (streamText && convId !== null) {  
-          const cleanText = streamText.replace(/█+$/, ''); // Always clean, but only update if needed  
-          const currentHistory = get(conversations)[convId].history;  
+export const closeStream = async () => {
+  if (globalAbortController) {
+    try { globalAbortController.abort(); } catch {}
+    globalAbortController = null;
+  }
+  console.log("Stream closed by user.");
+  isStreaming.set(false);
 
-          let lastEntry = currentHistory.length ? currentHistory[currentHistory.length - 1] : null;  
+  const { streamText, convId } = get(streamContext);
+  if (streamText && convId !== null) {
+    const cleanText = streamText.replace(/█+$/, '');
+    const currentHistory = get(conversations)[convId].history;
+    const lastEntry = currentHistory.length ? currentHistory[currentHistory.length - 1] : null;
 
-          // Determine if the last entry in history is the one we're streaming  
-          if (lastEntry && lastEntry.content.endsWith("█")) {  
-              // If so, update the last entry with the cleaned text  
-              currentHistory[currentHistory.length - 1] = {  
-                  ...lastEntry,  
-                  content: cleanText  
-              };  
-          } else {  
-              // Otherwise, add a new history entry  
-              currentHistory.push({  
-                  role: "assistant",  
-                  content: cleanText  
-              });  
-          }  
+    if (lastEntry && typeof lastEntry.content === 'string' && lastEntry.content.endsWith("█")) {
+      currentHistory[currentHistory.length - 1] = { ...lastEntry, content: cleanText };
+    } else {
+      currentHistory.push({ role: "assistant", content: cleanText });
+    }
+    await setHistory(currentHistory, convId);
+    streamContext.set({ streamText: '', convId: null });
+  }
 
-          // Now update the entire history in the store  
-          await setHistory(currentHistory, convId);  
-
-          // Clear stream context  
-          streamContext.set({ streamText: '', convId: null });  
-      }  
-
-      userRequestedStreamClosure.set(true);  
-      onSendVisionMessageComplete();
-
-  }  
-};  
+  userRequestedStreamClosure.set(true);
+  onSendVisionMessageComplete();
+};
   
 const errorMessage: ChatCompletionRequestMessage[] = [
   {
@@ -113,9 +97,7 @@ export function reloadConfig(): void {
 }
 
 export async function sendRequest(msg: ChatCompletionRequestMessage[], model: string = get(selectedModel)): Promise<any> {
-
   try {
-    // Prepend the system message to msg
     msg = [
       {
         role: "system",
@@ -124,27 +106,41 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
       ...msg,
     ];
 
-    // Attempt to send the request
-    const response = await openai.createChatCompletion({
+    const key = get(apiKey);
+    const payload = {
       model: model,
-      messages: msg,
+      input: buildResponsesInputFromMessages(msg),
+      reasoning: { effort: 'medium' },
+      text: { verbosity: 'medium' },
+      store: false,
+      stream: false
+    };
+
+    const res = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
     });
 
-    // If the response is successful, count tokens and return the response
-    if (response) {
-      countTokens(response.data.usage);
-      return response;
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Responses API error ${res.status}: ${text || res.statusText}`);
     }
+
+    const data = await res.json();
+
+    if (data?.usage) {
+      countTokens(data.usage);
+    }
+
+    return data;
   } catch (error) {
     console.error("Error in sendRequest:", error);
-
-    // Reset configuration and await setHistory in case of error
     configuration = null;
-
-    // Await setHistory here. Ensure setHistory is properly adapted to return a Promise.
     await setHistory(errorMessage);
-
-    // Re-throw the error or handle it as needed
     throw error;
   }
 }
@@ -247,159 +243,82 @@ console.error('Blob is null or undefined');
 
 export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], imagesBase64, convId) {
   console.log("Sending vision message.");
-  userRequestedStreamClosure.set(false);  
-  let hasEncounteredError = false;  
+  userRequestedStreamClosure.set(false);
 
   let tickCounter = 0;
   let ticks = false;
   let currentHistory = get(conversations)[convId].history;
 
-    // Convert history messages into the expected format
-    let historyMessages = currentHistory.map(historyItem => ({
-      role: historyItem.role,
-      content: typeof historyItem.content === 'string' ? [{type: "text", text: historyItem.content}] : historyItem.content,
+  const historyMessages = currentHistory.map((historyItem) => ({
+    role: historyItem.role,
+    content: convertChatContentToResponsesContent(historyItem.content),
   }));
 
-  let userTextMessage = [...msg].reverse().find(m => m.role === "user")?.content || "";
+  const userTextMessage = [...msg].reverse().find((m) => m.role === "user")?.content || "";
+  const contentParts: any[] = [];
+  if (userTextMessage) contentParts.push({ type: "input_text", text: userTextMessage });
+  for (const imageBase64 of imagesBase64) {
+    contentParts.push({ type: "input_image", image_url: imageBase64 });
+  }
 
-  let imageMessages = imagesBase64.map(imageBase64 => ({
-    type: "image_url",
-    image_url: {
-        url: imageBase64, // Ensure your base64 string includes the proper data URI scheme
-    }
-}));
+  const currentMessage = { role: "user", content: contentParts };
+  const finalInput = [...historyMessages, currentMessage];
 
-// Construct the combined message content array for the current message
-let combinedMessageContent = userTextMessage ? [
-    {
-        type: "text",
-        text: userTextMessage,
-    },
-    ...imageMessages // Spread operator to include all image messages
-] : [...imageMessages]; // Only include image messages if there's no text message
-
-// Create a single 'user' message object that contains both the text and image contents for the current message
-let currentMessage = {
-    role: "user",
-    content: combinedMessageContent,
-};
-
-// Combine the history and the current message into the final payload
-const cleansedMessages = historyMessages.map(cleanseMessage);
-
-let finalMessages = [...cleansedMessages, currentMessage];
-
-  let done = false;
   let streamText = "";
-
   currentHistory = [...currentHistory];
-  isStreaming.set(true);  
+  isStreaming.set(true);
 
-  let source = new SSE("https://api.openai.com/v1/chat/completions", {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${get(apiKey)}`,
-    },
-    method: "POST",
-    payload: JSON.stringify({
-      model: get(selectedModel),
-      messages: finalMessages, // Updated to include full conversation history
-      stream: true,
-    }),
-  });
-
-  console.log("payload", JSON.stringify({
-    model: get(selectedModel),
-    messages: finalMessages, // Updated to include full conversation history
-    stream: true,
-  })
-);
-
-  source.addEventListener("message", async (e) => {
-    let payload;
-    if (e.data !== "[DONE]") {
-      try {  
-        if (!hasEncounteredError) {  
-          let parsedChunks = parseJSONChunks(e.data);
-          // Process each parsed JSON object
-          parsedChunks.forEach((payload) => {
-            // Your logic to handle each JSON object goes here
-            // Example: Extracting text and updating history or stream context
-            let text = payload.choices[0]?.delta?.content;
-            if (text) {
-              let msgTicks = countTicks(text);
-              tickCounter += msgTicks;
-              if (msgTicks === 0) tickCounter = 0;
-              if (tickCounter === 3) {
-                ticks = !ticks;
-                tickCounter = 0;
-              }
-              streamText += text;
-              streamContext.set({ streamText, convId }); // Update the store  
-    
-              // Here, we await setHistory within the async IIFE
-              setHistory([...currentHistory, {
+  try {
+    await streamResponseViaResponsesAPI(
+      '',
+      get(selectedModel),
+      {
+        onTextDelta: (text) => {
+          const msgTicks = countTicks(text);
+          tickCounter += msgTicks;
+          if (msgTicks === 0) tickCounter = 0;
+          if (tickCounter === 3) { ticks = !ticks; tickCounter = 0; }
+          streamText += text;
+          streamContext.set({ streamText, convId });
+          setHistory(
+            [
+              ...currentHistory,
+              {
                 role: "assistant",
                 content: streamText + "█" + (ticks ? "\n```" : ""),
-              }], convId);
-            }
-          });
-        }
-      } catch (error) {
-          console.error("Error parsing JSON:", error);  
-          hasEncounteredError = true; 
-          source.close();  
+              },
+            ],
+            convId
+          );
+        },
+        onCompleted: async () => {
+          if (get(userRequestedStreamClosure)) {
+            streamText = streamText.replace(/█+$/, '');
+            userRequestedStreamClosure.set(false);
+          }
+          await setHistory(
+            [
+              ...currentHistory,
+              { role: "assistant", content: streamText },
+            ],
+            convId
+          );
+          estimateTokens(msg, convId);
+          streamText = "";
+          isStreaming.set(false);
           onSendVisionMessageComplete();
-
-          console.log("Stream closed due to parsing error.");  
-          isStreaming.set(false);  
-
-          return;
-        }  
-      
-      } else {
-        done = true;  
-        if (get(userRequestedStreamClosure)) {  
-          streamText = streamText.replace(/█+$/, ''); // Removes the block character(s) if present at the end  
-          userRequestedStreamClosure.set(false); // Reset the flag after handling  
-        }  
-      
-        await setHistory([...currentHistory, {  
-          role: "assistant",  
-          content: streamText,  
-        }], convId);  
-        
-
-
-
-        estimateTokens(msg, convId);
-        streamText = "";
-        done = true;
-        console.log("Stream closed");
-        source.close();
-        onSendVisionMessageComplete();
-
-          // Stream is complete, so set isStreaming back to false.  
-  isStreaming.set(false);  
-      }
-    });
-  
-    source.addEventListener("error", (e) => {  
-      try {  
-        if (done) return; // If the stream is already marked as done, no further action required.  
-        console.error("Stream error:", e);  
-      } finally {  
-        source.close(); 
-        onSendVisionMessageComplete();
- 
-        // Regardless of the cause of the error, the stream is closing, so set isStreaming back to false.  
-        isStreaming.set(false);  
-      }  
-    });  
-    
-    source.stream();  
-    globalSource = source;  
-  }  
+        },
+        onError: (_err) => {
+          isStreaming.set(false);
+          onSendVisionMessageComplete();
+        },
+      },
+      finalInput
+    );
+  } finally {
+    isStreaming.set(false);
+  }
+}
 
   export async function sendRegularMessage(msg: ChatCompletionRequestMessage[], convId) {
     userRequestedStreamClosure.set(false);  
@@ -727,6 +646,35 @@ function buildResponsesInputFromPrompt(prompt: string) {
   ];
 }
 
+function convertChatContentToResponsesContent(content: any): any[] {
+  if (typeof content === 'string') {
+    return [{ type: 'input_text', text: content }];
+  }
+  if (Array.isArray(content)) {
+    return content.map((part: any) => {
+      if (part?.type === 'text' && typeof part?.text === 'string') {
+        return { type: 'input_text', text: part.text };
+      }
+      if (part?.type === 'image_url') {
+        const url = part?.image_url?.url ?? part?.image_url ?? part?.url ?? '';
+        return { type: 'input_image', image_url: url };
+      }
+      if (part?.type === 'input_text' || part?.type === 'input_image') {
+        return part;
+      }
+      return { type: 'input_text', text: typeof part === 'string' ? part : JSON.stringify(part) };
+    });
+  }
+  return [{ type: 'input_text', text: String(content) }];
+}
+
+function buildResponsesInputFromMessages(messages: ChatCompletionRequestMessage[]) {
+  return messages.map((m) => ({
+    role: m.role,
+    content: convertChatContentToResponsesContent(m.content)
+  }));
+}
+
 export async function createResponseViaResponsesAPI(prompt: string, model?: string) {
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
@@ -766,31 +714,36 @@ export interface ResponsesStreamCallbacks {
 export async function streamResponseViaResponsesAPI(
   prompt: string,
   model?: string,
-  callbacks?: ResponsesStreamCallbacks
+  callbacks?: ResponsesStreamCallbacks,
+  inputOverride?: any[]
 ): Promise<string> {
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
 
   const payload = {
     model: model || getDefaultResponsesModel(),
-    input: buildResponsesInputFromPrompt(prompt),
+    input: inputOverride || buildResponsesInputFromPrompt(prompt),
     reasoning: { effort: 'medium' },
     text: { verbosity: 'medium' },
     store: false,
     stream: true
   };
 
+  const controller = new AbortController();
+  globalAbortController = controller;
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: controller.signal
   });
 
   if (!res.ok || !res.body) {
     const text = await res.text().catch(() => '');
+    globalAbortController = null;
     throw new Error(`Responses API stream error ${res.status}: ${text || res.statusText}`);
   }
 
@@ -863,6 +816,7 @@ export async function streamResponseViaResponsesAPI(
   }
   if (buffer.trim()) processSSEBlock(buffer);
 
+  globalAbortController = null;
   return finalText;
 }
   
