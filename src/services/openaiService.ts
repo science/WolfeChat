@@ -107,14 +107,9 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
     ];
 
     const key = get(apiKey);
-    const payload = {
-      model: model,
-      input: buildResponsesInputFromMessages(msg),
-      reasoning: { effort: 'medium' },
-      text: { verbosity: 'medium' },
-      store: false,
-      stream: false
-    };
+    const resolvedModel = model || getDefaultResponsesModel();
+    const input = buildResponsesInputFromMessages(msg);
+    const payload = buildResponsesPayload(resolvedModel, input, false);
 
     const res = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -532,6 +527,24 @@ function getDefaultResponsesModel() {
   return m;
 }
 
+// Only certain models (e.g., o3, o4 family or explicit reasoning models) support "reasoning".
+function supportsReasoning(model: string): boolean {
+  const m = (model || '').toLowerCase();
+  return m.includes('o3') || m.includes('o4') || m.includes('reason');
+}
+
+// Build a consistent Responses payload used by all call sites.
+// This ensures identical code paths between live chat and debug tests.
+function buildResponsesPayload(model: string, input: any[], stream: boolean) {
+  const payload: any = { model, input, store: false, stream };
+  if (supportsReasoning(model)) {
+    payload.reasoning = { effort: 'medium' };
+  }
+  // "text" tool is widely supported for text outputs; keep enabled.
+  payload.text = { verbosity: 'medium' };
+  return payload;
+}
+
 function buildResponsesInputFromPrompt(prompt: string) {
   return [
     {
@@ -574,14 +587,9 @@ export async function createResponseViaResponsesAPI(prompt: string, model?: stri
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
 
-  const payload = {
-    model: model || getDefaultResponsesModel(),
-    input: buildResponsesInputFromPrompt(prompt),
-    reasoning: { effort: 'medium' },
-    text: { verbosity: 'medium' },
-    store: false,
-    stream: false
-  };
+  const resolvedModel = model || getDefaultResponsesModel();
+  const input = buildResponsesInputFromPrompt(prompt);
+  const payload = buildResponsesPayload(resolvedModel, input, false);
 
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -615,14 +623,9 @@ export async function streamResponseViaResponsesAPI(
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
 
-  const payload = {
-    model: model || getDefaultResponsesModel(),
-    input: inputOverride || buildResponsesInputFromPrompt(prompt),
-    reasoning: { effort: 'medium' },
-    text: { verbosity: 'medium' },
-    store: false,
-    stream: true
-  };
+  const resolvedModel = model || getDefaultResponsesModel();
+  const input = inputOverride || buildResponsesInputFromPrompt(prompt);
+  const payload = buildResponsesPayload(resolvedModel, input, true);
 
   const controller = new AbortController();
   globalAbortController = controller;

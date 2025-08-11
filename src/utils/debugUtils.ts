@@ -29,10 +29,6 @@ export async function testDirectAPI() {
     console.error('No model selected; set a model in the UI to replicate live behavior.');
     return null;
   }
-  if (!model) {
-    console.error('No model selected; set a model in the UI to replicate live behavior.');
-    return null;
-  }
 
   try {
     // Test 1: Fetch available models
