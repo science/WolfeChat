@@ -744,8 +744,8 @@ export async function testReasoningStreamingAPI(prompt?: string) {
     return null;
   }
 
-  // Force reasoning test to use gpt-5-mini to validate event types across gpt-5 family
-  const model = 'gpt-5-mini';
+  // Force reasoning test to use o3-mini to ensure reasoning events are emitted consistently
+  const model = 'o3-mini';
   if ((selected || '').toLowerCase() !== model) {
     console.warn(`Reasoning test will use "${model}" regardless of selected model ("${selected}").`);
   }
