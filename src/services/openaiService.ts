@@ -722,8 +722,7 @@ function buildResponsesInputFromPrompt(prompt: string) {
   return [
     {
       role: 'user',
-      content: [{ type: 'input_text', text: prompt }],
-      type: 'message'
+      content: [{ type: 'input_text', text: prompt }]
     }
   ];
 }

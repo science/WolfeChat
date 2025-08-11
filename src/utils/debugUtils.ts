@@ -1,6 +1,6 @@
 // Debug utilities for SmoothGPT chat issues
 import { get } from 'svelte/store';
-import { apiKey, selectedModel, conversations, chosenConversationId } from '../stores/stores';
+import { apiKey, selectedModel } from '../stores/stores';
 import { createResponseViaResponsesAPI, streamResponseViaResponsesAPI } from '../services/openaiService';
 
 export interface DebugInfo {
