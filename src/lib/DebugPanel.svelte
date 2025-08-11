@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { testDirectAPI, testStreamingAPI, testSmoothGPTChatFlow, testModelSpecificBehavior, testSSEParsing, testSSEJSImplementation, testResponsesAPI, testResponsesStreamingAPI, logDebugInfo } from '../utils/debugUtils';
+  import { testDirectAPI, testStreamingAPI, testSmoothGPTChatFlow, testModelSpecificBehavior, testSSEParsing, testSSEJSImplementation, testResponsesAPI, testResponsesStreamingAPI, testReasoningStreamingAPI, logDebugInfo } from '../utils/debugUtils';
   import { selectedModel, apiKey, debugVisible } from '../stores/stores';
   import { createEventDispatcher } from 'svelte';
   import CloseIcon from '../assets/close.svg';
@@ -191,6 +191,38 @@
     isTesting = false;
   }
 
+  async function runReasoningStreamingTest() {
+    isTesting = true;
+    currentTest = 'Reasoning Streaming';
+    debugResults = 'Running reasoning streaming test...\n';
+
+    try {
+      const result = await testReasoningStreamingAPI();
+      if (result && result.success) {
+        debugResults += `✅ Reasoning streaming test successful!\n`;
+        debugResults += `Model: ${result.model}\n`;
+        debugResults += `Seen types (${result.seenTypes.length}): ${result.seenTypes.join(', ')}\n`;
+        debugResults += `Missing types (${result.missingTypes.length}): ${result.missingTypes.join(', ') || 'none'}\n`;
+        debugResults += `Event order:\n${result.order.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n`;
+        if (result.reasoningSummaryText) {
+          debugResults += `\nReasoning summary (first 300 chars):\n${result.reasoningSummaryText.slice(0, 300)}\n`;
+        }
+        if (result.reasoningText) {
+          debugResults += `\nReasoning text (first 300 chars):\n${result.reasoningText.slice(0, 300)}\n`;
+        }
+      } else {
+        debugResults += `❌ Reasoning streaming test failed!\n`;
+        if (result?.error) debugResults += `Error: ${result.error}\n`;
+        if (result?.seenTypes) debugResults += `Seen types: ${result.seenTypes.join(', ')}\n`;
+        if (result?.missingTypes) debugResults += `Missing types: ${result.missingTypes.join(', ')}\n`;
+      }
+    } catch (error) {
+      debugResults += `❌ Reasoning streaming test error: ${error}\n`;
+    }
+
+    isTesting = false;
+  }
+
   async function runAllTests() {
     isTesting = true;
     currentTest = 'All Tests';
@@ -364,6 +396,14 @@
       disabled={isTesting}
     >
       {isTesting && currentTest === 'Responses Streaming' ? 'Testing...' : 'Test Responses API (stream)'}
+    </button>
+
+    <button 
+      class="w-full bg-fuchsia-600 hover:bg-fuchsia-700 px-3 py-1 rounded text-sm disabled:opacity-50"
+      on:click={runReasoningStreamingTest}
+      disabled={isTesting}
+    >
+      {isTesting && currentTest === 'Reasoning Streaming' ? 'Testing...' : 'Test Reasoning Streaming'}
     </button>
     
     <button 

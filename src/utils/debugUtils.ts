@@ -704,3 +704,155 @@ export function logDebugInfo() {
   console.log('=== Debug Info ===');
   console.log(JSON.stringify(debugInfo, null, 2));
 }
+
+// Reasoning streaming debug test
+const EXPECTED_REASONING_EVENT_TYPES = [
+  'response.reasoning_summary_part.added',
+  'response.reasoning_summary_part.done',
+  'response.reasoning_summary_text.delta',
+  'response.reasoning_summary_text.done',
+  'response.reasoning_text.delta',
+  'response.reasoning_text.done',
+];
+
+// Mirror services' supportsReasoning check locally for the test harness
+function supportsReasoningLocal(model: string): boolean {
+  const m = (model || '').toLowerCase();
+  return m.includes('o3') || m.includes('o4') || m.includes('reason');
+}
+
+/**
+ * Streams a message using the Responses API and captures reasoning events.
+ * Returns:
+ * - events: compact payloads for each event
+ * - seenTypes: which event types were observed
+ * - missingTypes: which expected types were not observed
+ * - order: the order of event types as they were received
+ * - reasoningSummaryText, reasoningText: concatenated reasoning content (if any)
+ * - outputText: concatenated final output text
+ */
+export async function testReasoningStreamingAPI(prompt?: string) {
+  const key = get(apiKey);
+  const selected = get(selectedModel);
+
+  console.log('=== Reasoning Streaming Test ===');
+  console.log('API Key configured:', !!key);
+  console.log('Selected model:', selected);
+
+  if (!key) {
+    console.error('No API key configured');
+    return null;
+  }
+
+  // Prefer a reasoning-capable model for this test
+  const model = supportsReasoningLocal(selected) ? selected : 'o4-mini';
+  if (model !== selected) {
+    console.warn(`Selected model "${selected}" may not support reasoning; using "${model}" for this test.`);
+  }
+
+  const messages = [
+    { role: 'system', content: 'You are a helpful assistant. Think step by step internally and provide a concise final answer.' },
+    { role: 'user', content: prompt || 'Please explain your reasoning while answering: What is 24 * 17? Give the final numeric answer at the end.' }
+  ];
+
+  const input = buildResponsesInputFromMessages(messages);
+
+  const events: any[] = [];
+  const order: string[] = [];
+  const seen = new Set<string>();
+
+  let reasoningSummaryText = '';
+  let reasoningText = '';
+  let outputText = '';
+  let completed = false;
+
+  try {
+    await streamResponseViaResponsesAPI(
+      '',
+      model,
+      {
+        onEvent: ({ type, data }) => {
+          const resolvedType = type || data?.type || 'message';
+          order.push(resolvedType);
+          seen.add(resolvedType);
+
+          let payloadSummary: any;
+
+          switch (resolvedType) {
+            case 'response.reasoning_summary_part.added':
+              payloadSummary = { partType: data?.part?.type ?? '' };
+              break;
+            case 'response.reasoning_summary_part.done':
+              payloadSummary = { partType: data?.part?.type ?? '', text: data?.part?.text ?? '' };
+              if (typeof data?.part?.text === 'string') reasoningSummaryText += data.part.text;
+              break;
+            case 'response.reasoning_summary_text.delta':
+              payloadSummary = { delta: data?.delta ?? '' };
+              if (typeof data?.delta === 'string') reasoningSummaryText += data.delta;
+              break;
+            case 'response.reasoning_summary_text.done':
+              payloadSummary = { text: data?.text ?? '' };
+              if (typeof data?.text === 'string') reasoningSummaryText += data.text;
+              break;
+            case 'response.reasoning_text.delta':
+              payloadSummary = { delta: data?.delta ?? '' };
+              if (typeof data?.delta === 'string') reasoningText += data.delta;
+              break;
+            case 'response.reasoning_text.done':
+              payloadSummary = { text: data?.text ?? '' };
+              if (typeof data?.text === 'string') reasoningText += data.text;
+              break;
+            case 'response.output_text.delta':
+              payloadSummary = { delta: data?.delta?.text ?? data?.delta ?? data?.text ?? '' };
+              break;
+            default:
+              // Keep the whole payload for unknown/other event types to aid discovery
+              payloadSummary = data;
+              break;
+          }
+
+          events.push({ type: resolvedType, data: payloadSummary });
+        },
+        onTextDelta: (text) => {
+          outputText += text;
+        },
+        onCompleted: () => {
+          completed = true;
+        },
+        onError: (err) => {
+          console.error('Reasoning streaming onError:', err);
+          events.push({ type: 'error', data: err });
+        }
+      },
+      input
+    );
+
+    const missingTypes = EXPECTED_REASONING_EVENT_TYPES.filter((t) => !seen.has(t));
+    return {
+      success: completed,
+      model,
+      events,
+      order,
+      seenTypes: Array.from(seen),
+      missingTypes,
+      outputText,
+      reasoningSummaryText,
+      reasoningText
+    };
+  } catch (error) {
+    console.error('Reasoning streaming test failed:', error);
+    const missingTypes = EXPECTED_REASONING_EVENT_TYPES.filter((t) => !seen.has(t));
+    return {
+      success: false,
+      error,
+      model,
+      events,
+      order,
+      seenTypes: Array.from(seen),
+      missingTypes,
+      outputText,
+      reasoningSummaryText,
+      reasoningText
+    };
+  }
+}
