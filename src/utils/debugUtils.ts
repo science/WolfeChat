@@ -735,7 +735,7 @@ export async function testReasoningStreamingAPI(prompt?: string) {
   const key = get(apiKey);
   const selected = get(selectedModel);
 
-  console.log('=== Reasoning Streaming Test ===');
+  console.log('=== Reasoning Streaming Test (multi-variant) ===');
   console.log('API Key configured:', !!key);
   console.log('Selected model:', selected);
 
@@ -744,7 +744,7 @@ export async function testReasoningStreamingAPI(prompt?: string) {
     return null;
   }
 
-  // Force reasoning test to use o3-mini to ensure reasoning events are emitted consistently
+  // Keep using o3-mini for consistency (as discussed), but allow easy swapping here if needed.
   const model = 'o3-mini';
   if ((selected || '').toLowerCase() !== model) {
     console.warn(`Reasoning test will use "${model}" regardless of selected model ("${selected}").`);
@@ -752,107 +752,253 @@ export async function testReasoningStreamingAPI(prompt?: string) {
 
   const messages = [
     { role: 'system', content: 'You are a helpful assistant. Think step by step internally and provide a concise final answer.' },
-    { role: 'user', content: prompt || 'Please explain your reasoning while answering: What is 24 * 17? Give the final numeric answer at the end.' }
+    { role: 'user', content: prompt || 'Please solve: 24 * 17. Provide the final numeric answer; you may think step-by-step internally.' }
   ];
-
   const input = buildResponsesInputFromMessages(messages);
 
-  const events: any[] = [];
-  const order: string[] = [];
-  const seen = new Set<string>();
+  // Variants to try, inspired by Playgrounds/docs behavior
+  const variants: { name: string; extras: any }[] = [
+    { name: 'effort_high_summary_detailed', extras: { reasoning: { effort: 'high', summary: 'detailed' }, text: { verbosity: 'medium' } } },
+    { name: 'effort_medium_summary_detailed', extras: { reasoning: { effort: 'medium', summary: 'detailed' }, text: { verbosity: 'medium' } } },
+    { name: 'effort_high_summary_detailed_text_high', extras: { reasoning: { effort: 'high', summary: 'detailed' }, text: { verbosity: 'high' } } },
+    { name: 'effort_high_summary_auto', extras: { reasoning: { effort: 'high', summary: 'auto' }, text: { verbosity: 'medium' } } },
+    // This flag may be ignored by the API, but include it in a variant to probe behavior.
+    { name: 'effort_high_summary_detailed_metadata_include_reasoning', extras: { reasoning: { effort: 'high', summary: 'detailed' }, metadata: { include_reasoning: true }, text: { verbosity: 'medium' } } },
+  ];
 
-  let reasoningSummaryText = '';
-  let reasoningText = '';
-  let outputText = '';
-  let completed = false;
+  type StreamResult = {
+    success: boolean;
+    model: string;
+    variant: string;
+    events: any[];
+    order: string[];
+    seenTypes: string[];
+    missingTypes: string[];
+    outputText: string;
+    reasoningSummaryText: string;
+    reasoningText: string;
+    error?: any;
+  };
 
-  try {
-    await streamResponseViaResponsesAPI(
-      '',
-      model,
-      {
-        onEvent: ({ type, data }) => {
-          const resolvedType = type || data?.type || 'message';
-          order.push(resolvedType);
-          seen.add(resolvedType);
+  async function streamOnce(payload: any): Promise<StreamResult> {
+    const events: any[] = [];
+    const order: string[] = [];
+    const seen = new Set<string>();
+    let outputText = '';
+    let reasoningSummaryText = '';
+    let reasoningText = '';
+    let completed = false;
 
-          let payloadSummary: any;
+    try {
+      const res = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
 
-          switch (resolvedType) {
-            case 'response.reasoning_summary_part.added':
-              payloadSummary = { partType: data?.part?.type ?? '' };
-              break;
-            case 'response.reasoning_summary_part.done':
-              payloadSummary = { partType: data?.part?.type ?? '', text: data?.part?.text ?? '' };
-              if (typeof data?.part?.text === 'string') reasoningSummaryText += data.part.text;
-              break;
-            case 'response.reasoning_summary_text.delta':
-              payloadSummary = { delta: data?.delta ?? '' };
-              if (typeof data?.delta === 'string') reasoningSummaryText += data.delta;
-              break;
-            case 'response.reasoning_summary_text.done':
-              payloadSummary = { text: data?.text ?? '' };
-              if (typeof data?.text === 'string') reasoningSummaryText += data.text;
-              break;
-            case 'response.reasoning_text.delta':
-              payloadSummary = { delta: data?.delta ?? '' };
-              if (typeof data?.delta === 'string') reasoningText += data.delta;
-              break;
-            case 'response.reasoning_text.done':
-              payloadSummary = { text: data?.text ?? '' };
-              if (typeof data?.text === 'string') reasoningText += data.text;
-              break;
-            case 'response.output_text.delta':
-              payloadSummary = { delta: data?.delta?.text ?? data?.delta ?? data?.text ?? '' };
-              break;
-            default:
-              // Keep the whole payload for unknown/other event types to aid discovery
-              payloadSummary = data;
-              break;
+      if (!res.ok || !res.body) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Responses API stream error ${res.status}: ${text || res.statusText}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      function processSSEBlock(block: string) {
+        const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+        let eventType = 'message';
+        const dataLines: string[] = [];
+
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            eventType = line.slice('event:'.length).trim();
+          } else if (line.startsWith('data:')) {
+            dataLines.push(line.slice('data:'.length).trim());
           }
-
-          events.push({ type: resolvedType, data: payloadSummary });
-        },
-        onTextDelta: (text) => {
-          outputText += text;
-        },
-        onCompleted: () => {
-          completed = true;
-        },
-        onError: (err) => {
-          console.error('Reasoning streaming onError:', err);
-          events.push({ type: 'error', data: err });
         }
-      },
-      input
-    );
+        if (dataLines.length === 0) return;
 
-    const missingTypes = EXPECTED_REASONING_EVENT_TYPES.filter((t) => !seen.has(t));
-    return {
-      success: completed,
+        const dataStr = dataLines.join('\n');
+        if (dataStr === '[DONE]') {
+          completed = true;
+          return;
+        }
+
+        let obj: any = null;
+        try {
+          obj = JSON.parse(dataStr);
+        } catch (e) {
+          console.warn('Failed to parse SSE data JSON chunk:', e, dataStr);
+          return;
+        }
+
+        const resolvedType = eventType !== 'message' ? eventType : (obj?.type || 'message');
+        order.push(resolvedType);
+        seen.add(resolvedType);
+
+        let payloadSummary: any;
+        switch (resolvedType) {
+          case 'response.reasoning_summary_part.added':
+            payloadSummary = { partType: obj?.part?.type ?? '' };
+            break;
+          case 'response.reasoning_summary_part.done':
+            payloadSummary = { partType: obj?.part?.type ?? '', text: obj?.part?.text ?? '' };
+            if (typeof obj?.part?.text === 'string') reasoningSummaryText += obj.part.text;
+            break;
+          case 'response.reasoning_summary_text.delta':
+            payloadSummary = { delta: obj?.delta ?? '' };
+            if (typeof obj?.delta === 'string') reasoningSummaryText += obj.delta;
+            break;
+          case 'response.reasoning_summary_text.done':
+            payloadSummary = { text: obj?.text ?? '' };
+            if (typeof obj?.text === 'string') reasoningSummaryText += obj.text;
+            break;
+          case 'response.reasoning_text.delta':
+            payloadSummary = { delta: obj?.delta ?? '' };
+            if (typeof obj?.delta === 'string') reasoningText += obj.delta;
+            break;
+          case 'response.reasoning_text.done':
+            payloadSummary = { text: obj?.text ?? '' };
+            if (typeof obj?.text === 'string') reasoningText += obj.text;
+            break;
+          case 'response.output_text.delta': {
+            const deltaText =
+              obj?.delta?.text ??
+              obj?.delta ??
+              obj?.output_text_delta ??
+              obj?.text ??
+              '';
+            payloadSummary = { delta: typeof deltaText === 'string' ? deltaText : '' };
+            if (typeof deltaText === 'string' && deltaText) {
+              outputText += deltaText;
+            }
+            break;
+          }
+          case 'response.completed':
+            payloadSummary = obj;
+            completed = true;
+            break;
+          default:
+            payloadSummary = obj;
+            break;
+        }
+
+        events.push({ type: resolvedType, data: payloadSummary });
+      }
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+        for (const p of parts) {
+          if (p.trim()) processSSEBlock(p);
+        }
+      }
+      if (buffer.trim()) processSSEBlock(buffer);
+
+      const missingTypes = EXPECTED_REASONING_EVENT_TYPES.filter((t) => !seen.has(t));
+      return {
+        success: completed,
+        model,
+        variant: payload.__variant || 'unknown',
+        events,
+        order,
+        seenTypes: Array.from(seen),
+        missingTypes,
+        outputText,
+        reasoningSummaryText,
+        reasoningText
+      };
+    } catch (error) {
+      const seenTypes = Array.from(new Set(events.map((e: any) => e.type)));
+      const missingTypes = EXPECTED_REASONING_EVENT_TYPES.filter((t) => !seenTypes.includes(t));
+      return {
+        success: false,
+        model,
+        variant: payload.__variant || 'unknown',
+        events,
+        order,
+        seenTypes,
+        missingTypes,
+        outputText,
+        reasoningSummaryText,
+        reasoningText,
+        error
+      };
+    }
+  }
+
+  const variantResults: StreamResult[] = [];
+  let bestIndex = -1;
+
+  for (let i = 0; i < variants.length; i++) {
+    const v = variants[i];
+    const payload = {
+      __variant: v.name, // non-API field for local tracking
       model,
-      events,
-      order,
-      seenTypes: Array.from(seen),
-      missingTypes,
-      outputText,
-      reasoningSummaryText,
-      reasoningText
+      input,
+      store: false,
+      stream: true,
+      // base "text" tool default; overridden by variant if provided
+      text: { verbosity: 'medium' },
+      ...v.extras,
     };
-  } catch (error) {
-    console.error('Reasoning streaming test failed:', error);
-    const missingTypes = EXPECTED_REASONING_EVENT_TYPES.filter((t) => !seen.has(t));
+    console.log(`Trying variant ${i + 1}/${variants.length}: ${v.name}`, payload);
+
+    const result = await streamOnce(payload);
+    variantResults.push(result);
+
+    // Consider it "reasoning-present" if we saw any expected reasoning event types
+    const hasReasoning = EXPECTED_REASONING_EVENT_TYPES.some(t => result.seenTypes.includes(t));
+    if (hasReasoning && bestIndex === -1) {
+      bestIndex = i;
+      break; // stop at first variant that yields reasoning events
+    }
+  }
+
+  // Pick best result
+  const chosen = bestIndex >= 0 ? variantResults[bestIndex] : (variantResults[0] || null);
+  if (!chosen) {
     return {
       success: false,
-      error,
       model,
-      events,
-      order,
-      seenTypes: Array.from(seen),
-      missingTypes,
-      outputText,
-      reasoningSummaryText,
-      reasoningText
+      error: 'No variants executed',
+      events: [],
+      order: [],
+      seenTypes: [],
+      missingTypes: EXPECTED_REASONING_EVENT_TYPES,
+      outputText: '',
+      reasoningSummaryText: '',
+      reasoningText: '',
+      bestVariant: null,
+      variants: []
     };
   }
+
+  return {
+    success: chosen.success,
+    model,
+    events: chosen.events,
+    order: chosen.order,
+    seenTypes: chosen.seenTypes,
+    missingTypes: chosen.missingTypes,
+    outputText: chosen.outputText,
+    reasoningSummaryText: chosen.reasoningSummaryText,
+    reasoningText: chosen.reasoningText,
+    bestVariant: chosen.variant,
+    variants: variantResults.map(v => ({
+      name: v.variant,
+      success: v.success,
+      seenTypes: v.seenTypes,
+      missingTypes: v.missingTypes,
+      eventsCount: v.events.length
+    }))
+  };
 }
