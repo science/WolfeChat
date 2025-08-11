@@ -321,258 +321,153 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
 }
 
   export async function sendRegularMessage(msg: ChatCompletionRequestMessage[], convId) {
-    userRequestedStreamClosure.set(false);  
-    let hasEncounteredError = false;  
-
-    let tickCounter = 0;
-    let ticks = false;
-    let currentHistory = get(conversations)[convId].history;
-    
-    let roleMsg: ChatCompletionRequestMessage = {
-      role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
-      content: get(conversations)[convId].assistantRole,
-    };
-    
-    msg = [roleMsg, ...msg];
-
-    const cleansedMessages = msg.map(cleanseMessage);
-
-    let done = false;
-    let streamText = "";
+  userRequestedStreamClosure.set(false);
+  let tickCounter = 0;
+  let ticks = false;
+  let currentHistory = get(conversations)[convId].history;
   
-    currentHistory = [...currentHistory];
-    isStreaming.set(true);
-
-    let source = new SSE("https://api.openai.com/v1/chat/completions", {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${get(apiKey)}`,
-      },
-      method: "POST",
-      payload: JSON.stringify({
-        model: get(selectedModel),
-        messages: cleansedMessages,
-        stream: true,
-      }),
-    });
-
-    console.log("payload", JSON.stringify({
-      model: get(selectedModel),
-      messages: cleansedMessages,
-      stream: true,
-    })
-  );
+  let roleMsg: ChatCompletionRequestMessage = {
+    role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
+    content: get(conversations)[convId].assistantRole,
+  };
   
-    source.addEventListener("message", async (e) => { // Note: Adding async here makes the callback function async
-      let payload;
-      if (e.data !== "[DONE]") {
-        try {  
-          if (!hasEncounteredError) {  
-            let parsedChunks = parseJSONChunks(e.data);
-            // Process each parsed JSON object
-            parsedChunks.forEach((payload) => {
-              // Your logic to handle each JSON object goes here
-              // Example: Extracting text and updating history or stream context
-              let text = payload.choices[0]?.delta?.content;
-              if (text) {
-                let msgTicks = countTicks(text);
-                tickCounter += msgTicks;
-                if (msgTicks === 0) tickCounter = 0;
-                if (tickCounter === 3) {
-                  ticks = !ticks;
-                  tickCounter = 0;
-                }
-                streamText += text;
-                streamContext.set({ streamText, convId }); // Update the store  
-      
-                // Here, we await setHistory within the async IIFE
-                setHistory([...currentHistory, {
-                  role: "assistant",
-                  content: streamText + "█" + (ticks ? "\n```" : ""),
-                }], convId);
-              }
-            });
+  msg = [roleMsg, ...msg];
+  const cleansedMessages = msg.map(cleanseMessage);
+  const input = buildResponsesInputFromMessages(cleansedMessages);
+
+  let streamText = "";
+  currentHistory = [...currentHistory];
+  isStreaming.set(true);
+
+  try {
+    await streamResponseViaResponsesAPI(
+      '',
+      get(selectedModel),
+      {
+        onTextDelta: (text) => {
+          const msgTicks = countTicks(text);
+          tickCounter += msgTicks;
+          if (msgTicks === 0) tickCounter = 0;
+          if (tickCounter === 3) {
+            ticks = !ticks;
+            tickCounter = 0;
           }
-        } catch (error) {
-            console.error("Error parsing JSON:", error);  
-            hasEncounteredError = true; 
-            source.close();  
-            console.log("Stream closed due to parsing error.");  
-            isStreaming.set(false);  
-
-            return;
-          }  
-  
-      } else {
-        done = true;  
-        if (get(userRequestedStreamClosure)) {  
-          streamText = streamText.replace(/█+$/, ''); // Removes the block character(s) if present at the end  
-          userRequestedStreamClosure.set(false); // Reset the flag after handling  
-        }  
-      
-        await setHistory([...currentHistory, {  
-          role: "assistant",  
-          content: streamText,  
-        }], convId);  
-        
-
-
-
-        estimateTokens(msg, convId);
-        streamText = "";
-        done = true;
-        console.log("Stream closed");
-        source.close();
-          // Stream is complete, so set isStreaming back to false.  
-  isStreaming.set(false);  
-      }
-    });
-  
-    source.addEventListener("error", (e) => {  
-      try {  
-        if (done) return; // If the stream is already marked as done, no further action required.  
-        console.error("Stream error:", e);  
-      } finally {  
-        source.close();  
-        // Regardless of the cause of the error, the stream is closing, so set isStreaming back to false.  
-        isStreaming.set(false);  
-      }  
-    });  
-    
-    source.stream();  
-    globalSource = source;  
-  }  
+          streamText += text;
+          streamContext.set({ streamText, convId });
+          setHistory(
+            [
+              ...currentHistory,
+              {
+                role: "assistant",
+                content: streamText + "█" + (ticks ? "\n```" : ""),
+              },
+            ],
+            convId
+          );
+        },
+        onCompleted: async (_finalText) => {
+          if (get(userRequestedStreamClosure)) {
+            streamText = streamText.replace(/█+$/, '');
+            userRequestedStreamClosure.set(false);
+          }
+          await setHistory(
+            [
+              ...currentHistory,
+              {
+                role: "assistant",
+                content: streamText,
+              },
+            ],
+            convId
+          );
+          estimateTokens(msg, convId);
+          streamText = "";
+          isStreaming.set(false);
+        },
+        onError: (_err) => {
+          isStreaming.set(false);
+        },
+      },
+      input
+    );
+  } finally {
+    isStreaming.set(false);
+  }
+}
 
   export async function sendPDFMessage(msg: ChatCompletionRequestMessage[], convId, pdfOutput) {
-    userRequestedStreamClosure.set(false);  
-    let hasEncounteredError = false;  
+  userRequestedStreamClosure.set(false);
 
-    let tickCounter = 0;
-    let ticks = false;
-    let currentHistory = get(conversations)[convId].history;
-    
-    let roleMsg: ChatCompletionRequestMessage = {
-      role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
-      content: get(conversations)[convId].assistantRole,
-    };
-    
-    let systemMessage: ChatCompletionRequestMessage = {  
-      role: 'system', // Assuming 'system' is an acceptable value for your backend/API  
-      content: pdfOutput,  
-    };  
-
-    currentHistory.push(systemMessage);  
-
-
-    msg = [roleMsg, systemMessage, ...msg];  
-console.log(msg);
-    const cleansedMessages = msg.map(cleanseMessage);
-
-    let done = false;
-    let streamText = "";
+  let tickCounter = 0;
+  let ticks = false;
+  let currentHistory = get(conversations)[convId].history;
   
-    currentHistory = [...currentHistory];
-    isStreaming.set(true);
+  let roleMsg: ChatCompletionRequestMessage = {
+    role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
+    content: get(conversations)[convId].assistantRole,
+  };
 
-    let source = new SSE("https://api.openai.com/v1/chat/completions", {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${get(apiKey)}`,
-      },
-      method: "POST",
-      payload: JSON.stringify({
-        model: get(selectedModel),
-        messages: cleansedMessages,
-        stream: true,
-      }),
-    });
+  let systemMessage: ChatCompletionRequestMessage = {
+    role: 'system',
+    content: pdfOutput,
+  };
 
-    console.log("payload", JSON.stringify({
-      model: get(selectedModel),
-      messages: cleansedMessages,
-      stream: true,
-    })
-  );
-  
-    source.addEventListener("message", async (e) => { // Note: Adding async here makes the callback function async
-      let payload;
-      if (e.data !== "[DONE]") {
-        try {  
-          if (!hasEncounteredError) {  
-            let parsedChunks = parseJSONChunks(e.data);
-            // Process each parsed JSON object
-            parsedChunks.forEach((payload) => {
-              // Your logic to handle each JSON object goes here
-              // Example: Extracting text and updating history or stream context
-              let text = payload.choices[0]?.delta?.content;
-              if (text) {
-                let msgTicks = countTicks(text);
-                tickCounter += msgTicks;
-                if (msgTicks === 0) tickCounter = 0;
-                if (tickCounter === 3) {
-                  ticks = !ticks;
-                  tickCounter = 0;
-                }
-                streamText += text;
-                streamContext.set({ streamText, convId }); // Update the store  
-      
-                // Here, we await setHistory within the async IIFE
-                setHistory([...currentHistory, {
-                  role: "assistant",
-                  content: streamText + "█" + (ticks ? "\n```" : ""),
-                }], convId);
-              }
-            });
+  const chatMessages = [roleMsg, systemMessage, ...msg].map(cleanseMessage);
+  const input = buildResponsesInputFromMessages(chatMessages);
+
+  let streamText = "";
+  currentHistory = [...currentHistory];
+  isStreaming.set(true);
+
+  try {
+    await streamResponseViaResponsesAPI(
+      '',
+      get(selectedModel),
+      {
+        onTextDelta: (text) => {
+          const msgTicks = countTicks(text);
+          tickCounter += msgTicks;
+          if (msgTicks === 0) tickCounter = 0;
+          if (tickCounter === 3) { ticks = !ticks; tickCounter = 0; }
+          streamText += text;
+          streamContext.set({ streamText, convId });
+          setHistory(
+            [
+              ...currentHistory,
+              {
+                role: "assistant",
+                content: streamText + "█" + (ticks ? "\n```" : ""),
+              },
+            ],
+            convId
+          );
+        },
+        onCompleted: async () => {
+          if (get(userRequestedStreamClosure)) {
+            streamText = streamText.replace(/█+$/, '');
+            userRequestedStreamClosure.set(false);
           }
-        } catch (error) {
-            console.error("Error parsing JSON:", error);  
-            hasEncounteredError = true; 
-            source.close();  
-            console.log("Stream closed due to parsing error.");  
-            isStreaming.set(false);  
-
-            return;
-          }  
-  
-      } else {
-        done = true;  
-        if (get(userRequestedStreamClosure)) {  
-          streamText = streamText.replace(/█+$/, ''); // Removes the block character(s) if present at the end  
-          userRequestedStreamClosure.set(false); // Reset the flag after handling  
-        }  
-      
-        await setHistory([...currentHistory, {  
-          role: "assistant",  
-          content: streamText,  
-        }], convId);  
-        
-
-
-
-        estimateTokens(msg, convId);
-        streamText = "";
-        done = true;
-        console.log("Stream closed");
-        source.close();
-          // Stream is complete, so set isStreaming back to false.  
-  isStreaming.set(false);  
-      }
-    });
-  
-    source.addEventListener("error", (e) => {  
-      try {  
-        if (done) return; // If the stream is already marked as done, no further action required.  
-        console.error("Stream error:", e);  
-      } finally {  
-        source.close();  
-        // Regardless of the cause of the error, the stream is closing, so set isStreaming back to false.  
-        isStreaming.set(false);  
-      }  
-    });  
-    
-    source.stream();  
-    globalSource = source;  
-  }  
+          await setHistory(
+            [
+              ...currentHistory,
+              { role: "assistant", content: streamText },
+            ],
+            convId
+          );
+          estimateTokens(msg, convId);
+          streamText = "";
+          isStreaming.set(false);
+        },
+        onError: (_err) => {
+          isStreaming.set(false);
+        },
+      },
+      input
+    );
+  } finally {
+    isStreaming.set(false);
+  }
+}
   
 
 
