@@ -780,7 +780,7 @@ export async function testReasoningStreamingAPI(prompt?: string) {
     error?: any;
   };
 
-  async function streamOnce(payload: any): Promise<StreamResult> {
+  async function streamOnce(payload: any, variantName: string): Promise<StreamResult> {
     const events: any[] = [];
     const order: string[] = [];
     const seen = new Set<string>();
@@ -907,7 +907,7 @@ export async function testReasoningStreamingAPI(prompt?: string) {
       return {
         success: completed,
         model,
-        variant: payload.__variant || 'unknown',
+        variant: variantName,
         events,
         order,
         seenTypes: Array.from(seen),
@@ -922,7 +922,7 @@ export async function testReasoningStreamingAPI(prompt?: string) {
       return {
         success: false,
         model,
-        variant: payload.__variant || 'unknown',
+        variant: variantName,
         events,
         order,
         seenTypes,
@@ -941,7 +941,6 @@ export async function testReasoningStreamingAPI(prompt?: string) {
   for (let i = 0; i < variants.length; i++) {
     const v = variants[i];
     const payload = {
-      __variant: v.name, // non-API field for local tracking
       model,
       input,
       store: false,
@@ -952,7 +951,7 @@ export async function testReasoningStreamingAPI(prompt?: string) {
     };
     console.log(`Trying variant ${i + 1}/${variants.length}: ${v.name}`, payload);
 
-    const result = await streamOnce(payload);
+    const result = await streamOnce(payload, v.name);
     variantResults.push(result);
 
     // Consider it "reasoning-present" if we saw any expected reasoning event types
