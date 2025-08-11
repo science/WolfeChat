@@ -1,7 +1,7 @@
 // Debug utilities for SmoothGPT chat issues
 import { get } from 'svelte/store';
 import { apiKey, selectedModel } from '../stores/stores';
-import { createResponseViaResponsesAPI, streamResponseViaResponsesAPI } from '../services/openaiService';
+import { createResponseViaResponsesAPI, streamResponseViaResponsesAPI, sendRequest } from '../services/openaiService';
 
 export interface DebugInfo {
   apiKeyConfigured: boolean;
@@ -23,6 +23,14 @@ export async function testDirectAPI() {
   
   if (!key) {
     console.error('No API key configured');
+    return null;
+  }
+  if (!model) {
+    console.error('No model selected; set a model in the UI to replicate live behavior.');
+    return null;
+  }
+  if (!model) {
+    console.error('No model selected; set a model in the UI to replicate live behavior.');
     return null;
   }
 
@@ -476,7 +484,7 @@ export async function testSSEJSImplementation() {
 
 export async function testResponsesAPI(prompt: string = "Say 'double bubble bath' five times fast.") {
   const key = get(apiKey);
-  const model = get(selectedModel) || 'gpt-4o-mini';
+  const model = get(selectedModel);
 
   console.log('=== Responses API (non-streaming) Test ===');
   console.log('API Key configured:', !!key);
@@ -505,7 +513,7 @@ export async function testResponsesAPI(prompt: string = "Say 'double bubble bath
 
 export async function testResponsesStreamingAPI(prompt: string = "Stream this: 'double bubble bath' five times fast.") {
   const key = get(apiKey);
-  const model = get(selectedModel) || 'gpt-4o-mini';
+  const model = get(selectedModel);
 
   console.log('=== Responses API (streaming) Test ===');
   console.log('API Key configured:', !!key);
@@ -540,6 +548,37 @@ export async function testResponsesStreamingAPI(prompt: string = "Stream this: '
   } catch (e) {
     console.error('Responses Streaming error:', e);
     return { success: false, error: e, eventsCount: events.length, events, model };
+  }
+}
+
+/**
+ * Mirrors the title-generation path in the live app, which calls sendRequest(...)
+ * with a model like 'gpt-4-turbo-preview' that may not support reasoning.effort.
+ * This should reproduce the 400 unsupported_parameter error when applicable.
+ */
+export async function testCreateTitleFlow(currentInput: string = "This is a sample conversation about testing.") {
+  const key = get(apiKey);
+  const model = 'gpt-4-turbo-preview';
+
+  console.log('=== Title Flow Responses API Test ===');
+  console.log('API Key configured:', !!key);
+  console.log('Title model:', model);
+
+  if (!key) {
+    console.error('No API key configured');
+    return null;
+  }
+
+  try {
+    const data = await sendRequest([
+      { role: "user", content: currentInput },
+      { role: "user", content: "Generate a title for this conversation, so I can easily reference it later. Maximum 6 words. Return only the title text." }
+    ], model);
+    console.log('Title flow result:', data);
+    return { success: true, raw: data, model };
+  } catch (e) {
+    console.error('Title flow error:', e);
+    return { success: false, error: e, model };
   }
 }
 
