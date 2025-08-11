@@ -708,6 +708,166 @@ console.log(msg);
       isStreaming.set(false);  // Notify that the image generation is complete
     }
   }
+
+// Choose a sensible default Responses-capable model
+function getDefaultResponsesModel() {
+  const m = get(selectedModel);
+  if (!m || /gpt-3\.5|gpt-4-turbo-preview|gpt-4-32k|gpt-4$/.test(m)) {
+    return 'gpt-4o-mini';
+  }
+  return m;
+}
+
+function buildResponsesInputFromPrompt(prompt: string) {
+  return [
+    {
+      role: 'user',
+      content: [{ type: 'text', text: prompt }],
+      type: 'message'
+    }
+  ];
+}
+
+export async function createResponseViaResponsesAPI(prompt: string, model?: string) {
+  const key = get(apiKey);
+  if (!key) throw new Error('No API key configured');
+
+  const payload = {
+    model: model || getDefaultResponsesModel(),
+    input: buildResponsesInputFromPrompt(prompt),
+    reasoning: { effort: 'medium' }, // Implementation Note
+    summary: 'auto',                 // Implementation Note
+    store: false,                    // Implementation Note
+    stream: false,
+    verbosity: 'medium'              // Implementation Note
+  };
+
+  const res = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Responses API error ${res.status}: ${text || res.statusText}`);
+  }
+  return res.json();
+}
+
+export interface ResponsesStreamCallbacks {
+  onEvent?: (evt: { type: string; data: any }) => void;
+  onTextDelta?: (text: string) => void;
+  onCompleted?: (finalText: string, raw?: any) => void;
+  onError?: (error: any) => void;
+}
+
+export async function streamResponseViaResponsesAPI(
+  prompt: string,
+  model?: string,
+  callbacks?: ResponsesStreamCallbacks
+): Promise<string> {
+  const key = get(apiKey);
+  if (!key) throw new Error('No API key configured');
+
+  const payload = {
+    model: model || getDefaultResponsesModel(),
+    input: buildResponsesInputFromPrompt(prompt),
+    reasoning: { effort: 'medium' },
+    summary: 'auto',
+    store: false,
+    stream: true,
+    verbosity: 'medium'
+  };
+
+  const res = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok || !res.body) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Responses API stream error ${res.status}: ${text || res.statusText}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalText = '';
+
+  function processSSEBlock(block: string) {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    let eventType = 'message';
+    const dataLines: string[] = [];
+
+    for (const line of lines) {
+      if (line.startsWith('event:')) {
+        eventType = line.slice('event:'.length).trim();
+      } else if (line.startsWith('data:')) {
+        dataLines.push(line.slice('data:'.length).trim());
+      }
+    }
+    if (dataLines.length === 0) return;
+
+    const dataStr = dataLines.join('\n');
+    if (dataStr === '[DONE]') {
+      callbacks?.onCompleted?.(finalText);
+      return;
+    }
+
+    let obj: any = null;
+    try {
+      obj = JSON.parse(dataStr);
+    } catch (e) {
+      callbacks?.onError?.(new Error(`Failed to parse SSE data JSON: ${e}`));
+      return;
+    }
+
+    // Prefer explicit SSE event name; if missing, fall back to payload.type
+    const resolvedType = eventType !== 'message' ? eventType : (obj?.type || 'message');
+
+    callbacks?.onEvent?.({ type: resolvedType, data: obj });
+
+    if (resolvedType === 'response.output_text.delta') {
+      const deltaText =
+        obj?.delta?.text ??
+        obj?.delta ??
+        obj?.output_text_delta ??
+        obj?.text ??
+        '';
+      if (deltaText) {
+        finalText += deltaText;
+        callbacks?.onTextDelta?.(deltaText);
+      }
+    } else if (resolvedType === 'response.completed') {
+      callbacks?.onCompleted?.(finalText, obj);
+    } else if (resolvedType === 'error') {
+      callbacks?.onError?.(obj);
+    }
+  }
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const parts = buffer.split('\n\n');
+    buffer = parts.pop() || '';
+    for (const p of parts) {
+      if (p.trim()) processSSEBlock(p);
+    }
+  }
+  if (buffer.trim()) processSSEBlock(buffer);
+
+  return finalText;
+}
   
   
   

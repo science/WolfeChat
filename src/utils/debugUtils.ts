@@ -1,6 +1,7 @@
 // Debug utilities for SmoothGPT chat issues
 import { get } from 'svelte/store';
 import { apiKey, selectedModel, conversations, chosenConversationId } from '../stores/stores';
+import { createResponseViaResponsesAPI, streamResponseViaResponsesAPI } from '../services/openaiService';
 
 export interface DebugInfo {
   apiKeyConfigured: boolean;
@@ -470,6 +471,75 @@ export async function testSSEJSImplementation() {
       chunkCount: 0,
       streamData: ''
     };
+  }
+}
+
+export async function testResponsesAPI(prompt: string = "Say 'double bubble bath' five times fast.") {
+  const key = get(apiKey);
+  const model = get(selectedModel) || 'gpt-4o-mini';
+
+  console.log('=== Responses API (non-streaming) Test ===');
+  console.log('API Key configured:', !!key);
+  console.log('Selected model:', model);
+
+  if (!key) {
+    console.error('No API key configured');
+    return null;
+  }
+
+  try {
+    const data = await createResponseViaResponsesAPI(prompt, model);
+    const outputText =
+      data?.output_text ??
+      data?.output?.[0]?.content?.map((c: any) => c?.text).join('') ??
+      data?.response?.output_text ??
+      JSON.stringify(data);
+    console.log('Responses API result:', data);
+    console.log('Responses API output_text:', outputText);
+    return { success: true, raw: data, outputText, model };
+  } catch (e) {
+    console.error('Responses API error:', e);
+    return { success: false, error: e };
+  }
+}
+
+export async function testResponsesStreamingAPI(prompt: string = "Stream this: 'double bubble bath' five times fast.") {
+  const key = get(apiKey);
+  const model = get(selectedModel) || 'gpt-4o-mini';
+
+  console.log('=== Responses API (streaming) Test ===');
+  console.log('API Key configured:', !!key);
+  console.log('Selected model:', model);
+
+  if (!key) {
+    console.error('No API key configured');
+    return null;
+  }
+
+  const events: any[] = [];
+  let finalText = '';
+
+  try {
+    finalText = await streamResponseViaResponsesAPI(prompt, model, {
+      onEvent: (evt) => {
+        if (evt.type === 'response.created' || evt.type === 'response.completed' || evt.type === 'error') {
+          console.log('SSE event:', evt.type, evt.data?.id || '');
+        }
+        events.push(evt);
+      },
+      onTextDelta: (_text) => {},
+      onCompleted: (text) => {
+        console.log('Streaming completed. Final text length:', text.length);
+      },
+      onError: (err) => {
+        console.error('Streaming error:', err);
+      }
+    });
+
+    return { success: true, finalText, eventsCount: events.length, events, model };
+  } catch (e) {
+    console.error('Responses Streaming error:', e);
+    return { success: false, error: e, eventsCount: events.length, events, model };
   }
 }
 

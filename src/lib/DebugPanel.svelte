@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { testDirectAPI, testStreamingAPI, testSmoothGPTChatFlow, testModelSpecificBehavior, testSSEParsing, testSSEJSImplementation, logDebugInfo } from '../utils/debugUtils';
+  import { testDirectAPI, testStreamingAPI, testSmoothGPTChatFlow, testModelSpecificBehavior, testSSEParsing, testSSEJSImplementation, testResponsesAPI, testResponsesStreamingAPI, logDebugInfo } from '../utils/debugUtils';
   import { selectedModel, apiKey, debugVisible } from '../stores/stores';
   import { createEventDispatcher } from 'svelte';
   import CloseIcon from '../assets/close.svg';
@@ -146,6 +146,51 @@
     isTesting = false;
   }
   
+  async function runResponsesAPITest() {
+    isTesting = true;
+    currentTest = 'Responses API';
+    debugResults = 'Running Responses API (non-streaming) test...\n';
+
+    try {
+      const result = await testResponsesAPI();
+      if (result && result.success) {
+        debugResults += `✅ Responses API test successful!\n`;
+        debugResults += `Model: ${result.model}\n`;
+        debugResults += `Output: ${result.outputText}\n`;
+      } else {
+        debugResults += `❌ Responses API test failed!\n`;
+        if (result?.error) debugResults += `Error: ${result.error}\n`;
+      }
+    } catch (error) {
+      debugResults += `❌ Responses API test error: ${error}\n`;
+    }
+
+    isTesting = false;
+  }
+
+  async function runResponsesStreamingTest() {
+    isTesting = true;
+    currentTest = 'Responses Streaming';
+    debugResults = 'Running Responses API (streaming) test...\n';
+
+    try {
+      const result = await testResponsesStreamingAPI();
+      if (result && result.success) {
+        debugResults += `✅ Responses streaming test successful!\n`;
+        debugResults += `Model: ${result.model}\n`;
+        debugResults += `Events received: ${result.eventsCount}\n`;
+        debugResults += `Final text: ${result.finalText}\n`;
+      } else {
+        debugResults += `❌ Responses streaming test failed!\n`;
+        if (result?.error) debugResults += `Error: ${result.error}\n`;
+      }
+    } catch (error) {
+      debugResults += `❌ Responses streaming test error: ${error}\n`;
+    }
+
+    isTesting = false;
+  }
+
   async function runAllTests() {
     isTesting = true;
     currentTest = 'All Tests';
@@ -303,6 +348,22 @@
       disabled={isTesting}
     >
       {isTesting && currentTest === 'SSE.js Implementation' ? 'Testing...' : 'Test SSE.js'}
+    </button>
+
+    <button 
+      class="w-full bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded text-sm disabled:opacity-50"
+      on:click={runResponsesAPITest}
+      disabled={isTesting}
+    >
+      {isTesting && currentTest === 'Responses API' ? 'Testing...' : 'Test Responses API (non-stream)'}
+    </button>
+
+    <button 
+      class="w-full bg-cyan-700 hover:bg-cyan-800 px-3 py-1 rounded text-sm disabled:opacity-50"
+      on:click={runResponsesStreamingTest}
+      disabled={isTesting}
+    >
+      {isTesting && currentTest === 'Responses Streaming' ? 'Testing...' : 'Test Responses API (stream)'}
     </button>
     
     <button 
