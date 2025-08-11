@@ -246,7 +246,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
 
   const historyMessages = currentHistory.map((historyItem) => ({
     role: historyItem.role,
-    content: convertChatContentToResponsesContent(historyItem.content),
+    content: convertChatContentToResponsesContent(historyItem.content, historyItem.role),
   }));
 
   const userTextMessage = [...msg].reverse().find((m) => m.role === "user")?.content || "";
@@ -554,12 +554,31 @@ function buildResponsesInputFromPrompt(prompt: string) {
   ];
 }
 
-function convertChatContentToResponsesContent(content: any): any[] {
+function convertChatContentToResponsesContent(content: any, role?: string): any[] {
+  const isAssistant = (role || '').toLowerCase() === 'assistant';
+
   if (typeof content === 'string') {
-    return [{ type: 'input_text', text: content }];
+    return [{ type: isAssistant ? 'output_text' : 'input_text', text: content }];
   }
+
   if (Array.isArray(content)) {
     return content.map((part: any) => {
+      if (isAssistant) {
+        // Assistant prior messages must be represented as output_text/refusal
+        if (typeof part === 'string') {
+          return { type: 'output_text', text: part };
+        }
+        if (part?.type === 'text' && typeof part?.text === 'string') {
+          return { type: 'output_text', text: part.text };
+        }
+        if (part?.type === 'input_text' && typeof part?.text === 'string') {
+          return { type: 'output_text', text: part.text };
+        }
+        // Fallback: stringify unknown assistant content
+        return { type: 'output_text', text: typeof part === 'string' ? part : JSON.stringify(part) };
+      }
+
+      // Non-assistant (user/system) messages use input_* types
       if (part?.type === 'text' && typeof part?.text === 'string') {
         return { type: 'input_text', text: part.text };
       }
@@ -573,13 +592,14 @@ function convertChatContentToResponsesContent(content: any): any[] {
       return { type: 'input_text', text: typeof part === 'string' ? part : JSON.stringify(part) };
     });
   }
-  return [{ type: 'input_text', text: String(content) }];
+
+  return [{ type: isAssistant ? 'output_text' : 'input_text', text: String(content) }];
 }
 
-function buildResponsesInputFromMessages(messages: ChatCompletionRequestMessage[]) {
+export function buildResponsesInputFromMessages(messages: ChatCompletionRequestMessage[]) {
   return messages.map((m) => ({
     role: m.role,
-    content: convertChatContentToResponsesContent(m.content)
+    content: convertChatContentToResponsesContent(m.content, m.role)
   }));
 }
 

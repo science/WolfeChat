@@ -1,7 +1,7 @@
 // Debug utilities for SmoothGPT chat issues
 import { get } from 'svelte/store';
 import { apiKey, selectedModel } from '../stores/stores';
-import { createResponseViaResponsesAPI, streamResponseViaResponsesAPI, sendRequest } from '../services/openaiService';
+import { createResponseViaResponsesAPI, streamResponseViaResponsesAPI, sendRequest, buildResponsesInputFromMessages } from '../services/openaiService';
 
 export interface DebugInfo {
   apiKeyConfigured: boolean;
@@ -543,6 +543,55 @@ export async function testResponsesStreamingAPI(prompt: string = "Stream this: '
     return { success: true, finalText, eventsCount: events.length, events, model };
   } catch (e) {
     console.error('Responses Streaming error:', e);
+    return { success: false, error: e, eventsCount: events.length, events, model };
+  }
+}
+
+export async function testResponsesStreamingWithHistory() {
+  const key = get(apiKey);
+  const model = get(selectedModel);
+
+  console.log('=== Responses API Streaming With History Test ===');
+  console.log('API Key configured:', !!key);
+  console.log('Selected model:', model);
+
+  if (!key) {
+    console.error('No API key configured');
+    return null;
+  }
+
+  const messages = [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'Say "Hello."' },
+    { role: 'assistant', content: 'Hello.' },
+    { role: 'user', content: 'Now say "world".' }
+  ];
+
+  const input = buildResponsesInputFromMessages(messages);
+
+  const events: any[] = [];
+  let finalText = '';
+
+  try {
+    finalText = await streamResponseViaResponsesAPI('', model, {
+      onEvent: (evt) => {
+        if (evt.type === 'response.created' || evt.type === 'response.completed' || evt.type === 'error') {
+          console.log('SSE event:', evt.type, evt.data?.id || '');
+        }
+        events.push(evt);
+      },
+      onTextDelta: (_text) => {},
+      onCompleted: (text) => {
+        console.log('Streaming completed. Final text length:', text.length);
+      },
+      onError: (err) => {
+        console.error('Streaming error:', err);
+      }
+    }, input);
+
+    return { success: true, finalText, eventsCount: events.length, events, model };
+  } catch (e) {
+    console.error('Responses Streaming With History error:', e);
     return { success: false, error: e, eventsCount: events.length, events, model };
   }
 }
