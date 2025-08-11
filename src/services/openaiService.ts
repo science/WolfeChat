@@ -735,11 +735,10 @@ export async function createResponseViaResponsesAPI(prompt: string, model?: stri
   const payload = {
     model: model || getDefaultResponsesModel(),
     input: buildResponsesInputFromPrompt(prompt),
-    reasoning: { effort: 'medium' }, // Implementation Note
-    summary: 'auto',                 // Implementation Note
-    store: false,                    // Implementation Note
-    stream: false,
-    verbosity: 'medium'              // Implementation Note
+    reasoning: { effort: 'medium' },
+    text: { verbosity: 'medium' },
+    store: false,
+    stream: false
   };
 
   const res = await fetch('https://api.openai.com/v1/responses', {
@@ -777,10 +776,9 @@ export async function streamResponseViaResponsesAPI(
     model: model || getDefaultResponsesModel(),
     input: buildResponsesInputFromPrompt(prompt),
     reasoning: { effort: 'medium' },
-    summary: 'auto',
+    text: { verbosity: 'medium' },
     store: false,
-    stream: true,
-    verbosity: 'medium'
+    stream: true
   };
 
   const res = await fetch('https://api.openai.com/v1/responses', {
