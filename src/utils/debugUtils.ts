@@ -718,7 +718,7 @@ const EXPECTED_REASONING_EVENT_TYPES = [
 // Mirror services' supportsReasoning check locally for the test harness
 function supportsReasoningLocal(model: string): boolean {
   const m = (model || '').toLowerCase();
-  return m.includes('o3') || m.includes('o4') || m.includes('reason');
+  return m.includes('gpt-5') || m.includes('o3') || m.includes('o4') || m.includes('reason');
 }
 
 /**
@@ -744,10 +744,10 @@ export async function testReasoningStreamingAPI(prompt?: string) {
     return null;
   }
 
-  // Prefer a reasoning-capable model for this test
-  const model = supportsReasoningLocal(selected) ? selected : 'o4-mini';
-  if (model !== selected) {
-    console.warn(`Selected model "${selected}" may not support reasoning; using "${model}" for this test.`);
+  // Force reasoning test to use gpt-5-mini to validate event types across gpt-5 family
+  const model = 'gpt-5-mini';
+  if ((selected || '').toLowerCase() !== model) {
+    console.warn(`Reasoning test will use "${model}" regardless of selected model ("${selected}").`);
   }
 
   const messages = [

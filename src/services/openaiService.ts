@@ -527,10 +527,10 @@ function getDefaultResponsesModel() {
   return m;
 }
 
-// Only certain models (e.g., o3, o4 family or explicit reasoning models) support "reasoning".
+ // Only certain models (e.g., gpt-5, o3, o4 family or explicit reasoning models) support "reasoning".
 function supportsReasoning(model: string): boolean {
   const m = (model || '').toLowerCase();
-  return m.includes('o3') || m.includes('o4') || m.includes('reason');
+  return m.includes('gpt-5') || m.includes('o3') || m.includes('o4') || m.includes('reason');
 }
 
 // Build a consistent Responses payload used by all call sites.
