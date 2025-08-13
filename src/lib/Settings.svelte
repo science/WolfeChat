@@ -1,5 +1,6 @@
 <script lang="ts">
     import { selectedModel, selectedVoice, selectedMode, showTokens, selectedSize, selectedQuality } from '../stores/stores';
+    import { modelsStore } from '../stores/modelStore';
     import { createEventDispatcher } from 'svelte';
     import CloseIcon from "../assets/close.svg";
     import { writable, get, derived } from "svelte/store";
@@ -18,10 +19,9 @@
   let apiCheckMessage = writable('');
   let showMessage = writable(''); 
 
-  let models = writable([]); 
   let filteredModels = writable([]); 
   $: $selectedMode, updateFilteredModels();
-    $: $models, updateFilteredModels();
+  $: $modelsStore, updateFilteredModels();
 
   let localApiTextField: string = get(apiKey) || ''; 
   $: localApiTextField = $apiKey || '';
@@ -53,7 +53,7 @@ onMount(async() => {
     }
  function updateFilteredModels() {
         let mode = get(selectedMode);
-        let availableModels = get(models);
+        let availableModels = get(modelsStore);
         let newFilteredModels = [];
 
         if (mode === "GPT") {
@@ -77,14 +77,12 @@ async function initializeSettings() {
     const savedMode = localStorage.getItem("selectedMode");
     selectedMode.set(savedMode || "GPT"); 
 
-    if (apiTextField) {
-        await fetchModels(apiTextField);
-    } else {
-        const savedModels = localStorage.getItem("models");
-        if (savedModels) {
-            models.set(JSON.parse(savedModels));
-        }
+    // Auto-refresh if cache is empty when opening settings
+    const cachedModels = get(modelsStore);
+    if ((!cachedModels || cachedModels.length === 0) && (apiTextField || get(apiKey))) {
+        await fetchModels(get(apiKey) || apiTextField);
     }
+
     updateFilteredModels(); 
 }
 
@@ -146,15 +144,29 @@ async function fetchModels(apiKey: string) {
 
     const data = await response.json();
     const sortedModels = data.data.sort((a, b) => a.id.localeCompare(b.id));
-    models.set(sortedModels);
-    localStorage.setItem("models", JSON.stringify(sortedModels));
-
-    // After models are fetched and set, restore the model selection
+    modelsStore.set(sortedModels);
+    // Persistence handled by modelsStore subscriber
   } catch (error) {
     console.error("Failed to fetch models:", error);
   }
 }
 
+let isRefreshing = false;
+async function refreshModels() {
+  const key = get(apiKey) || localApiTextField;
+  if (!key) {
+    showMessage.set("yellow");
+    apiCheckMessage.set("API key is missing.");
+    return;
+  }
+  try {
+    isRefreshing = true;
+    await fetchModels(key);
+    updateFilteredModels();
+  } finally {
+    isRefreshing = false;
+  }
+}
   function clearTokens() {
     combinedTokens.set(0);
   }
@@ -236,8 +248,18 @@ handleClose();
       
 
       <div class="mb-4">
-        <label for="model-selection" class="block font-medium mb-2">Model Selection</label>
-       <select bind:value={$selectedModel} class="border text-black border-gray-300 p-2 rounded w-full" id="model-selection">
+        <div class="flex items-center justify-between mb-2">
+          <label for="model-selection" class="block font-medium">Model Selection</label>
+          <button
+            class="ml-2 text-sm bg-gray-700 hover:bg-gray-600 transition-colors duration-200 text-white px-2 py-1 rounded"
+            on:click={refreshModels}
+            disabled={isRefreshing}
+            title="Refresh models"
+          >
+            ↻
+          </button>
+        </div>
+        <select bind:value={$selectedModel} class="border text-black border-gray-300 p-2 rounded w-full" id="model-selection">
     {#each $filteredModels as model}
         <option value={model.id}>{model.id}</option>
     {/each}
