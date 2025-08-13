@@ -732,7 +732,7 @@ export async function streamResponseViaResponsesAPI(
     if (resolvedType === 'response.reasoning_summary_part.added') {
       if (!currentSummaryPanelId) {
         console.debug('[ResponsesStream][Reasoning] start summary panel', { convId: convIdCtx });
-        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx);
+        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx, responseWindowId || undefined);
         callbacks?.onReasoningStart?.('summary', obj?.part);
       }
     } else if (resolvedType === 'response.reasoning_summary_text.delta' || resolvedType === 'response.reasoning_summary.delta') {
