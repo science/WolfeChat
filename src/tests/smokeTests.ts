@@ -3,7 +3,8 @@
  * Register two smoke tests (non-stream and streaming) that rely on existing debugUtils functions.
  */
 
-import { registerTest, runAllTests, formatSuiteResultsText, SuiteResult } from './testHarness';
+import { registerTest, runAllTests, formatSuiteResultsText } from './testHarness';
+import type { SuiteResult } from './testHarness';
 import { testResponsesAPI, testResponsesStreamingAPI } from '../utils/debugUtils';
 
 let registered = false;
