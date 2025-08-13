@@ -1,6 +1,7 @@
 <script lang="ts">
     import { selectedModel, selectedVoice, selectedMode, showTokens, selectedSize, selectedQuality } from '../stores/stores';
     import { modelsStore } from '../stores/modelStore';
+    import { recentModelsStore } from '../stores/recentModelsStore';
     import { createEventDispatcher } from 'svelte';
     import CloseIcon from "../assets/close.svg";
     import { writable, get, derived } from "svelte/store";
@@ -20,8 +21,11 @@
   let showMessage = writable(''); 
 
   let filteredModels = writable([]); 
+  let filteredRecentModels = writable([]); 
   $: $selectedMode, updateFilteredModels();
   $: $modelsStore, updateFilteredModels();
+  $: $selectedMode, updateFilteredRecentModels();
+  $: $recentModelsStore, updateFilteredRecentModels();
 
   let localApiTextField: string = get(apiKey) || ''; 
   $: localApiTextField = $apiKey || '';
@@ -73,6 +77,24 @@ onMount(async() => {
             selectedModel.set(newFilteredModels[0].id);
         }
     }
+
+    function updateFilteredRecentModels() {
+        let mode = get(selectedMode);
+        let recent = get(recentModelsStore) || [];
+        let newFilteredRecent = [];
+
+        if (mode === "GPT") {
+            newFilteredRecent = recent.filter(model => model.id.includes('gpt') && !model.id.includes('vision'));
+        } else if (mode === "GPT + Vision") {
+            newFilteredRecent = recent.filter(model => model.id.includes('vision'));
+        } else if (mode === "Dall-E") {
+            newFilteredRecent = recent.filter(model => model.id.includes('dall-e'));
+        } else if (mode === "TTS") {
+            newFilteredRecent = recent.filter(model => model.id.includes('tts'));
+        }
+
+        filteredRecentModels.set(newFilteredRecent);
+    }
 async function initializeSettings() {
     const savedMode = localStorage.getItem("selectedMode");
     selectedMode.set(savedMode || "GPT"); 
@@ -84,6 +106,7 @@ async function initializeSettings() {
     }
 
     updateFilteredModels(); 
+    updateFilteredRecentModels();
 }
 
 async function checkAPIConnection() {
@@ -260,9 +283,24 @@ handleClose();
           </button>
         </div>
         <select bind:value={$selectedModel} class="border text-black border-gray-300 p-2 rounded w-full" id="model-selection">
-    {#each $filteredModels as model}
-        <option value={model.id}>{model.id}</option>
-    {/each}
+    {#if ($filteredRecentModels && $filteredRecentModels.length) || ($filteredModels && $filteredModels.length)}
+      {#if $filteredRecentModels && $filteredRecentModels.length}
+        <optgroup label="Recently used">
+          {#each $filteredRecentModels as r}
+            <option value={r.id}>{r.id}</option>
+          {/each}
+        </optgroup>
+      {/if}
+      <optgroup label="All models">
+        {#each $filteredModels as model}
+          {#if !$filteredRecentModels.find(r => r.id === model.id)}
+            <option value={model.id}>{model.id}</option>
+          {/if}
+        {/each}
+      </optgroup>
+    {:else}
+      <option disabled selected>No models available</option>
+    {/if}
 </select>
       </div>
       {#if $selectedModel.startsWith('tts')}

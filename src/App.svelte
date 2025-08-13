@@ -33,6 +33,7 @@
   import { copyTextToClipboard } from './utils/generalUtils';
   import { selectedModel, selectedVoice, selectedMode, isStreaming } from './stores/stores';
   import { modelsStore } from './stores/modelStore';
+  import { recentModelsStore, addRecentModel } from './stores/recentModelsStore';
   import { reloadConfig } from './services/openaiService';
   import { handleImageUpload, onSendVisionMessageComplete } from './managers/imageManager';
   import { base64Images } from './stores/stores';
@@ -157,6 +158,7 @@ function autoExpand(event) {
 
   function processMessage() {
     let convId = $chosenConversationId;
+    addRecentModel($selectedModel);
     routeMessage(input, convId, pdfOutput);
     input = ""; 
     clearFiles ();
@@ -211,6 +213,7 @@ function startEditMessage(i: number) {
     }
     // Process the edited message as new input
     let convId = $chosenConversationId;
+    addRecentModel($selectedModel);
     routeMessage(editedContent, convId, pdfOutput);
     cancelEdit(); // Reset editing state
   }
@@ -247,9 +250,20 @@ SmoothGPT
         <label for="current-model-select" class="mr-2">Current Model:</label>
         <select id="current-model-select" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$selectedModel}>
           {#if $modelsStore && $modelsStore.length > 0}
-            {#each $modelsStore as model}
-              <option value={model.id}>{model.id}</option>
-            {/each}
+            {#if $recentModelsStore && $recentModelsStore.length > 0}
+              <optgroup label="Recently used">
+                {#each $recentModelsStore as r}
+                  <option value={r.id}>{r.id}</option>
+                {/each}
+              </optgroup>
+            {/if}
+            <optgroup label="All models">
+              {#each $modelsStore as model}
+                {#if !$recentModelsStore || !$recentModelsStore.find(r => r.id === model.id)}
+                  <option value={model.id}>{model.id}</option>
+                {/if}
+              {/each}
+            </optgroup>
           {:else}
             <option disabled selected>No models loaded</option>
           {/if}
