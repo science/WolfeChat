@@ -4,7 +4,7 @@ import { conversations, chosenConversationId, combinedTokens } from "../stores/s
 import { type Conversation, defaultAssistantRole } from "../stores/stores";
 import { selectedModel, selectedVoice, audioUrls, base64Images } from '../stores/stores';
 
-import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage, sendPDFMessage } from "../services/openaiService";
+import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService";
 let streamText = "";
 
 
@@ -80,13 +80,12 @@ export function cleanseMessage(msg: ChatCompletionRequestMessage | { role: strin
 
 
 
-export async function routeMessage(input: string, convId, pdfOutput) {
+export async function routeMessage(input: string, convId) {
 
     let currentHistory = get(conversations)[convId].history;
     let messageHistory = currentHistory;
     currentHistory = [...currentHistory, { role: "user", content: input }];
     setHistory(currentHistory);
-    let pdftext = pdfOutput;
 
     const defaultModel = 'gpt-3.5-turbo'; 
     const defaultVoice = 'alloy'; 
@@ -107,12 +106,10 @@ export async function routeMessage(input: string, convId, pdfOutput) {
         await sendVisionMessage(outgoingMessage, imagesBase64, convId);
       } else if (model.includes('dall-e')) {
         await sendDalleMessage(outgoingMessage, convId);
-      } else if (pdfOutput) {
-        await sendPDFMessage(outgoingMessage, convId, pdfOutput);
-    } else {
+      } else {
         // Default case for regular messages if no specific keywords are found in the model string
         await sendRegularMessage(outgoingMessage, convId);
-    }
+      }
     if (get(conversations)[convId].history.length === 1 || get(conversations)[convId].title === '') {
         await createTitle(input);
     }

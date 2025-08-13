@@ -24,10 +24,8 @@
   import SendIcon from "./assets/send.svg";
   import WaitIcon from "./assets/wait.svg"; 
   import  UploadIcon from "./assets/upload-icon.svg";
-  import  PDFIcon from "./assets/pdf-icon.svg";
   import { afterUpdate } from "svelte";
-  import { processPDF } from './managers/pdfManager';
-  import { conversations, chosenConversationId, settingsVisible, helpVisible, debugVisible, clearFileInputSignal, clearPDFInputSignal } from "./stores/stores";
+  import { conversations, chosenConversationId, settingsVisible, helpVisible, debugVisible, clearFileInputSignal } from "./stores/stores";
   import { isAudioMessage, formatMessageForMarkdown } from "./utils/generalUtils";
   import { routeMessage, newChat, deleteMessageFromConversation } from "./managers/conversationManager";
   import { copyTextToClipboard } from './utils/generalUtils';
@@ -42,13 +40,10 @@
   import ReasoningInline from './lib/ReasoningInline.svelte';
 
   let fileInputElement; 
-  let pdfInputElement; 
   let input: string = "";
   let textAreaElement; 
   let editTextArea; 
 
-  let pdfFile;
-  let pdfOutput = '';
 
   let chatContainer: HTMLElement;
   let moreButtonsToggle: boolean = false;
@@ -62,10 +57,6 @@
     clearFileInputSignal.set(false); // Reset the signal
   }
 
-  $: if ($clearPDFInputSignal && pdfInputElement) {
-    pdfInputElement.value = '';
-    clearPDFInputSignal.set(false); // Reset the signal
-  }
 
   $: {
     const currentConversationId = $chosenConversationId;
@@ -83,20 +74,9 @@
     }
   }
 
-  async function uploadPDF(event) {
-    pdfFile = event.target.files[0]; // Get the first file (assuming single file upload)
-    if (pdfFile) {
-        pdfOutput = await processPDF(pdfFile);
-        console.log(pdfOutput);
-    }
-}
 
 function clearFiles() {  
     base64Images.set([]); // Assuming this is a writable store tracking uploaded images  
-    pdfFile = null; // Clear the file variable  
-    pdfOutput = ''; // Reset the output  
-    pdfInputElement.value = '';
-
   }  
   
   let chatContainerObserver: MutationObserver | null = null;  
@@ -159,7 +139,7 @@ function autoExpand(event) {
   function processMessage() {
     let convId = $chosenConversationId;
     addRecentModel($selectedModel);
-    routeMessage(input, convId, pdfOutput);
+    routeMessage(input, convId);
     input = ""; 
     clearFiles ();
     textAreaElement.style.height = '96px'; // Reset the height after sending
@@ -179,7 +159,6 @@ function autoExpand(event) {
   });
   
   $: isVisionMode = $selectedMode.includes('Vision');
-  $: isGPTMode = $selectedMode.includes('GPT');
 
 $: conversationTitle = $conversations[$chosenConversationId] ? $conversations[$chosenConversationId].title : "ChatGPT";
 
@@ -187,10 +166,6 @@ $: conversationTitle = $conversations[$chosenConversationId] ? $conversations[$c
 let uploadedFileCount: number = 0; 
 $: uploadedFileCount = $base64Images.length;
 
-let uploadedPDFCount: number = 0; 
-$: if (pdfOutput) {
-  uploadedPDFCount = 1; } else { uploadedPDFCount = 0; 
-} 
 
 function startEditMessage(i: number) {
     editingMessageId = i;
@@ -214,7 +189,7 @@ function startEditMessage(i: number) {
     // Process the edited message as new input
     let convId = $chosenConversationId;
     addRecentModel($selectedModel);
-    routeMessage(editedContent, convId, pdfOutput);
+    routeMessage(editedContent, convId);
     cancelEdit(); // Reset editing state
   }
 
