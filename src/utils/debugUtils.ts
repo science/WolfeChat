@@ -226,41 +226,131 @@ export async function testSmoothGPTChatFlow() {
       return null;
     }
 
+    const EXPECTED_REASONING_TYPES = [
+      'response.reasoning_summary_part.added',
+      'response.reasoning_summary_text.delta',
+      'response.reasoning_summary_part.done',
+      'response.reasoning_summary_text.done',
+      'response.reasoning_text.delta',
+      'response.reasoning_text.done',
+    ];
+
     let rawData = '';
-    let parsedChunks = [];
+    let parsedChunks: any[] = [];
     let chunkCount = 0;
-    
+
+    const seenReasoning = new Set<string>();
+    const reasoningEvents: { type: string; data: any }[] = [];
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
     while (true) {
       const { done, value } = await reader.read();
-      
+
       if (done) {
         console.log('Stream complete');
         break;
       }
-      
+
       chunkCount++;
-      const chunk = new TextDecoder().decode(value);
-      rawData += chunk;
-      
-      // Test the parseJSONChunks function logic
-      const parsed = parseJSONChunks(chunk);
-      if (parsed.length > 0) {
-        parsedChunks.push(...parsed);
+      const text = decoder.decode(value, { stream: true });
+      rawData += text;
+      buffer += text;
+
+      const blocks = buffer.split('\n\n');
+      buffer = blocks.pop() || '';
+
+      for (const block of blocks) {
+        const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+        let eventType = 'message';
+        const dataLines: string[] = [];
+
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            eventType = line.slice('event:'.length).trim();
+          } else if (line.startsWith('data:')) {
+            dataLines.push(line.slice('data:'.length).trim());
+          }
+        }
+
+        if (dataLines.length === 0) continue;
+
+        const dataStr = dataLines.join('\n');
+        if (dataStr === '[DONE]') {
+          continue;
+        }
+
+        let obj: any = null;
+        try {
+          obj = JSON.parse(dataStr);
+        } catch (e) {
+          console.warn('Failed to parse SSE data JSON in chat flow test:', e, dataStr);
+          continue;
+        }
+
+        // Collect regular chat-completions chunks for final message extraction
+        if (obj?.choices) {
+          parsedChunks.push(obj);
+        }
+
+        const resolvedType = eventType !== 'message' ? eventType : (obj?.type || 'message');
+        if (EXPECTED_REASONING_TYPES.includes(resolvedType)) {
+          if (!seenReasoning.has(resolvedType)) {
+            console.log('Reasoning event detected:', resolvedType);
+          }
+          seenReasoning.add(resolvedType);
+          reasoningEvents.push({ type: resolvedType, data: obj });
+        }
       }
-      
-      console.log(`Chunk ${chunkCount}:`, chunk);
-      console.log(`Parsed from chunk ${chunkCount}:`, parsed);
+
+      console.log(`Chunk ${chunkCount}:`, text);
+    }
+
+    if (buffer.trim()) {
+      // Process any trailing block left in buffer
+      const trailingBlocks = buffer.split('\n\n').filter(b => b.trim());
+      for (const block of trailingBlocks) {
+        const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+        let eventType = 'message';
+        const dataLines: string[] = [];
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            eventType = line.slice('event:'.length).trim();
+          } else if (line.startsWith('data:')) {
+            dataLines.push(line.slice('data:'.length).trim());
+          }
+        }
+        if (dataLines.length === 0) continue;
+        const dataStr = dataLines.join('\n');
+        if (dataStr === '[DONE]') continue;
+        try {
+          const obj = JSON.parse(dataStr);
+          if (obj?.choices) parsedChunks.push(obj);
+          const resolvedType = eventType !== 'message' ? eventType : (obj?.type || 'message');
+          if (EXPECTED_REASONING_TYPES.includes(resolvedType)) {
+            if (!seenReasoning.has(resolvedType)) {
+              console.log('Reasoning event detected:', resolvedType);
+            }
+            seenReasoning.add(resolvedType);
+            reasoningEvents.push({ type: resolvedType, data: obj });
+          }
+        } catch {}
+      }
     }
 
     console.log('Total raw data:', rawData);
     console.log('Total parsed chunks:', parsedChunks);
+    console.log('Seen reasoning event types:', Array.from(seenReasoning));
     
     return {
       success: true,
       chunkCount,
       rawData,
       parsedChunks,
-      finalMessage: extractFinalMessage(parsedChunks)
+      finalMessage: extractFinalMessage(parsedChunks),
+      seenReasoningTypes: Array.from(seenReasoning),
+      reasoningEvents
     };
 
   } catch (error) {
