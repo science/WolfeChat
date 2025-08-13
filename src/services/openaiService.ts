@@ -656,10 +656,6 @@ export async function streamResponseViaResponsesAPI(
   const resolvedModel = model || getDefaultResponsesModel();
   const input = inputOverride || buildResponsesInputFromPrompt(prompt);
   const payload = buildResponsesPayload(resolvedModel, input, true);
-  console.groupCollapsed('[ResponsesStream] start');
-  console.log('[ResponsesStream] model', resolvedModel, 'supportsReasoning?', supportsReasoning(resolvedModel));
-  console.log('[ResponsesStream] convId', uiContext?.convId);
-  console.log('[ResponsesStream] payload', payload);
 
   const controller = new AbortController();
   globalAbortController = controller;
@@ -707,7 +703,6 @@ export async function streamResponseViaResponsesAPI(
 
     const dataStr = dataLines.join('\n');
     if (dataStr === '[DONE]') {
-      console.debug('[ResponsesStream] [DONE] received');
       callbacks?.onCompleted?.(finalText);
       return;
     }
@@ -722,7 +717,6 @@ export async function streamResponseViaResponsesAPI(
 
     // Prefer explicit SSE event name; if missing, fall back to payload.type
     const resolvedType = eventType !== 'message' ? eventType : (obj?.type || 'message');
-    console.debug('[ResponsesStream][SSE]', { resolvedType, convId: convIdCtx });
 
     callbacks?.onEvent?.({ type: resolvedType, data: obj });
     // Log every SSE type compactly for the collapsible UI (not reused as prompt input)
@@ -742,7 +736,6 @@ export async function streamResponseViaResponsesAPI(
         callbacks?.onReasoningStart?.('summary');
       }
       if (typeof delta === 'string' && delta) {
-        console.debug('[ResponsesStream][Reasoning] summary delta', { len: typeof delta === 'string' ? delta.length : 0 });
         aggSummaryText += delta;
         appendReasoningText(currentSummaryPanelId, delta);
         callbacks?.onReasoningDelta?.('summary', delta);
@@ -757,7 +750,6 @@ export async function streamResponseViaResponsesAPI(
         aggSummaryText += text;
         appendReasoningText(currentSummaryPanelId, text);
       }
-      console.debug('[ResponsesStream][Reasoning] summary done', { totalLen: aggSummaryText.length });
       completeReasoningPanel(currentSummaryPanelId);
       callbacks?.onReasoningDone?.('summary', aggSummaryText);
       currentSummaryPanelId = null;
@@ -769,7 +761,6 @@ export async function streamResponseViaResponsesAPI(
         callbacks?.onReasoningStart?.('text');
       }
       if (typeof delta === 'string' && delta) {
-        console.debug('[ResponsesStream][Reasoning] text delta', { len: typeof delta === 'string' ? delta.length : 0 });
         aggReasoningText += delta;
         appendReasoningText(currentReasoningPanelId, delta);
         callbacks?.onReasoningDelta?.('text', delta);
@@ -784,7 +775,6 @@ export async function streamResponseViaResponsesAPI(
         aggReasoningText += text;
         appendReasoningText(currentReasoningPanelId, text);
       }
-      console.debug('[ResponsesStream][Reasoning] text done', { totalLen: aggReasoningText.length });
       completeReasoningPanel(currentReasoningPanelId);
       callbacks?.onReasoningDone?.('text', aggReasoningText);
       currentReasoningPanelId = null;
@@ -797,7 +787,6 @@ export async function streamResponseViaResponsesAPI(
         obj?.text ??
         '';
       if (deltaText) {
-        console.debug('[ResponsesStream][Text] delta', { len: typeof deltaText === 'string' ? deltaText.length : 0 });
         finalText += deltaText;
         callbacks?.onTextDelta?.(deltaText);
       }
@@ -813,7 +802,6 @@ export async function streamResponseViaResponsesAPI(
     if (done) break;
     const decoded = decoder.decode(value, { stream: true });
     buffer += decoded;
-    console.debug('[ResponsesStream] chunk received', { bytes: value?.length ?? 0, decodedLen: decoded.length });
 
     const parts = buffer.split('\n\n');
     buffer = parts.pop() || '';
@@ -824,7 +812,6 @@ export async function streamResponseViaResponsesAPI(
   if (buffer.trim()) processSSEBlock(buffer);
 
   globalAbortController = null;
-  console.groupEnd?.();
   return finalText;
 }
   
