@@ -9,6 +9,18 @@
     ([$reasoningWindows, $chosenConversationId]) =>
       $reasoningWindows.filter((w) => w.convId === $chosenConversationId || w.convId === undefined)
   );
+
+  // Group panels by responseId for quick lookup per window
+  const panelsByResponseId = derived(reasoningPanels, ($panels) => {
+    const m = new Map<string, ReasoningPanel[]>();
+    for (const p of $panels) {
+      const key = p.responseId ?? '';
+      const arr = m.get(key) || [];
+      arr.push(p);
+      m.set(String(key), arr);
+    }
+    return m;
+  });
 </script>
 
 {#if $windowsForCurrent.length > 0}
@@ -18,16 +30,16 @@
         Reasoning
         {#if w.model}<span class="ml-2 text-xs text-white/60">({w.model})</span>{/if}
         <span class="ml-2 text-xs text-white/60">
-          {$reasoningPanels.filter((p: ReasoningPanel) => p.responseId === w.id).length} message{$reasoningPanels.filter((p: ReasoningPanel) => p.responseId === w.id).length === 1 ? '' : 's'}
+          {($panelsByResponseId.get(w.id) ?? []).length} message{(($panelsByResponseId.get(w.id) ?? []).length === 1) ? '' : 's'}
         </span>
       </summary>
 
-      {#if $reasoningPanels.filter((p: ReasoningPanel) => p.responseId === w.id).length === 0}
+      {#if ($panelsByResponseId.get(w.id) ?? []).length === 0}
         <div class="px-3 py-2 text-xs text-white/60 italic">Waiting for reasoning events...</div>
       {/if}
 
       <div class="p-3 space-y-3">
-        {#each $reasoningPanels.filter((p: ReasoningPanel) => p.responseId === w.id) as p (p.id)}
+        {#each ($panelsByResponseId.get(w.id) ?? []) as p (p.id)}
           <div class="rounded border border-gray-500">
             <div class="flex items-center justify-between px-3 py-2 bg-secondary">
               <div class="text-sm font-semibold text-white/80">
