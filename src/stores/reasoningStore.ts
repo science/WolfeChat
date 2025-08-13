@@ -23,6 +23,7 @@ export interface ReasoningWindow {
   id: string;
   convId?: number;
   model?: string;
+  anchorIndex?: number;
   open: boolean;
   createdAt: number;
 }
@@ -32,9 +33,12 @@ function genWindowId(convId?: number) {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}-win-${convId ?? 'na'}`;
 }
 
-export function createReasoningWindow(convId?: number, model?: string): string {
+export function createReasoningWindow(convId?: number, model?: string, anchorIndex?: number): string {
   const id = genWindowId(convId);
-  reasoningWindows.update((arr) => [...arr, { id, convId, model, open: true, createdAt: Date.now() }]);
+  reasoningWindows.update((arr) => [
+    ...arr,
+    { id, convId, model, anchorIndex, open: true, createdAt: Date.now() }
+  ]);
   return id;
 }
 

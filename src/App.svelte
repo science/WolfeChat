@@ -37,7 +37,7 @@
   import { base64Images } from './stores/stores';
   import { closeStream } from './services/openaiService';  
   import DebugPanel from './lib/DebugPanel.svelte';
-  import ReasoningCollapsible from './lib/ReasoningCollapsible.svelte';
+  import ReasoningInline from './lib/ReasoningInline.svelte';
 
   let fileInputElement; 
   let pdfInputElement; 
@@ -255,7 +255,6 @@ SmoothGPT
       {#if $conversations.length > 0 && $conversations[$chosenConversationId]}
         <div class="flex flex-col max-w-3xl pt-5 grow">
           
-          <ReasoningCollapsible />
           <div>
         {#each $conversations[$chosenConversationId].history as message, i}
 
@@ -341,7 +340,9 @@ SmoothGPT
 
             {/if}
 
-
+            {#if message.role === 'user'}
+              <ReasoningInline convId={$chosenConversationId} anchorIndex={i} />
+            {/if}
 
           </div>
 {/if}        

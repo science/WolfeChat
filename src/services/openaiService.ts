@@ -244,6 +244,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   let tickCounter = 0;
   let ticks = false;
   let currentHistory = get(conversations)[convId].history;
+  const anchorIndex = currentHistory.length - 1;
 
   const historyMessages = currentHistory.map((historyItem) => ({
     role: historyItem.role,
@@ -310,7 +311,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       finalInput,
-      { convId }
+      { convId, anchorIndex }
     );
   } finally {
     isStreaming.set(false);
@@ -322,6 +323,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   let tickCounter = 0;
   let ticks = false;
   let currentHistory = get(conversations)[convId].history;
+  const anchorIndex = currentHistory.length - 1;
   
   let roleMsg: ChatCompletionRequestMessage = {
     role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
@@ -386,7 +388,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       input,
-      { convId }
+      { convId, anchorIndex }
     );
   } finally {
     isStreaming.set(false);
@@ -399,6 +401,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   let tickCounter = 0;
   let ticks = false;
   let currentHistory = get(conversations)[convId].history;
+  const anchorIndex = currentHistory.length - 1;
   
   let roleMsg: ChatCompletionRequestMessage = {
     role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
@@ -461,7 +464,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       input,
-      { convId }
+      { convId, anchorIndex }
     );
   } finally {
     isStreaming.set(false);
@@ -648,7 +651,7 @@ export async function streamResponseViaResponsesAPI(
   model?: string,
   callbacks?: ResponsesStreamCallbacks,
   inputOverride?: any[],
-  uiContext?: { convId?: number }
+  uiContext?: { convId?: number; anchorIndex?: number }
 ): Promise<string> {
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
@@ -686,10 +689,11 @@ export async function streamResponseViaResponsesAPI(
   let aggSummaryText = '';
   let aggReasoningText = '';
   const convIdCtx = uiContext?.convId;
+  const anchorIndexCtx = uiContext?.anchorIndex;
 
   // One reasoning window per API Response (only for reasoning-capable models)
   const responseWindowId: string | null = supportsReasoning(resolvedModel)
-    ? createReasoningWindow(convIdCtx, resolvedModel)
+    ? createReasoningWindow(convIdCtx, resolvedModel, anchorIndexCtx)
     : null;
 
   function processSSEBlock(block: string) {
