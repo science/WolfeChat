@@ -32,6 +32,7 @@
   import { routeMessage, newChat, deleteMessageFromConversation } from "./managers/conversationManager";
   import { copyTextToClipboard } from './utils/generalUtils';
   import { selectedModel, selectedVoice, selectedMode, isStreaming } from './stores/stores';
+  import { modelsStore } from './stores/modelStore';
   import { reloadConfig } from './services/openaiService';
   import { handleImageUpload, onSendVisionMessageComplete } from './managers/imageManager';
   import { base64Images } from './stores/stores';
@@ -243,7 +244,16 @@ SmoothGPT
       <div class="py-5 bg-primary px-5 flex flex-row justify-between flex-wrap-reverse">
         
       <div class="font-bold text-l">  
-        Current Model: <span class="font-normal">{$selectedModel}</span>
+        <label for="current-model-select" class="mr-2">Current Model:</label>
+        <select id="current-model-select" class="text-black p-1 rounded" bind:value={$selectedModel}>
+          {#if $modelsStore && $modelsStore.length > 0}
+            {#each $modelsStore as model}
+              <option value={model.id}>{model.id}</option>
+            {/each}
+          {:else}
+            <option disabled selected>No models loaded</option>
+          {/if}
+        </select>
       </div>
 
       
