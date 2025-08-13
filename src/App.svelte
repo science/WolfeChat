@@ -375,22 +375,6 @@ SmoothGPT
     {/if}  
 
 
-{:else if isGPTMode}
-<input type="file" id="pdfUpload" accept="application/pdf" 
-on:change={event => uploadPDF(event)} bind:this={pdfInputElement} class="file-input">
-
-<label for="pdfUpload" class="file-label bg-chat rounded py-2 px-4 mx-1 cursor-pointer hover:bg-hover2 transition-colors">
-  {#if uploadedPDFCount === 0}
-    <img src={PDFIcon} alt="PDF" class="pdf-icon icon-white">
-  {:else}
-    <span class="fileCount">{uploadedPDFCount}</span>
-  {/if}
-</label>
-
-{#if uploadedPDFCount > 0}  
-      <button on:click={clearFiles} class="clear-btn px-4 rounded-lg bg-red-700 mx-2 hover:bg-red-500">X</button>  
-    {/if}  
-
       {/if}
 
       <textarea bind:this={textAreaElement}  
