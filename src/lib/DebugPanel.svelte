@@ -3,6 +3,7 @@
   import { selectedModel, apiKey, debugVisible } from '../stores/stores';
   import { createEventDispatcher } from 'svelte';
   import CloseIcon from '../assets/close.svg';
+  import { runSmokeTestSuite, formatSuiteResultsText } from '../tests/smokeTests';
   
   const dispatch = createEventDispatcher();
   
@@ -153,6 +154,21 @@
     isTesting = false;
   }
   
+  async function runTestHarness() {
+    isTesting = true;
+    currentTest = 'Test Harness (smoke)';
+    debugResults = 'Running test harness (smoke tests)...\n';
+
+    try {
+      const suite = await runSmokeTestSuite();
+      debugResults = formatSuiteResultsText(suite);
+    } catch (error) {
+      debugResults = `❌ Test harness error: ${error}\n`;
+    }
+
+    isTesting = false;
+  }
+
   function showDebugInfo() {
     logDebugInfo();
     debugResults = 'Debug info logged to console. Check browser console for details.\n';
@@ -215,6 +231,14 @@
       disabled={isTesting}
     >
       {isTesting && currentTest === 'All Tests' ? 'Running...' : 'Run All Tests'}
+    </button>
+    
+    <button 
+      class="w-full bg-emerald-600 hover:bg-emerald-700 px-3 py-1 rounded text-sm disabled:opacity-50"
+      on:click={runTestHarness}
+      disabled={isTesting}
+    >
+      {isTesting && currentTest === 'Test Harness (smoke)' ? 'Running...' : 'Run Test Harness (smoke)'}
     </button>
     
     <button 
