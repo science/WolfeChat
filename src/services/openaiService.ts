@@ -726,7 +726,7 @@ export async function streamResponseViaResponsesAPI(
         currentSummaryPanelId = startReasoningPanel('summary', convIdCtx);
         callbacks?.onReasoningStart?.('summary', obj?.part);
       }
-    } else if (resolvedType === 'response.reasoning_summary_text.delta') {
+    } else if (resolvedType === 'response.reasoning_summary_text.delta' || resolvedType === 'response.reasoning_summary.delta') {
       const delta = obj?.delta ?? '';
       if (!currentSummaryPanelId) {
         currentSummaryPanelId = startReasoningPanel('summary', convIdCtx);
@@ -737,7 +737,7 @@ export async function streamResponseViaResponsesAPI(
         appendReasoningText(currentSummaryPanelId, delta);
         callbacks?.onReasoningDelta?.('summary', delta);
       }
-    } else if (resolvedType === 'response.reasoning_summary_part.done' || resolvedType === 'response.reasoning_summary_text.done') {
+    } else if (resolvedType === 'response.reasoning_summary_part.done' || resolvedType === 'response.reasoning_summary_text.done' || resolvedType === 'response.reasoning_summary.done') {
       const text = obj?.part?.text ?? obj?.text ?? '';
       if (!currentSummaryPanelId) {
         currentSummaryPanelId = startReasoningPanel('summary', convIdCtx);
@@ -751,7 +751,7 @@ export async function streamResponseViaResponsesAPI(
       callbacks?.onReasoningDone?.('summary', aggSummaryText);
       currentSummaryPanelId = null;
       aggSummaryText = '';
-    } else if (resolvedType === 'response.reasoning_text.delta') {
+    } else if (resolvedType === 'response.reasoning_text.delta' || resolvedType === 'response.reasoning.delta') {
       const delta = obj?.delta ?? '';
       if (!currentReasoningPanelId) {
         currentReasoningPanelId = startReasoningPanel('text', convIdCtx);
@@ -762,7 +762,7 @@ export async function streamResponseViaResponsesAPI(
         appendReasoningText(currentReasoningPanelId, delta);
         callbacks?.onReasoningDelta?.('text', delta);
       }
-    } else if (resolvedType === 'response.reasoning_text.done') {
+    } else if (resolvedType === 'response.reasoning_text.done' || resolvedType === 'response.reasoning.done') {
       const text = obj?.text ?? '';
       if (!currentReasoningPanelId) {
         currentReasoningPanelId = startReasoningPanel('text', convIdCtx);

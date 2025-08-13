@@ -707,12 +707,10 @@ export function logDebugInfo() {
 
 // Reasoning streaming debug test
 const EXPECTED_REASONING_EVENT_TYPES = [
-  'response.reasoning_summary_part.added',
-  'response.reasoning_summary_part.done',
-  'response.reasoning_summary_text.delta',
-  'response.reasoning_summary_text.done',
-  'response.reasoning_text.delta',
-  'response.reasoning_text.done',
+  'response.reasoning_summary.delta',
+  'response.reasoning_summary.done',
+  'response.reasoning.delta',
+  'response.reasoning.done',
 ];
 
 // Mirror services' supportsReasoning check locally for the test harness
@@ -850,18 +848,22 @@ export async function testReasoningStreamingAPI(prompt?: string) {
             if (typeof obj?.part?.text === 'string') reasoningSummaryText += obj.part.text;
             break;
           case 'response.reasoning_summary_text.delta':
+          case 'response.reasoning_summary.delta':
             payloadSummary = { delta: obj?.delta ?? '' };
             if (typeof obj?.delta === 'string') reasoningSummaryText += obj.delta;
             break;
           case 'response.reasoning_summary_text.done':
+          case 'response.reasoning_summary.done':
             payloadSummary = { text: obj?.text ?? '' };
             if (typeof obj?.text === 'string') reasoningSummaryText += obj.text;
             break;
           case 'response.reasoning_text.delta':
+          case 'response.reasoning.delta':
             payloadSummary = { delta: obj?.delta ?? '' };
             if (typeof obj?.delta === 'string') reasoningText += obj.delta;
             break;
           case 'response.reasoning_text.done':
+          case 'response.reasoning.done':
             payloadSummary = { text: obj?.text ?? '' };
             if (typeof obj?.text === 'string') reasoningText += obj.text;
             break;
