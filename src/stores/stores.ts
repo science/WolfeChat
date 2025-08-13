@@ -32,7 +32,7 @@ combinedTokens.subscribe((value) => localStorage.setItem("combined_tokens", JSON
 let storedDefaultAssistantRole = localStorage.getItem('default_assistant_role');
 let parsedDefaultAssistantRole: DefaultAssistantRole = storedDefaultAssistantRole !== null ? JSON.parse(storedDefaultAssistantRole) : 0;
 export const defaultAssistantRole = writable(parsedDefaultAssistantRole || {
-    role: "You are a helpful assistant.",
+    role: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
     type: "system",
   });
 defaultAssistantRole.subscribe((value) => localStorage.setItem("default_assistant_role", JSON.stringify(value)));
@@ -45,7 +45,7 @@ let parsedConversations: Conversation[] = storedConversations !== null ? JSON.pa
 export const conversations: Writable<Conversation[]> = writable(parsedConversations || [{
     history: [],
     conversationTokens: 0,
-    assistantRole: "You are a helpful assistant.",
+    assistantRole: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
     title: "",
   }]);
 
