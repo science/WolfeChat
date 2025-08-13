@@ -245,7 +245,7 @@ SmoothGPT
         
       <div class="font-bold text-l">  
         <label for="current-model-select" class="mr-2">Current Model:</label>
-        <select id="current-model-select" class="text-black p-1 rounded" bind:value={$selectedModel}>
+        <select id="current-model-select" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$selectedModel}>
           {#if $modelsStore && $modelsStore.length > 0}
             {#each $modelsStore as model}
               <option value={model.id}>{model.id}</option>
