@@ -9,7 +9,7 @@ import { setHistory, countTokens, estimateTokens, displayAudioMessage, cleanseMe
 import { countTicks } from '../utils/generalUtils';
 import { saveAudioBlob, getAudioBlob } from '../idb';
 import { onSendVisionMessageComplete } from '../managers/imageManager';
-import { startReasoningPanel, appendReasoningText, completeReasoningPanel } from '../stores/reasoningStore';
+import { startReasoningPanel, appendReasoningText, completeReasoningPanel, logSSEEvent } from '../stores/reasoningStore';
 
 let configuration: Configuration | null = null;
 let openai: OpenAIApi | null = null;
@@ -719,6 +719,8 @@ export async function streamResponseViaResponsesAPI(
     const resolvedType = eventType !== 'message' ? eventType : (obj?.type || 'message');
 
     callbacks?.onEvent?.({ type: resolvedType, data: obj });
+    // Log every SSE type compactly for the collapsible UI (not reused as prompt input)
+    logSSEEvent(resolvedType, obj, convIdCtx);
 
     // Handle reasoning-related events first, then output text
     if (resolvedType === 'response.reasoning_summary_part.added') {

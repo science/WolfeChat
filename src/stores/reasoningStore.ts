@@ -39,3 +39,33 @@ export function completeReasoningPanel(id: string) {
     arr.map((p) => (p.id === id ? { ...p, open: false, done: true } : p))
   );
 }
+
+/**
+ * Lightweight per-conversation SSE event log for debugging reasoning.
+ * Stored separately from conversation history and NEVER included in prompts.
+ */
+export interface SSEEventEntry {
+  id: string;
+  convId?: number;
+  type: string;
+  ts: number;
+}
+
+export const reasoningSSEEvents = writable<SSEEventEntry[]>([]);
+
+function genEventId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}-evt`;
+}
+
+/**
+ * Log a compact SSE entry (type only). We intentionally avoid storing payload
+ * text to ensure none of this data is reused as model input.
+ */
+export function logSSEEvent(type: string, _data?: any, convId?: number) {
+  reasoningSSEEvents.update((arr) => {
+    const entry: SSEEventEntry = { id: genEventId(), convId, type, ts: Date.now() };
+    const next = [...arr, entry];
+    // Cap total entries to avoid unbounded growth
+    return next.length > 500 ? next.slice(next.length - 500) : next;
+  });
+}
