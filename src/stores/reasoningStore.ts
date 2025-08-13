@@ -24,17 +24,20 @@ export function startReasoningPanel(kind: ReasoningKind, convId?: number): strin
     ...arr,
     { id, convId, kind, text: '', open: true, startedAt: Date.now(), done: false }
   ]);
+  console.debug('[ReasoningStore] startReasoningPanel', { id, kind, convId });
   return id;
 }
 
 export function appendReasoningText(id: string, chunk: string) {
   if (!chunk) return;
+  console.debug('[ReasoningStore] appendReasoningText', { id, len: chunk.length });
   reasoningPanels.update((arr) =>
     arr.map((p) => (p.id === id ? { ...p, text: p.text + chunk } : p))
   );
 }
 
 export function completeReasoningPanel(id: string) {
+  console.debug('[ReasoningStore] completeReasoningPanel', { id });
   reasoningPanels.update((arr) =>
     arr.map((p) => (p.id === id ? { ...p, open: false, done: true } : p))
   );
@@ -64,6 +67,7 @@ function genEventId() {
 export function logSSEEvent(type: string, _data?: any, convId?: number) {
   reasoningSSEEvents.update((arr) => {
     const entry: SSEEventEntry = { id: genEventId(), convId, type, ts: Date.now() };
+    console.debug('[ReasoningStore] logSSEEvent', { type, convId });
     const next = [...arr, entry];
     // Cap total entries to avoid unbounded growth
     return next.length > 500 ? next.slice(next.length - 500) : next;

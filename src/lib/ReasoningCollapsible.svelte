@@ -1,5 +1,6 @@
 <script lang="ts">
   import { derived } from 'svelte/store';
+  import { onMount } from 'svelte';
   import { reasoningPanels, reasoningSSEEvents, type ReasoningPanel } from '../stores/reasoningStore';
   import { chosenConversationId } from '../stores/stores';
 
@@ -38,6 +39,11 @@
       .replace(/_summary/g, '.summary')
       .replace(/_text/g, '.text');
   }
+  onMount(() => {
+    console.log('[ReasoningCollapsible] mounted');
+  });
+  $: console.debug('[ReasoningCollapsible] counts', { panels: $panelsForCurrent.length, events: $sseEventsForCurrent.length });
+  $: if ($sseEventsForCurrent.length) { console.debug('[ReasoningCollapsible] sse types', Array.from(new Set($sseEventsForCurrent.map(e => e.type)))); }
 </script>
 
 <!-- ReasoningCollapsible always visible -->
