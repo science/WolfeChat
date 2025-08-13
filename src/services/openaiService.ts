@@ -9,6 +9,7 @@ import { setHistory, countTokens, estimateTokens, displayAudioMessage, cleanseMe
 import { countTicks } from '../utils/generalUtils';
 import { saveAudioBlob, getAudioBlob } from '../idb';
 import { onSendVisionMessageComplete } from '../managers/imageManager';
+import { startReasoningPanel, appendReasoningText, completeReasoningPanel } from '../stores/reasoningStore';
 
 let configuration: Configuration | null = null;
 let openai: OpenAIApi | null = null;
@@ -308,7 +309,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
           onSendVisionMessageComplete();
         },
       },
-      finalInput
+      finalInput,
+      { convId }
     );
   } finally {
     isStreaming.set(false);
@@ -457,7 +459,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
           isStreaming.set(false);
         },
       },
-      input
+      input,
+      { convId }
     );
   } finally {
     isStreaming.set(false);
@@ -632,13 +635,19 @@ export interface ResponsesStreamCallbacks {
   onTextDelta?: (text: string) => void;
   onCompleted?: (finalText: string, raw?: any) => void;
   onError?: (error: any) => void;
+
+  // New: reasoning lifecycle callbacks
+  onReasoningStart?: (kind: 'summary' | 'text', meta?: any) => void;
+  onReasoningDelta?: (kind: 'summary' | 'text', text: string) => void;
+  onReasoningDone?: (kind: 'summary' | 'text', fullText?: string) => void;
 }
 
 export async function streamResponseViaResponsesAPI(
   prompt: string,
   model?: string,
   callbacks?: ResponsesStreamCallbacks,
-  inputOverride?: any[]
+  inputOverride?: any[],
+  uiContext?: { convId?: number }
 ): Promise<string> {
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
@@ -669,6 +678,13 @@ export async function streamResponseViaResponsesAPI(
   const decoder = new TextDecoder();
   let buffer = '';
   let finalText = '';
+
+  // Track reasoning panels per stream
+  let currentSummaryPanelId: string | null = null;
+  let currentReasoningPanelId: string | null = null;
+  let aggSummaryText = '';
+  let aggReasoningText = '';
+  const convIdCtx = uiContext?.convId;
 
   function processSSEBlock(block: string) {
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
@@ -703,7 +719,63 @@ export async function streamResponseViaResponsesAPI(
 
     callbacks?.onEvent?.({ type: resolvedType, data: obj });
 
-    if (resolvedType === 'response.output_text.delta') {
+    // Handle reasoning-related events first, then output text
+    if (resolvedType === 'response.reasoning_summary_part.added') {
+      if (!currentSummaryPanelId) {
+        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx);
+        callbacks?.onReasoningStart?.('summary', obj?.part);
+      }
+    } else if (resolvedType === 'response.reasoning_summary_text.delta') {
+      const delta = obj?.delta ?? '';
+      if (!currentSummaryPanelId) {
+        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx);
+        callbacks?.onReasoningStart?.('summary');
+      }
+      if (typeof delta === 'string' && delta) {
+        aggSummaryText += delta;
+        appendReasoningText(currentSummaryPanelId, delta);
+        callbacks?.onReasoningDelta?.('summary', delta);
+      }
+    } else if (resolvedType === 'response.reasoning_summary_part.done' || resolvedType === 'response.reasoning_summary_text.done') {
+      const text = obj?.part?.text ?? obj?.text ?? '';
+      if (!currentSummaryPanelId) {
+        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx);
+        callbacks?.onReasoningStart?.('summary');
+      }
+      if (typeof text === 'string' && text) {
+        aggSummaryText += text;
+        appendReasoningText(currentSummaryPanelId, text);
+      }
+      completeReasoningPanel(currentSummaryPanelId);
+      callbacks?.onReasoningDone?.('summary', aggSummaryText);
+      currentSummaryPanelId = null;
+      aggSummaryText = '';
+    } else if (resolvedType === 'response.reasoning_text.delta') {
+      const delta = obj?.delta ?? '';
+      if (!currentReasoningPanelId) {
+        currentReasoningPanelId = startReasoningPanel('text', convIdCtx);
+        callbacks?.onReasoningStart?.('text');
+      }
+      if (typeof delta === 'string' && delta) {
+        aggReasoningText += delta;
+        appendReasoningText(currentReasoningPanelId, delta);
+        callbacks?.onReasoningDelta?.('text', delta);
+      }
+    } else if (resolvedType === 'response.reasoning_text.done') {
+      const text = obj?.text ?? '';
+      if (!currentReasoningPanelId) {
+        currentReasoningPanelId = startReasoningPanel('text', convIdCtx);
+        callbacks?.onReasoningStart?.('text');
+      }
+      if (typeof text === 'string' && text) {
+        aggReasoningText += text;
+        appendReasoningText(currentReasoningPanelId, text);
+      }
+      completeReasoningPanel(currentReasoningPanelId);
+      callbacks?.onReasoningDone?.('text', aggReasoningText);
+      currentReasoningPanelId = null;
+      aggReasoningText = '';
+    } else if (resolvedType === 'response.output_text.delta') {
       const deltaText =
         obj?.delta?.text ??
         obj?.delta ??
