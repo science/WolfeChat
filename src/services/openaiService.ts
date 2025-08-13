@@ -385,7 +385,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
           isStreaming.set(false);
         },
       },
-      input
+      input,
+      { convId }
     );
   } finally {
     isStreaming.set(false);
