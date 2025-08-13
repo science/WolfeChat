@@ -361,7 +361,7 @@ SmoothGPT
 
     <div class="inputbox flex flex-1 bg-primary mt-auto mx-auto max-w-3xl mb-3">
       {#if isVisionMode}  
-      <input type="file" id="imageUpload" multiple accept="image/*" on:change="{handleImageUpload}" bind:this={fileInputElement} class="file-input">  
+      <input type="file" id="imageUpload" multiple accept="image/*" on:change={handleImageUpload} bind:this={fileInputElement} class="file-input">  
       <label for="imageUpload" class="file-label bg-chat rounded py-2 px-4 mx-1 cursor-pointer hover:bg-hover2 transition-colors">  
         {#if uploadedFileCount > 0}  
           <span class="fileCount">{uploadedFileCount}</span>  
@@ -377,7 +377,7 @@ SmoothGPT
 
 {:else if isGPTMode}
 <input type="file" id="pdfUpload" accept="application/pdf" 
-on:change="{event => uploadPDF(event)}" bind:this={pdfInputElement} class="file-input">
+on:change={event => uploadPDF(event)} bind:this={pdfInputElement} class="file-input">
 
 <label for="pdfUpload" class="file-label bg-chat rounded py-2 px-4 mx-1 cursor-pointer hover:bg-hover2 transition-colors">
   {#if uploadedPDFCount === 0}
