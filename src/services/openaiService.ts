@@ -9,7 +9,7 @@ import { setHistory, countTokens, estimateTokens, displayAudioMessage, cleanseMe
 import { countTicks } from '../utils/generalUtils';
 import { saveAudioBlob, getAudioBlob } from '../idb';
 import { onSendVisionMessageComplete } from '../managers/imageManager';
-import { startReasoningPanel, appendReasoningText, completeReasoningPanel, logSSEEvent } from '../stores/reasoningStore';
+import { startReasoningPanel, appendReasoningText, completeReasoningPanel, logSSEEvent, createReasoningWindow, collapseReasoningWindow } from '../stores/reasoningStore';
 
 let configuration: Configuration | null = null;
 let openai: OpenAIApi | null = null;
@@ -687,6 +687,11 @@ export async function streamResponseViaResponsesAPI(
   let aggReasoningText = '';
   const convIdCtx = uiContext?.convId;
 
+  // One reasoning window per API Response (only for reasoning-capable models)
+  const responseWindowId: string | null = supportsReasoning(resolvedModel)
+    ? createReasoningWindow(convIdCtx, resolvedModel)
+    : null;
+
   function processSSEBlock(block: string) {
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
     let eventType = 'message';
@@ -704,6 +709,7 @@ export async function streamResponseViaResponsesAPI(
     const dataStr = dataLines.join('\n');
     if (dataStr === '[DONE]') {
       callbacks?.onCompleted?.(finalText);
+      if (responseWindowId) collapseReasoningWindow(responseWindowId);
       return;
     }
 
@@ -732,7 +738,7 @@ export async function streamResponseViaResponsesAPI(
     } else if (resolvedType === 'response.reasoning_summary_text.delta' || resolvedType === 'response.reasoning_summary.delta') {
       const delta = obj?.delta ?? '';
       if (!currentSummaryPanelId) {
-        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx);
+        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx, responseWindowId || undefined);
         callbacks?.onReasoningStart?.('summary');
       }
       if (typeof delta === 'string' && delta) {
@@ -743,7 +749,7 @@ export async function streamResponseViaResponsesAPI(
     } else if (resolvedType === 'response.reasoning_summary_part.done' || resolvedType === 'response.reasoning_summary_text.done' || resolvedType === 'response.reasoning_summary.done') {
       const text = obj?.part?.text ?? obj?.text ?? '';
       if (!currentSummaryPanelId) {
-        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx);
+        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx, responseWindowId || undefined);
         callbacks?.onReasoningStart?.('summary');
       }
       if (typeof text === 'string' && text) {
@@ -757,7 +763,7 @@ export async function streamResponseViaResponsesAPI(
     } else if (resolvedType === 'response.reasoning_text.delta' || resolvedType === 'response.reasoning.delta') {
       const delta = obj?.delta ?? '';
       if (!currentReasoningPanelId) {
-        currentReasoningPanelId = startReasoningPanel('text', convIdCtx);
+        currentReasoningPanelId = startReasoningPanel('text', convIdCtx, responseWindowId || undefined);
         callbacks?.onReasoningStart?.('text');
       }
       if (typeof delta === 'string' && delta) {
@@ -768,7 +774,7 @@ export async function streamResponseViaResponsesAPI(
     } else if (resolvedType === 'response.reasoning_text.done' || resolvedType === 'response.reasoning.done') {
       const text = obj?.text ?? '';
       if (!currentReasoningPanelId) {
-        currentReasoningPanelId = startReasoningPanel('text', convIdCtx);
+        currentReasoningPanelId = startReasoningPanel('text', convIdCtx, responseWindowId || undefined);
         callbacks?.onReasoningStart?.('text');
       }
       if (typeof text === 'string' && text) {
@@ -792,6 +798,7 @@ export async function streamResponseViaResponsesAPI(
       }
     } else if (resolvedType === 'response.completed') {
       callbacks?.onCompleted?.(finalText, obj);
+      if (responseWindowId) collapseReasoningWindow(responseWindowId);
     } else if (resolvedType === 'error') {
       callbacks?.onError?.(obj);
     }
