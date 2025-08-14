@@ -96,7 +96,7 @@
     isTesting = false;
   }
 
-  async function runAllTests() {
+  async function runAllApiTests() {
     isTesting = true;
     currentTest = 'All Tests';
     debugResults = 'Running comprehensive test suite...\n\n';
@@ -250,7 +250,7 @@
     
     <button 
       class="w-full bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded text-sm disabled:opacity-50"
-      on:click={runAllTests}
+      on:click={runAllApiTests}
       disabled={isTesting}
     >
       {isTesting && currentTest === 'All Tests' ? 'Running...' : 'Run All Tests'}
