@@ -4,6 +4,8 @@
   import { createEventDispatcher } from 'svelte';
   import CloseIcon from '../assets/close.svg';
   import { runSmokeTestSuite, formatSuiteResultsText } from '../tests/smokeTests';
+  import { runAllTests, formatSuiteResultsText as formatSuiteResultsTextAll } from '../tests/testHarness';
+  import '../tests/codeRendererStreaming.test';
   
   const dispatch = createEventDispatcher();
   
@@ -156,14 +158,35 @@
   
   async function runTestHarness() {
     isTesting = true;
-    currentTest = 'Test Harness (smoke)';
-    debugResults = 'Running test harness (smoke tests)...\n';
+    currentTest = 'Test Harness (API)';
+    debugResults = 'Running test harness (API tests)...\n';
 
     try {
       const suite = await runSmokeTestSuite();
       debugResults = formatSuiteResultsText(suite);
     } catch (error) {
       debugResults = `❌ Test harness error: ${error}\n`;
+    }
+
+    isTesting = false;
+  }
+
+  async function runNonApiTestHarness() {
+    isTesting = true;
+    currentTest = 'Test Harness (non-API)';
+    debugResults = 'Running non-API test harness...\n';
+
+    try {
+      const apiTags = new Set(['smoke', 'responses', 'api', 'network', 'reasoning']);
+      const suite = await runAllTests({
+        filter: (t) => {
+          const tags = t.tags ?? [];
+          return !tags.some(tag => apiTags.has(tag));
+        }
+      });
+      debugResults = formatSuiteResultsTextAll(suite);
+    } catch (error) {
+      debugResults = `❌ Non-API test harness error: ${error}\n`;
     }
 
     isTesting = false;
@@ -234,11 +257,19 @@
     </button>
     
     <button 
+      class="w-full bg-emerald-500 hover:bg-emerald-600 px-3 py-1 rounded text-sm disabled:opacity-50"
+      on:click={runNonApiTestHarness}
+      disabled={isTesting}
+    >
+      {isTesting && currentTest === 'Test Harness (non-API)' ? 'Running...' : 'Run Test Harness (non-API)'}
+    </button>
+    
+    <button 
       class="w-full bg-emerald-600 hover:bg-emerald-700 px-3 py-1 rounded text-sm disabled:opacity-50"
       on:click={runTestHarness}
       disabled={isTesting}
     >
-      {isTesting && currentTest === 'Test Harness (smoke)' ? 'Running...' : 'Run Test Harness (smoke)'}
+      {isTesting && currentTest === 'Test Harness (API)' ? 'Running...' : 'Run Test Harness (API)'}
     </button>
     
     <button 
