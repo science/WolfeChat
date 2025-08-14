@@ -1,136 +1,140 @@
 <script>
-  import { onMount } from 'svelte'; // Import onMount lifecycle function
-  import Prism from 'prismjs';     // Import Prism core
+  import Prism from 'prismjs';
 
-  // --- Import necessary language components ---
-  // Only import the ones you expect to use to keep bundle size small
+  // Import Prism languages used in app
   import 'prismjs/components/prism-javascript';
   import 'prismjs/components/prism-css';
-  import 'prismjs/components/prism-markup'; // For HTML, XML, SVG
+  import 'prismjs/components/prism-markup';
   import 'prismjs/components/prism-ruby';
   import 'prismjs/components/prism-bash';
-  // Add more languages as needed from 'prismjs/components/'
 
-  // --- Import a Prism theme CSS ---
-  // Choose ONE theme. Many options available in 'prismjs/themes/'
-  // Example: Okaidia theme
-  import 'prismjs/themes/prism-okaidia.css'; 
-  // Other popular options: prism.css (default), prism-tomorrow.css, prism-coy.css etc.
+  // Theme CSS
+  import 'prismjs/themes/prism-okaidia.css';
 
-  export let text; 
-  export let lang = undefined; 
+  // Support multiple incoming prop names from svelte-markdown
+  export let text;
+  export let value;   // svelte-markdown often passes { value }
+  export let code;    // some renderers pass { code }
+  export let lang = undefined;
+  export let className; // sometimes language is encoded in className (e.g., "language-js")
 
-  // Create a ref for the <code> element
   let codeElement;
 
-  // Run highlighting after the component is added to the DOM
-  onMount(() => {
-    if (codeElement) {
-      Prism.highlightElement(codeElement);
+  function normalizeLang(l) {
+    if (!l) return 'none';
+    return String(l).replace(/^language-/, '').toLowerCase();
+  }
+
+  // Derive language from explicit prop or className, fallback to 'none'
+  $: language =
+    normalizeLang(
+      lang ||
+        (className && String(className).match(/language-([\w-]+)/)?.[1]) ||
+        ''
+    );
+
+  // Derive content from most common prop names
+  $: content = (text ?? value ?? code ?? '').toString();
+
+  // Compute highlighted HTML reactively so Svelte doesn't overwrite tokens
+  $: highlightedHtml = (() => {
+    try {
+      const grammar =
+        Prism.languages[language] ||
+        (language === 'none' ? null : null) ||
+        Prism.languages.markup; // safe fallback
+
+      if (grammar) {
+        return Prism.highlight(content, grammar, language);
+      }
+    } catch (e) {
+      console.warn('Prism highlight error', e);
     }
-  });
+    // Fallback: escape safely
+    const span = document.createElement('span');
+    span.textContent = content;
+    return span.innerHTML;
+  })();
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(text); 
+      await navigator.clipboard.writeText(content);
     } catch (error) {
-      console.error("Error copying text: ", error);
+      console.error('Error copying text: ', error);
     }
   };
-  
 </script>
 
-<div class="code-block-container" style="position:relative"> <!-- Add class for better CSS targeting -->
+<div class="code-block-container" style="position:relative">
   <div class="copycode">
-    {#if lang}
-      <span class="language-label">{lang}</span>
+    {#if language && language !== 'none'}
+      <span class="language-label">{language}</span>
     {:else}
-      <span></span> 
+      <span></span>
     {/if}
     <button on:click={copyToClipboard}>Copy code</button>
   </div>
-  
-  <!-- Wrap highlightedCode within <pre> and <code> -->
-  <!-- Ensure the language class is added, and bind the element reference -->
-  <pre class="language-{lang || 'none'}"><code bind:this={codeElement} class="language-{lang || 'none'}">{text}</code></pre> 
+
+  <pre class="language-{language}"><code bind:this={codeElement} class="language-{language}">{@html highlightedHtml}</code></pre>
 </div>
 
 <style>
-  /* --- Import Prism's Line Number Plugin CSS (Optional) --- */
-  /* If you want line numbers, uncomment the next line */
-  /* @import 'prismjs/plugins/line-numbers/prism-line-numbers.css'; */
+  /* --- Import Prism's Line Number Plugin CSS (Optional) ---
+     If you want line numbers, uncomment the next line
+     @import 'prismjs/plugins/line-numbers/prism-line-numbers.css'; */
 
-  /* --- Your Existing Styles (Adjusted) --- */
-  .code-block-container :global(pre[class*="language-"]) { /* Target Prism's pre tag */
-    /* Remove your custom background/padding if handled by Prism theme */
-    /* background-color: #0d0d0d; */ 
-    border-radius: 0px 0px 10px 10px !important; /* Keep bottom radius, !important might be needed */
-    /* padding: 20px; */ /* Let Prism theme handle padding */
-    margin: 0 20px 0 20px !important; /* Keep horizontal margin */
+  .code-block-container :global(pre[class*="language-"]) {
+    border-radius: 0px 0px 10px 10px !important;
+    margin: 0 20px 0 20px !important;
     opacity: 0;
     animation: fade-in 0.5s ease-in-out forwards;
-    margin-bottom: 1rem !important; /* Keep bottom margin */
+    margin-bottom: 1rem !important;
     overflow-wrap: break-word;
-    white-space: pre-wrap; /* You might want pre if using line numbers */
-    /* color: #e0e0e0; */ /* Let Prism theme handle color */
-    /* font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; */ /* Let Prism theme handle font */
-    /* font-size: 0.9em; */ /* Let Prism theme handle font size */
+    white-space: pre-wrap;
   }
 
-   /* Style the title bar */
   .copycode {
     display: flex;
-    justify-content: space-between; 
-    align-items: center; 
-    background-color: #2f2f2f; /* Or match your Prism theme's background */
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2f2f2f;
     margin: 0 20px 0 20px;
     border-radius: 10px 10px 0px 0px;
     padding: 0.5rem 1rem 0.5rem 1rem;
-    min-height: 2.25rem; 
+    min-height: 2.25rem;
   }
 
   .language-label {
     font-size: small;
     color: rgb(187, 187, 187);
     font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-    text-transform: lowercase; 
+    text-transform: lowercase;
   }
 
-  /* Style the button */
   button {
     font-size: small;
-    display: block; 
+    display: block;
     transition: all 0.1s ease-in-out;
     color: rgb(187, 187, 187);
-    background: none; 
-    border: none; 
-    cursor: pointer; 
+    background: none;
+    border: none;
+    cursor: pointer;
   }
   button:hover {
     color: white;
   }
 
-  /* Fade-in animation */
   @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
-  /* --- Prism Theme Overrides (Optional) --- */
-  /* You might need to override Prism theme styles slightly */
-  /* Example: Remove Prism's default margin/radius if it conflicts */
   :global(pre[class*="language-"]) {
-     margin-top: 0 !important;
-     margin-bottom: 0 !important; /* We handle bottom margin on the container */
-     border-radius: 0 !important; 
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    border-radius: 0 !important;
   }
   :global(code[class*="language-"]) {
-     /* Adjust font size if needed */
-     /* font-size: 0.85em !important; */
+    /* Customize font if needed */
   }
-
 </style>
