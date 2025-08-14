@@ -3,6 +3,11 @@
 
   // Import Prism languages used in app
   import 'prismjs/components/prism-javascript';
+  import 'prismjs/components/prism-typescript';
+  import 'prismjs/components/prism-jsx';
+  import 'prismjs/components/prism-tsx';
+  import 'prismjs/components/prism-python';
+  import 'prismjs/components/prism-json';
   import 'prismjs/components/prism-css';
   import 'prismjs/components/prism-markup';
   import 'prismjs/components/prism-ruby';
@@ -16,21 +21,34 @@
   export let value;   // svelte-markdown often passes { value }
   export let code;    // some renderers pass { code }
   export let lang = undefined;
+  export let language = undefined; // svelte-markdown may pass { language }
   export let className; // sometimes language is encoded in className (e.g., "language-js")
 
   let codeElement;
 
   function normalizeLang(l) {
     if (!l) return 'none';
-    return String(l).replace(/^language-/, '').toLowerCase();
+    const name = String(l).replace(/^language-/, '').toLowerCase();
+    const aliases = {
+      js: 'javascript',
+      jsx: 'jsx',
+      ts: 'typescript',
+      tsx: 'tsx',
+      py: 'python',
+      sh: 'bash',
+      shell: 'bash',
+      html: 'markup'
+    };
+    return aliases[name] || name;
   }
 
-  // Derive language from explicit prop or className, fallback to 'none'
-  $: language =
+  // Derive language from explicit prop(s) or className, fallback to 'none'
+  $: resolvedLanguage =
     normalizeLang(
+      language ||
       lang ||
-        (className && String(className).match(/language-([\w-]+)/)?.[1]) ||
-        ''
+      (className && String(className).match(/language-([\w-]+)/)?.[1]) ||
+      ''
     );
 
   // Derive content from most common prop names
@@ -40,12 +58,12 @@
   $: highlightedHtml = (() => {
     try {
       const grammar =
-        Prism.languages[language] ||
-        (language === 'none' ? null : null) ||
+        Prism.languages[resolvedLanguage] ||
+        (resolvedLanguage === 'none' ? null : null) ||
         Prism.languages.markup; // safe fallback
 
       if (grammar) {
-        return Prism.highlight(content, grammar, language);
+        return Prism.highlight(content, grammar, resolvedLanguage);
       }
     } catch (e) {
       console.warn('Prism highlight error', e);
@@ -67,15 +85,15 @@
 
 <div class="code-block-container" style="position:relative">
   <div class="copycode">
-    {#if language && language !== 'none'}
-      <span class="language-label">{language}</span>
+    {#if resolvedLanguage && resolvedLanguage !== 'none'}
+      <span class="language-label">{resolvedLanguage}</span>
     {:else}
       <span></span>
     {/if}
     <button on:click={copyToClipboard}>Copy code</button>
   </div>
 
-  <pre class="language-{language}"><code bind:this={codeElement} class="language-{language}">{@html highlightedHtml}</code></pre>
+  <pre class="language-{resolvedLanguage}"><code bind:this={codeElement} class="language-{resolvedLanguage}">{@html highlightedHtml}</code></pre>
 </div>
 
 <style>
