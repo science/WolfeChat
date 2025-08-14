@@ -52,8 +52,8 @@ registerTest({
     const codeEl2 = host.querySelector('code');
     assert.that(!!codeEl2, 'Code element still exists after update');
     const stillHasTokens = codeEl2!.innerHTML.includes('token');
-    // This asserts the bug: after update, highlighting is lost (unstyled text)
-    assert.that(!stillHasTokens, 'Highlighting is lost after prop update (BUG)');
+    // After update, highlighting should persist
+    assert.that(stillHasTokens, 'Highlighting persists after prop update');
 
     comp.$destroy();
     document.body.removeChild(host);
@@ -69,13 +69,14 @@ registerTest({
     const host = document.createElement('div');
     document.body.appendChild(host);
 
-    // Simulate streaming: first render an early chunk (up to just before the closing fence),
-    // then append the rest. We expect our custom Code renderer to be used, but its onMount-only
-    // highlighting causes a toggle to unstyled after update.
-    const earlyChunk = RAW_MD_SNIPPET.replace(
-      "```",
-      "```" // keep same content; we rely on update behavior for toggle
-    );
+    // Simulate streaming with a simpler snippet to ensure a code block renders,
+    // then update the source to change the code content.
+    const earlyChunk = `Here is code:
+
+\`\`\`js
+const a = 1;
+\`\`\`
+`;
 
     const mdComp = new SvelteMarkdown({
       target: host,
@@ -96,7 +97,14 @@ registerTest({
     assert.that(initiallyHighlighted, 'Initial render is syntax highlighted');
 
     // Append more text like a streaming update would do
-    const appended = earlyChunk + '\n\nAdditional lines after code block to simulate stream.\n';
+    const appended = `Here is code:
+
+\`\`\`js
+const a = 1;
+const b = 2;
+\`\`\`
+
+And more text below the code block.`;
     mdComp.$set({ source: appended });
 
     await sleep(0);
@@ -104,8 +112,8 @@ registerTest({
     codeEl = host.querySelector('pre code');
     assert.that(!!codeEl, 'Code block still exists after update');
     const afterUpdateHighlighted = codeEl!.innerHTML.includes('token');
-    // This asserts the observed bug: after updates, the rendered code toggles to unstyled/plain
-    assert.that(!afterUpdateHighlighted, 'After update, code block is unstyled/plain (BUG)');
+    // After updates, the rendered code should remain highlighted
+    assert.that(afterUpdateHighlighted, 'After update, code block remains syntax highlighted');
 
     mdComp.$destroy();
     document.body.removeChild(host);
