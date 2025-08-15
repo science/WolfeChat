@@ -2,6 +2,8 @@
     import { selectedModel, selectedVoice, selectedMode, showTokens, selectedSize, selectedQuality } from '../stores/stores';
     import { modelsStore } from '../stores/modelStore';
     import { recentModelsStore } from '../stores/recentModelsStore';
+    import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
+    import { supportsReasoning } from '../services/openaiService';
     import { createEventDispatcher } from 'svelte';
     import CloseIcon from "../assets/close.svg";
     import { writable, get, derived } from "svelte/store";
@@ -302,6 +304,35 @@ handleClose();
       <option disabled selected>No models available</option>
     {/if}
 </select>
+        {#if supportsReasoning($selectedModel)}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+          <div>
+            <label for="settings-reasoning-effort" class="block font-medium mb-1">Reasoning</label>
+            <select id="settings-reasoning-effort" bind:value={$reasoningEffort} class="border text-black border-gray-300 p-2 rounded w-full">
+              <option value="minimal">minimal</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+          </div>
+          <div>
+            <label for="settings-verbosity" class="block font-medium mb-1">Verbosity</label>
+            <select id="settings-verbosity" bind:value={$verbosity} class="border text-black border-gray-300 p-2 rounded w-full">
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+          </div>
+          <div>
+            <label for="settings-summary" class="block font-medium mb-1">Summary</label>
+            <select id="settings-summary" bind:value={$summary} class="border text-black border-gray-300 p-2 rounded w-full">
+              <option value="auto">auto</option>
+              <option value="detailed">detailed</option>
+              <option value="null">null</option>
+            </select>
+          </div>
+        </div>
+        {/if}
       </div>
       {#if $selectedModel.startsWith('tts')}
 <div class="mb-4">

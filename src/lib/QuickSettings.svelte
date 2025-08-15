@@ -2,9 +2,12 @@
   import { selectedModel } from '../stores/stores';
   import { modelsStore } from '../stores/modelStore';
   import { recentModelsStore } from '../stores/recentModelsStore';
+  import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
+  import { supportsReasoning } from '../services/openaiService';
 
   let open = false;
   function toggle() { open = !open; }
+  $: isReasoningModel = supportsReasoning($selectedModel || '');
 </script>
 
 <div class="w-full">
@@ -15,7 +18,7 @@
     aria-controls="quick-settings-body"
     type="button"
   >
-    <span class="font-bold">Quick Settings M: {$selectedModel || '—'}</span>
+    <span class="font-bold">Quick Settings M: {$selectedModel || '—'}, V: {isReasoningModel ? $verbosity : '—'} | R: {isReasoningModel ? $reasoningEffort : '—'} | S: {isReasoningModel ? $summary : '—'}</span>
     <span class="ml-2 text-sm">{open ? '▲' : '▼'}</span>
   </button>
 
@@ -50,7 +53,36 @@
         </select>
       </div>
 
-      <!-- Future quick setting controls can be added here -->
+      {#if isReasoningModel}
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+        <div>
+          <label for="reasoning-effort" class="mr-2">Reasoning:</label>
+          <select id="reasoning-effort" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$reasoningEffort}>
+            <option value="minimal">minimal</option>
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+          </select>
+        </div>
+        <div>
+          <label for="verbosity" class="mr-2">Verbosity:</label>
+          <select id="verbosity" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$verbosity}>
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+          </select>
+        </div>
+        <div>
+          <label for="summary" class="mr-2">Summary:</label>
+          <select id="summary" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$summary}>
+            <option value="auto">auto</option>
+            <option value="detailed">detailed</option>
+            <option value="null">null</option>
+          </select>
+        </div>
+      </div>
+      {/if}
+
       <slot />
     </div>
   {/if}

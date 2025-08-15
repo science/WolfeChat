@@ -9,6 +9,7 @@ import { setHistory, countTokens, estimateTokens, displayAudioMessage, cleanseMe
 import { countTicks } from '../utils/generalUtils';
 import { saveAudioBlob, getAudioBlob } from '../idb';
 import { onSendVisionMessageComplete } from '../managers/imageManager';
+import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
 import { startReasoningPanel, appendReasoningText, completeReasoningPanel, logSSEEvent, createReasoningWindow, collapseReasoningWindow } from '../stores/reasoningStore';
 
 let configuration: Configuration | null = null;
@@ -535,20 +536,30 @@ function getDefaultResponsesModel() {
 }
 
  // Only certain models (e.g., gpt-5, o3, o4 family or explicit reasoning models) support "reasoning".
-function supportsReasoning(model: string): boolean {
+export function supportsReasoning(model: string): boolean {
   const m = (model || '').toLowerCase();
   return m.includes('gpt-5') || m.includes('o3') || m.includes('o4') || m.includes('reason');
 }
 
-// Build a consistent Responses payload used by all call sites.
-// This ensures identical code paths between live chat and debug tests.
-function buildResponsesPayload(model: string, input: any[], stream: boolean) {
+/**
+ * Build a consistent Responses payload used by all call sites.
+ * Includes reasoning and verbosity fields only for reasoning-capable models.
+ */
+export function buildResponsesPayload(model: string, input: any[], stream: boolean) {
   const payload: any = { model, input, store: false, stream };
+
   if (supportsReasoning(model)) {
-    payload.reasoning = { summary: 'detailed', effort: 'medium' };
+    const eff = get(reasoningEffort) || 'medium';
+    const verb = get(verbosity) || 'medium';
+    const sum = get(summary) || 'auto';
+
+    // text.verbosity only for reasoning-capable models per requirements
+    payload.text = { verbosity: verb };
+
+    // reasoning settings (summary: allow explicit null)
+    payload.reasoning = { effort: eff, summary: (sum === 'null' ? null : sum) };
   }
-  // "text" tool is widely supported for text outputs; keep enabled.
-  payload.text = { verbosity: 'medium' };
+
   return payload;
 }
 
