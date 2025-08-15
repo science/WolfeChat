@@ -97,6 +97,11 @@ export class ScrollMemory {
     if (!container || key == null) return;
     if (this.suspended) return;
 
+    // Guard: only perform mutation-driven restores when we're in a pendingRestore phase
+    // (e.g., after switching conversations). This prevents ratio-based restores from
+    // adjusting scrollTop while content is streaming/growing within the same chat.
+    if (scheduleIfNeeded && !this.pendingRestore) return;
+
     const ratio = this.getRatioForKey(key);
     const denom = container.scrollHeight - container.clientHeight;
 
