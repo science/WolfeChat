@@ -7,6 +7,7 @@
   import { runAllTests, formatSuiteResultsText as formatSuiteResultsTextAll } from '../tests/testHarness';
   import '../tests/codeRendererStreaming.test';
   import '../tests/chatScrollState.test';
+  import '../tests/modelSelectionPayload.test';
   
   const dispatch = createEventDispatcher();
   
