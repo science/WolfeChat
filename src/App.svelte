@@ -38,6 +38,7 @@
   import { closeStream } from './services/openaiService';  
   import DebugPanel from './lib/DebugPanel.svelte';
   import ReasoningInline from './lib/ReasoningInline.svelte';
+  import { ScrollMemory } from './utils/scrollState';
 
   let fileInputElement; 
   let input: string = "";
@@ -51,6 +52,9 @@
 
   let editingMessageId: number | null = null;
   let editingMessageContent: string = "";
+
+  const scrollMem = new ScrollMemory();
+  let lastConvId: number | null = null;
 
   $: if ($clearFileInputSignal && fileInputElement) {
     fileInputElement.value = '';
@@ -90,6 +94,8 @@ function clearFiles() {
       // Trigger scroll if any relevant mutations observed  
       // Disabled scroll to end of chat
       // scrollChatToEnd();  
+      // Maintain per-conversation scroll ratio after DOM mutations
+      scrollMem.restoreCurrentAfterFrame();
     });  
   
     chatContainerObserver.observe(chatContainer, config);    
@@ -97,7 +103,15 @@ function clearFiles() {
 
   onMount(async () => {  
     await initApp();  
-  
+
+    // Attach scroll memory to chat container and initialize for current conversation
+    if (chatContainer) {
+      scrollMem.attach(chatContainer);
+      scrollMem.setActiveKey($chosenConversationId != null ? String($chosenConversationId) : null);
+      scrollMem.restoreCurrentAfterFrame();
+      lastConvId = $chosenConversationId;
+    }
+    
     // Setup MutationObserver after app initialization and component mounting  
     setupMutationObserver();  
   });  
@@ -108,6 +122,8 @@ function clearFiles() {
       chatContainerObserver.disconnect();  
       chatContainerObserver = null;  
     }  
+    // Detach scroll memory
+    scrollMem.detach();
     // Clean up app-specific resources  
     cleanupApp();  
   });  
@@ -154,8 +170,19 @@ function autoExpand(event) {
     if (currentMessageCount > lastMessageCount) {
       // disable scroll to bottom on update
       // scrollChat();
+      // Ensure we re-apply saved ratio when content grows
+      scrollMem.restoreCurrentAfterFrame();
     }
     lastMessageCount = currentMessageCount; // Update the count after every update
+  });
+
+  // Restore per-conversation scroll position when switching chats
+  afterUpdate(() => {
+    if ($chosenConversationId !== lastConvId) {
+      scrollMem.setActiveKey($chosenConversationId != null ? String($chosenConversationId) : null);
+      scrollMem.restoreCurrentAfterFrame();
+      lastConvId = $chosenConversationId;
+    }
   });
   
   $: isVisionMode = $selectedMode.includes('Vision');

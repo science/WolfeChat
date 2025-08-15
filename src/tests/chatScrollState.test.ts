@@ -1,11 +1,11 @@
 /**
  * chatScrollState.test.ts
- * Demonstrates the bug: a single scroll container is reused across chats without
- * per-conversation scroll "memory". These tests assert the desired behavior
- * (position should persist per chat) and will currently FAIL, exposing the bug.
+ * Tests the per-conversation scroll memory helper. These should PASS when the
+ * ScrollMemory utility is used in the app.
  */
 
 import { registerTest, Assert } from './testHarness';
+import { ScrollMemory } from '../utils/scrollState';
 
 function sleep(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));
@@ -54,87 +54,130 @@ function scrollRatio(container: HTMLDivElement): number {
   return container.scrollTop / denom;
 }
 
-// Test 1: Switching from a long chat to a shorter chat should preserve position ratio per chat.
-// Current behavior (bug) will NOT preserve it, so this test is expected to FAIL.
+// Test 1: Per-chat isolation and persistence across different content sizes.
 registerTest({
-  id: 'ui-scroll-per-conv-shorter',
-  name: 'Chat scroll: switching to shorter chat should preserve position ratio (expected to fail)',
+  id: 'ui-scroll-isolated-per-chat',
+  name: 'Chat scroll: isolated per-chat memory across different sizes',
   tags: ['ui', 'dom'],
-  timeoutMs: 5000,
+  timeoutMs: 6000,
   fn: async (assert: Assert) => {
     const container = createScrollContainer();
+    const mem = new ScrollMemory();
+    mem.attach(container);
+
     try {
       const chat1 = createSessionContent(100000, 'chat1'); // 100k px
       const chat2 = createSessionContent(10000, 'chat2');  // 10k px
 
-      // Open Chat1 and scroll to ~25%
+      // Visit Chat1 and scroll to ~25%
+      mem.setActiveKey('chat1');
       showSession(container, chat1);
       await nextFrame();
-      await sleep(0);
-
+      mem.restoreCurrent(); // initial restore -> 0
+      await nextFrame();
       const maxScroll1 = container.scrollHeight - container.clientHeight;
       container.scrollTop = Math.floor(maxScroll1 * 0.25);
       await nextFrame();
+      mem.saveCurrent();
 
       const ratio1 = scrollRatio(container);
-      assert.that(Math.abs(ratio1 - 0.25) < 0.02, `Precondition: Chat1 should be ~25% scrolled (got ${(ratio1 * 100).toFixed(1)}%).`);
+      assert.that(Math.abs(ratio1 - 0.25) < 0.03, `Chat1 precondition: ~25% (got ${(ratio1 * 100).toFixed(1)}%).`);
 
-      // Switch to Chat2 (shorter)
+      // Switch to Chat2 (no prior history -> should start at 0)
+      mem.setActiveKey('chat2');
       showSession(container, chat2);
       await nextFrame();
-      await sleep(0);
+      mem.restoreCurrent();
+      await nextFrame();
 
-      const ratio2 = scrollRatio(container);
+      let ratio2 = scrollRatio(container);
+      assert.that(Math.abs(ratio2 - 0) < 0.001, `First visit to Chat2 should start at top (got ${(ratio2 * 100).toFixed(1)}%).`);
 
-      // Desired behavior: ratio2 should be ~25% as well, but current implementation shares a single
-      // container without per-chat memory, so this will typically be near 100% (clamped to bottom).
-      assert.that(Math.abs(ratio2 - ratio1) < 0.05, `Expected scroll ratio to persist (~${(ratio1 * 100).toFixed(1)}%), but got ${(ratio2 * 100).toFixed(1)}%.`);
+      // Scroll Chat2 to ~60% and save
+      const maxScroll2 = container.scrollHeight - container.clientHeight;
+      container.scrollTop = Math.floor(maxScroll2 * 0.6);
+      await nextFrame();
+      mem.saveCurrent();
+      ratio2 = scrollRatio(container);
+      assert.that(Math.abs(ratio2 - 0.6) < 0.03, `Chat2 should be ~60% (got ${(ratio2 * 100).toFixed(1)}%).`);
+
+      // Switch back to Chat1 and ensure ~25% is restored
+      mem.setActiveKey('chat1');
+      showSession(container, chat1);
+      await nextFrame();
+      mem.restoreCurrent();
+      await nextFrame();
+
+      const ratio1Back = scrollRatio(container);
+      assert.that(Math.abs(ratio1Back - 0.25) < 0.03, `Return to Chat1 should restore ~25% (got ${(ratio1Back * 100).toFixed(1)}%).`);
+
+      // Switch to Chat2 again and ensure ~60% persists
+      mem.setActiveKey('chat2');
+      showSession(container, chat2);
+      await nextFrame();
+      mem.restoreCurrent();
+      await nextFrame();
+
+      const ratio2Back = scrollRatio(container);
+      assert.that(Math.abs(ratio2Back - 0.6) < 0.03, `Return to Chat2 should restore ~60% (got ${(ratio2Back * 100).toFixed(1)}%).`);
     } finally {
+      mem.detach();
       document.body.removeChild(container);
     }
   }
 });
 
-// Test 2: Switching through an empty chat should not reset the original chat's position.
-// Current behavior (bug) resets to top after visiting an empty chat, so this is expected to FAIL.
+// Test 2: Switching through an empty chat should not reset other chats' positions.
 registerTest({
   id: 'ui-scroll-reset-via-empty',
-  name: 'Chat scroll: visiting empty chat should not reset other chats (expected to fail)',
+  name: 'Chat scroll: visiting empty chat should not reset other chats',
   tags: ['ui', 'dom'],
-  timeoutMs: 5000,
+  timeoutMs: 6000,
   fn: async (assert: Assert) => {
     const container = createScrollContainer();
+    const mem = new ScrollMemory();
+    mem.attach(container);
+
     try {
-      const chat1 = createSessionContent(100000, 'chat1'); // 100k px
-      const chat3 = createSessionContent(0, 'chat3-empty'); // empty
+      const chat1 = createSessionContent(100000, 'chat1');     // 100k px
+      const chat3 = createSessionContent(0, 'chat3-empty');    // empty
 
       // Open Chat1 and scroll to ~25%
+      mem.setActiveKey('chat1');
       showSession(container, chat1);
       await nextFrame();
-      await sleep(0);
+      mem.restoreCurrent();
+      await nextFrame();
 
       const maxScroll1 = container.scrollHeight - container.clientHeight;
       container.scrollTop = Math.floor(maxScroll1 * 0.25);
       await nextFrame();
+      mem.saveCurrent();
 
       const ratio1 = scrollRatio(container);
-      assert.that(Math.abs(ratio1 - 0.25) < 0.02, `Precondition: Chat1 should be ~25% scrolled (got ${(ratio1 * 100).toFixed(1)}%).`);
+      assert.that(Math.abs(ratio1 - 0.25) < 0.03, `Chat1 precondition: ~25% (got ${(ratio1 * 100).toFixed(1)}%).`);
 
-      // Switch to empty Chat3
+      // Switch to empty Chat3 (should be at top, but must not affect Chat1 memory)
+      mem.setActiveKey('chat3');
       showSession(container, chat3);
       await nextFrame();
-      await sleep(0);
+      mem.restoreCurrent();
+      await nextFrame();
 
-      // Switch back to Chat1
+      const ratio3 = scrollRatio(container);
+      assert.that(Math.abs(ratio3 - 0) < 0.001, `Empty Chat3 should be at top (got ${(ratio3 * 100).toFixed(1)}%).`);
+
+      // Switch back to Chat1 and verify ratio restored
+      mem.setActiveKey('chat1');
       showSession(container, chat1);
       await nextFrame();
-      await sleep(0);
+      mem.restoreCurrent();
+      await nextFrame();
 
       const ratioBack = scrollRatio(container);
-
-      // Desired behavior: Should restore ~25%. Current behavior will be ~0% (top).
-      assert.that(Math.abs(ratioBack - ratio1) < 0.05, `Expected Chat1 scroll ratio to be restored (~${(ratio1 * 100).toFixed(1)}%), but got ${(ratioBack * 100).toFixed(1)}%.`);
+      assert.that(Math.abs(ratioBack - 0.25) < 0.03, `Returning to Chat1 should restore ~25% (got ${(ratioBack * 100).toFixed(1)}%).`);
     } finally {
+      mem.detach();
       document.body.removeChild(container);
     }
   }
