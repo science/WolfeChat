@@ -11,6 +11,7 @@ export class ScrollMemory {
   private pendingRestore = false;
   private rafId: number | null = null;
   private restoreRetries = 0;
+  private suspended = false;
   private static readonly MAX_RESTORE_RETRIES = 8;
   private onScroll = () => this.saveCurrent();
 
@@ -50,6 +51,10 @@ export class ScrollMemory {
     this.pendingRestore = true;
   }
 
+  setSuspended(suspended: boolean) {
+    this.suspended = !!suspended;
+  }
+
   getRatioForKey(key: string | number | null): number {
     const k = key == null ? null : String(key);
     if (k == null) return 0;
@@ -61,7 +66,7 @@ export class ScrollMemory {
   }
 
   saveCurrent() {
-    if (!this.container || this.key == null || this.pendingRestore) return;
+    if (!this.container || this.key == null || this.pendingRestore || this.suspended) return;
     const denom = this.container.scrollHeight - this.container.clientHeight;
     // Ignore saves while not scrollable; this avoids overwriting a meaningful ratio with 0
     // when switching from an empty chat to a long chat.
@@ -90,6 +95,7 @@ export class ScrollMemory {
     const container = this.container;
     const key = this.key;
     if (!container || key == null) return;
+    if (this.suspended) return;
 
     const ratio = this.getRatioForKey(key);
     const denom = container.scrollHeight - container.clientHeight;

@@ -54,6 +54,7 @@
   let editingMessageContent: string = "";
 
   const scrollMem = new ScrollMemory();
+  $: scrollMem.setSuspended($isStreaming);
   let lastConvId: number | null = null;
 
   $: if ($clearFileInputSignal && fileInputElement) {
