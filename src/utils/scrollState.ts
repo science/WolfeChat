@@ -9,6 +9,9 @@ export class ScrollMemory {
   private ratios = new Map<string, number>();
   // When true, ignore scroll-driven saves until a restore occurs for the active key.
   private pendingRestore = false;
+  private rafId: number | null = null;
+  private restoreRetries = 0;
+  private static readonly MAX_RESTORE_RETRIES = 8;
   private onScroll = () => this.saveCurrent();
 
   attach(container: HTMLElement) {
@@ -23,6 +26,11 @@ export class ScrollMemory {
       this.container.removeEventListener('scroll', this.onScroll as any);
       this.container = null;
     }
+    if (this.rafId != null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    this.restoreRetries = 0;
   }
 
   setActiveKey(key: string | number | null) {
@@ -31,6 +39,12 @@ export class ScrollMemory {
     // Persist any in-progress scrolling before switching
     this.saveCurrent();
     this.key = k;
+    // Cancel any in-flight restore scheduling and reset retries for the new key
+    if (this.rafId != null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    this.restoreRetries = 0;
     // Defer saving for the new key until we perform an initial restore,
     // to avoid capturing a transient/clamped scrollTop caused by DOM changes.
     this.pendingRestore = true;
@@ -49,21 +63,57 @@ export class ScrollMemory {
   saveCurrent() {
     if (!this.container || this.key == null || this.pendingRestore) return;
     const denom = this.container.scrollHeight - this.container.clientHeight;
-    const ratio = denom > 0 ? this.container.scrollTop / denom : 0;
+    // Ignore saves while not scrollable; this avoids overwriting a meaningful ratio with 0
+    // when switching from an empty chat to a long chat.
+    if (denom <= 0) return;
+    const ratio = this.container.scrollTop / denom;
     this.ratios.set(this.key, this.clamp01(ratio));
   }
 
   restoreCurrent() {
-    if (!this.container || this.key == null) return;
-    const ratio = this.getRatioForKey(this.key);
-    this.applyRatio(ratio);
-    // Now that we've applied the intended position, allow saves again.
-    this.pendingRestore = false;
+    this.tryRestore(/*scheduleIfNeeded*/ false);
   }
 
   restoreCurrentAfterFrame() {
-    if (!this.container) return;
-    requestAnimationFrame(() => this.restoreCurrent());
+    this.tryRestore(/*scheduleIfNeeded*/ true);
+  }
+
+  private scheduleRestore() {
+    if (this.rafId != null) return;
+    this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+      this.tryRestore(/*scheduleIfNeeded*/ true);
+    });
+  }
+
+  private tryRestore(scheduleIfNeeded: boolean) {
+    const container = this.container;
+    const key = this.key;
+    if (!container || key == null) return;
+
+    const ratio = this.getRatioForKey(key);
+    const denom = container.scrollHeight - container.clientHeight;
+
+    if (denom <= 0 && ratio > 0 && this.restoreRetries < ScrollMemory.MAX_RESTORE_RETRIES) {
+      // Content not scrollable yet but we need a non-top position. Try again next frame.
+      this.restoreRetries++;
+      if (scheduleIfNeeded) {
+        this.scheduleRestore();
+      }
+      return;
+    }
+
+    // Apply whatever position we have (0 when no memory or still unscrollable).
+    this.applyRatio(ratio);
+
+    // If content is scrollable (or we gave up / only needed top), allow saves again.
+    if (denom > 0 || ratio === 0 || this.restoreRetries >= ScrollMemory.MAX_RESTORE_RETRIES) {
+      this.pendingRestore = false;
+      this.restoreRetries = 0;
+    } else if (scheduleIfNeeded) {
+      // As a fallback, keep trying a bit more if still unscrollable and ratio>0.
+      this.scheduleRestore();
+    }
   }
 
   private applyRatio(ratio: number) {

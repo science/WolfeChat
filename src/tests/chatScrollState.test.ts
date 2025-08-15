@@ -15,6 +15,12 @@ function nextFrame(): Promise<void> {
   return new Promise((r) => requestAnimationFrame(() => r()));
 }
 
+async function waitFrames(n: number) {
+  for (let i = 0; i < n; i++) {
+    await nextFrame();
+  }
+}
+
 function createScrollContainer(): HTMLDivElement {
   const container = document.createElement('div');
   // Place off-screen to avoid impacting visible UI
@@ -120,6 +126,62 @@ registerTest({
 
       const ratio2Back = scrollRatio(container);
       assert.that(Math.abs(ratio2Back - 0.6) < 0.03, `Return to Chat2 should restore ~60% (got ${(ratio2Back * 100).toFixed(1)}%).`);
+    } finally {
+      mem.detach();
+      document.body.removeChild(container);
+    }
+  }
+});
+
+// Test 3: Switching from an empty chat (no scrollbar) back to a long chat should restore saved ratio.
+registerTest({
+  id: 'ui-scroll-empty-to-long',
+  name: 'Chat scroll: switching from empty to long chat restores saved ratio',
+  tags: ['ui', 'dom'],
+  timeoutMs: 6000,
+  fn: async (assert: Assert) => {
+    const container = createScrollContainer();
+    const mem = new ScrollMemory();
+    mem.attach(container);
+
+    try {
+      const chatLong = createSessionContent(100000, 'long'); // scrollable
+      const chatEmpty = createSessionContent(300, 'empty');  // shorter than container (500px), no scroll
+
+      // Visit long chat and save ~70%
+      mem.setActiveKey('long');
+      showSession(container, chatLong);
+      await nextFrame();
+      mem.restoreCurrent();
+      await nextFrame();
+
+      const denomLong = container.scrollHeight - container.clientHeight;
+      container.scrollTop = Math.floor(denomLong * 0.7);
+      await nextFrame();
+      mem.saveCurrent();
+
+      let ratioLong = scrollRatio(container);
+      assert.that(Math.abs(ratioLong - 0.7) < 0.03, `Long chat precondition: ~70% (got ${(ratioLong * 100).toFixed(1)}%).`);
+
+      // Switch to empty chat (non-scrollable)
+      mem.setActiveKey('empty');
+      showSession(container, chatEmpty);
+      await nextFrame();
+      mem.restoreCurrent();
+      await nextFrame();
+
+      const ratioEmpty = scrollRatio(container);
+      assert.that(Math.abs(ratioEmpty - 0) < 0.001, `Empty chat should be at top (got ${(ratioEmpty * 100).toFixed(1)}%).`);
+
+      // Switch back to long chat and ensure saved ratio is restored (not overwritten by 0)
+      mem.setActiveKey('long');
+      showSession(container, chatLong);
+      // Allow a few frames for layout to become scrollable and restoration retries
+      mem.restoreCurrentAfterFrame();
+      await waitFrames(3);
+
+      ratioLong = scrollRatio(container);
+      assert.that(Math.abs(ratioLong - 0.7) < 0.04, `Returning to long chat should restore ~70% (got ${(ratioLong * 100).toFixed(1)}%).`);
     } finally {
       mem.detach();
       document.body.removeChild(container);
