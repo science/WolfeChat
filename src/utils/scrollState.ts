@@ -7,6 +7,8 @@ export class ScrollMemory {
   private container: HTMLElement | null = null;
   private key: string | null = null;
   private ratios = new Map<string, number>();
+  // When true, ignore scroll-driven saves until a restore occurs for the active key.
+  private pendingRestore = false;
   private onScroll = () => this.saveCurrent();
 
   attach(container: HTMLElement) {
@@ -29,6 +31,9 @@ export class ScrollMemory {
     // Persist any in-progress scrolling before switching
     this.saveCurrent();
     this.key = k;
+    // Defer saving for the new key until we perform an initial restore,
+    // to avoid capturing a transient/clamped scrollTop caused by DOM changes.
+    this.pendingRestore = true;
   }
 
   getRatioForKey(key: string | number | null): number {
@@ -42,7 +47,7 @@ export class ScrollMemory {
   }
 
   saveCurrent() {
-    if (!this.container || this.key == null) return;
+    if (!this.container || this.key == null || this.pendingRestore) return;
     const denom = this.container.scrollHeight - this.container.clientHeight;
     const ratio = denom > 0 ? this.container.scrollTop / denom : 0;
     this.ratios.set(this.key, this.clamp01(ratio));
@@ -52,6 +57,8 @@ export class ScrollMemory {
     if (!this.container || this.key == null) return;
     const ratio = this.getRatioForKey(this.key);
     this.applyRatio(ratio);
+    // Now that we've applied the intended position, allow saves again.
+    this.pendingRestore = false;
   }
 
   restoreCurrentAfterFrame() {
