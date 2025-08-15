@@ -6,6 +6,7 @@
   import { runSmokeTestSuite, formatSuiteResultsText } from '../tests/smokeTests';
   import { runAllTests, formatSuiteResultsText as formatSuiteResultsTextAll } from '../tests/testHarness';
   import '../tests/codeRendererStreaming.test';
+  import '../tests/chatScrollState.test';
   
   const dispatch = createEventDispatcher();
   
