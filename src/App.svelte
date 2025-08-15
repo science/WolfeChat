@@ -30,14 +30,14 @@
   import { routeMessage, newChat, deleteMessageFromConversation } from "./managers/conversationManager";
   import { copyTextToClipboard } from './utils/generalUtils';
   import { selectedModel, selectedVoice, selectedMode, isStreaming } from './stores/stores';
-  import { modelsStore } from './stores/modelStore';
-  import { recentModelsStore, addRecentModel } from './stores/recentModelsStore';
+  import { addRecentModel } from './stores/recentModelsStore';
   import { reloadConfig } from './services/openaiService';
   import { handleImageUpload, onSendVisionMessageComplete } from './managers/imageManager';
   import { base64Images } from './stores/stores';
   import { closeStream } from './services/openaiService';  
   import DebugPanel from './lib/DebugPanel.svelte';
   import ReasoningInline from './lib/ReasoningInline.svelte';
+  import QuickSettings from './lib/QuickSettings.svelte';
   import { ScrollMemory } from './utils/scrollState';
 
   let fileInputElement; 
@@ -248,34 +248,7 @@ SmoothGPT
       <Topbar bind:conversation_title={conversationTitle} on:new-chat={newChat} />
       <div class="py-5 bg-primary px-5 flex flex-row justify-between flex-wrap-reverse">
         
-      <div class="font-bold text-l">  
-        <label for="current-model-select" class="mr-2">Current Model:</label>
-        <select id="current-model-select" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$selectedModel}>
-          {#if $modelsStore && $modelsStore.length > 0}
-            {#if $recentModelsStore && $recentModelsStore.length > 0}
-              <optgroup label="Recently used">
-                {#each $recentModelsStore as r}
-                  <option value={r.id}>{r.id}</option>
-                {/each}
-              </optgroup>
-            {/if}
-            <optgroup label="All models">
-              {#each $modelsStore as model}
-                {#if !$recentModelsStore || !$recentModelsStore.find(r => r.id === model.id)}
-                  <option value={model.id}>{model.id}</option>
-                {/if}
-              {/each}
-            </optgroup>
-          {:else}
-            <option disabled selected>No models loaded</option>
-          {/if}
-        </select>
-      </div>
-
-      
-
-    
-
+      <QuickSettings />
       </div>
       <div class="flex bg-primary overflow-y-auto overflow-x-hidden justify-center grow" bind:this={chatContainer}>
       {#if $conversations.length > 0 && $conversations[$chosenConversationId]}
