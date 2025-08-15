@@ -8,19 +8,22 @@
   import '../tests/codeRendererStreaming.test';
   import '../tests/chatScrollState.test';
   import '../tests/modelSelectionPayload.test';
+  import '../tests/chatStreamingScroll.test';
   
   const dispatch = createEventDispatcher();
   
   let debugResults = '';
   let isTesting = false;
   let currentTest = '';
-  
-  
-  
-  
-  
-  
-  
+
+  // Ensure that all test modules are attached (imported) before running the non-API harness.
+  // This dynamically imports every *.test.ts under src/tests so newly added tests are included without manual wiring.
+  async function ensureAllNonApiTestsLoaded() {
+    const modules = import.meta.glob('../tests/**/*.test.ts');
+    const loaders = Object.values(modules);
+    await Promise.all(loaders.map((load: any) => load()));
+  }
+
   async function runResponsesAPITest() {
     isTesting = true;
     currentTest = 'Responses API';
@@ -177,6 +180,9 @@
     isTesting = true;
     currentTest = 'Test Harness (non-API)';
     debugResults = 'Running non-API test harness...\n';
+
+    // Ensure all non-API tests are loaded before running
+    await ensureAllNonApiTestsLoaded();
 
     try {
       const apiTags = new Set(['smoke', 'responses', 'api', 'network', 'reasoning']);
