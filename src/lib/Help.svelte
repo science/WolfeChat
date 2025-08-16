@@ -19,9 +19,9 @@
         </button>
         <h2 class="text-xl font-bold mb-4">Help & FAQ</h2>
         <div class="text-left">
-          <h1 class="text-3xl font-bold mb-4">What is SmoothGPT?</h1>
+          <h1 class="text-3xl font-bold mb-4">What is WolfeChat?</h1>
           <p class="mb-4">OpenAI offers ChatGPT Plus for a monthly subscription, which allows you to use their UI to converse with ChatGPT. However, this comes with usage limits, and the $20/mo fee is expensive. Alternatively, you can use the OpenAI API, which is much more affordable with a pay-as-you-go rate. But, the API is not end-user friendly! It's designed for developers who can build apps around it.</p>
-          <p class="mb-4"><strong>That's where SmoothGPT comes in!</strong> SmoothGPT provides a UI that is extremely similar to the ChatGPT official site.</p>
+          <p class="mb-4"><strong>That's where WolfeChat comes in!</strong> WolfeChat provides a UI that is extremely similar to the ChatGPT official site.</p>
   
           <h2 class="text-2xl font-bold mb-3">Key Features:</h2>
           <ul class="list-disc list-inside mb-4">

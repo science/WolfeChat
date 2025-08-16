@@ -231,9 +231,9 @@ function startEditMessage(i: number) {
 </script>
 <title>
   {#if $conversations.length > 0 && $conversations[$chosenConversationId]}
-  {$conversations[$chosenConversationId].title || "SmoothGPT"}
+  {$conversations[$chosenConversationId].title || "WolfeChat"}
 {:else}
-SmoothGPT
+WolfeChat
 {/if}
 </title>
 {#if $settingsVisible}
