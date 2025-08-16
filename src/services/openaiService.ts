@@ -335,6 +335,20 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   const cleansedMessages = msg.map(cleanseMessage);
   const input = buildResponsesInputFromMessages(cleansedMessages);
 
+  // Extract the last user prompt text for potential title generation
+  let lastUserPromptText = '';
+  const lastUserMessage = [...cleansedMessages].reverse().find((m) => m.role === 'user');
+  if (lastUserMessage) {
+    const c: any = (lastUserMessage as any).content;
+    if (typeof c === 'string') {
+      lastUserPromptText = c;
+    } else if (Array.isArray(c)) {
+      lastUserPromptText = c.map((p: any) => (typeof p === 'string' ? p : (p?.text ?? ''))).join(' ').trim();
+    } else if (c != null) {
+      lastUserPromptText = String(c);
+    }
+  }
+
   let streamText = "";
   currentHistory = [...currentHistory];
   isStreaming.set(true);
@@ -381,6 +395,10 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
             convId
           );
           estimateTokens(msg, convId);
+
+          // Trigger title generation for brand-new conversations
+          await maybeUpdateTitleAfterFirstMessage(convId, lastUserPromptText, streamText);
+
           streamText = "";
           isStreaming.set(false);
         },
@@ -643,6 +661,112 @@ export async function createResponseViaResponsesAPI(prompt: string, model?: stri
     throw new Error(`Responses API error ${res.status}: ${text || res.statusText}`);
   }
   return res.json();
+}
+
+/**
+ * Extract plain text from a Responses API non-streaming response.
+ * Supports several possible shapes: output_text or output[].content[].text
+ */
+function extractOutputTextFromResponses(obj: any): string {
+  if (!obj) return '';
+  if (typeof obj.output_text === 'string') return obj.output_text.trim();
+
+  const outputs = Array.isArray(obj.output) ? obj.output : (Array.isArray(obj.outputs) ? obj.outputs : null);
+  if (outputs) {
+    let text = '';
+    for (const o of outputs) {
+      const content = Array.isArray(o?.content) ? o.content : [];
+      for (const p of content) {
+        if (typeof p?.text === 'string') text += p.text;
+        else if (typeof p === 'string') text += p;
+      }
+    }
+    if (text.trim()) return text.trim();
+  }
+
+  // Fallbacks for unexpected shapes
+  if (Array.isArray(obj?.content)) {
+    const t = obj.content.map((p: any) => p?.text || '').join('');
+    if (t.trim()) return t.trim();
+  }
+  try {
+    const s = JSON.stringify(obj);
+    const m = s.match(/"text"\s*:\s*"([^"]{1,200})/);
+    if (m) return m[1];
+  } catch {}
+  return '';
+}
+
+function sanitizeTitle(title: string): string {
+  let t = (title || '').trim();
+  t = t.replace(/^["'`]+|["'`]+$/g, '');     // strip wrapping quotes
+  t = t.replace(/^title\s*:\s*/i, '');       // strip leading "Title:"
+  t = t.replace(/\s+/g, ' ').trim();
+  if (t.length > 80) t = t.slice(0, 80);     // safety cap
+  return t;
+}
+
+/**
+ * Generate a concise conversation title and update the sidebar if it is currently empty.
+ * Safe to call multiple times; it only updates when the title is empty or placeholder.
+ */
+async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt: string, assistantReply: string) {
+  try {
+    const all = get(conversations);
+    const conv = all?.[convId];
+    if (!conv) return;
+
+    const currentTitle = (conv.title ?? '').trim().toLowerCase();
+    if (currentTitle && currentTitle !== 'new conversation') return;
+
+    const sys: any = {
+      role: 'system',
+      content: 'You generate a short, clear chat title. Respond with only the title, no quotes, max 8 words, Title Case.'
+    };
+    const user: any = {
+      role: 'user',
+      content: lastUserPrompt || 'Create a short title for this conversation.'
+    };
+    const asst: any = assistantReply ? { role: 'assistant', content: assistantReply } : null;
+
+    const msgs: any[] = asst ? [sys, user, asst] : [sys, user];
+    const input = buildResponsesInputFromMessages(msgs);
+    const model = 'gpt-4o-mini';
+    const payload = buildResponsesPayload(model, input, false);
+
+    const key = get(apiKey);
+    const res = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Responses API error ${res.status}: ${text || res.statusText}`);
+    }
+
+    const data = await res.json();
+    const rawTitle = extractOutputTextFromResponses(data);
+    const title = sanitizeTitle(rawTitle);
+    if (!title) return;
+
+    conversations.update((allConvs) => {
+      const copy = [...allConvs];
+      const curr = { ...copy[convId] };
+      const currTitle = (curr.title ?? '').trim().toLowerCase();
+      if (!currTitle || currTitle === 'new conversation') {
+        curr.title = title;
+        copy[convId] = curr;
+      }
+      return copy;
+    });
+  } catch (err) {
+    console.warn('Title generation failed:', err);
+  }
 }
 
 export interface ResponsesStreamCallbacks {
