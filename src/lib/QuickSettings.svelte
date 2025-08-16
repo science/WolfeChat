@@ -8,6 +8,60 @@
   let open = false;
   function toggle() { open = !open; }
   $: isReasoningModel = supportsReasoning($selectedModel || '');
+
+  function getChatContainer(): HTMLElement | null {
+    const root = document.querySelector('.main-content-area') as HTMLElement | null;
+    if (!root) return null;
+    return root.querySelector('.overflow-y-auto') as HTMLElement | null;
+  }
+
+  function getAnchors(container: HTMLElement): number[] {
+    const msgEls = Array.from(container.querySelectorAll('.message')) as HTMLElement[];
+    const cRect = container.getBoundingClientRect();
+    return msgEls.map((el) => {
+      const r = el.getBoundingClientRect();
+      return (r.top - cRect.top) + container.scrollTop;
+    });
+  }
+
+  function navigateAnchors(direction: 'up' | 'down') {
+    const container = getChatContainer();
+    if (!container) return;
+
+    const anchors = getAnchors(container);
+    if (!anchors.length) return;
+
+    const tol = 10;
+    const st = container.scrollTop;
+
+    const nearIdx = anchors.findIndex((a) => Math.abs(a - st) <= tol);
+    let floorIdx = -1;
+    for (let i = 0; i < anchors.length; i++) {
+      if (anchors[i] <= st) floorIdx = i;
+      else break;
+    }
+
+    if (direction === 'up') {
+      let targetIdx: number | null = (nearIdx >= 0) ? (nearIdx - 1) : floorIdx;
+
+      // At/above the first message: either snap to the first anchor if we're below it,
+      // or do nothing if we're already at/near it.
+      if (targetIdx == null || targetIdx < 0) {
+        if (st > anchors[0] + tol) container.scrollTop = anchors[0];
+        return;
+      }
+      container.scrollTop = anchors[targetIdx];
+      return;
+    }
+
+    // direction === 'down'
+    let targetIdx = (nearIdx >= 0) ? (nearIdx + 1) : (floorIdx + 1);
+    if (targetIdx >= anchors.length) {
+      container.scrollTop = container.scrollHeight - container.clientHeight;
+    } else {
+      container.scrollTop = anchors[targetIdx];
+    }
+  }
 </script>
 
 <div class="w-full">
@@ -82,6 +136,24 @@
         </div>
       </div>
       {/if}
+
+      <div class="mt-3 flex gap-2">
+        <button
+          type="button"
+          class="bg-primary text-white/80 px-3 py-1 rounded border border-gray-600 hover:bg-secondary"
+          title="Go to previous turn"
+          aria-label="Go to previous turn"
+          on:click={() => navigateAnchors('up')}
+        >▲ Up</button>
+
+        <button
+          type="button"
+          class="bg-primary text-white/80 px-3 py-1 rounded border border-gray-600 hover:bg-secondary"
+          title="Go to next turn"
+          aria-label="Go to next turn"
+          on:click={() => navigateAnchors('down')}
+        >▼ Down</button>
+      </div>
 
       <slot />
     </div>
