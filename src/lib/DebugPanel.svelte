@@ -9,6 +9,7 @@
   import '../tests/chatScrollState.test';
   import '../tests/modelSelectionPayload.test';
   import '../tests/chatStreamingScroll.test';
+  import '../tests/liveTitleUpdate.test';
   
   const dispatch = createEventDispatcher();
   
