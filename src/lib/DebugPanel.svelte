@@ -3,12 +3,11 @@
   import { selectedModel, apiKey, debugVisible } from '../stores/stores';
   import { createEventDispatcher } from 'svelte';
   import CloseIcon from '../assets/close.svg';
-  import { runAllTests, formatSuiteResultsText as formatSuiteResultsTextAll } from '../tests/testHarness';
+  import { runAllTests, formatSuiteResultsText as formatSuiteResultsTextAll, clearTests } from '../tests/testHarness';
   import '../tests/codeRendererStreaming.test';
   import '../tests/chatScrollState.test';
   import '../tests/modelSelectionPayload.test';
   import '../tests/chatStreamingScroll.test';
-  import '../tests/liveTitleUpdate.test';
   
   const dispatch = createEventDispatcher();
   
@@ -20,6 +19,13 @@
   // This dynamically imports every *.test.ts under src/tests so newly added tests are included without manual wiring.
   async function ensureAllNonApiTestsLoaded() {
     const modules = import.meta.glob('../tests/**/*.test.ts');
+    const loaders = Object.values(modules);
+    await Promise.all(loaders.map((load: any) => load()));
+  }
+
+  // Ensure only live API tests are loaded. Any new test placed under src/tests/live will be discovered automatically.
+  async function ensureAllLiveApiTestsLoaded() {
+    const modules = import.meta.glob('../tests/live/**/*.test.ts');
     const loaders = Object.values(modules);
     await Promise.all(loaders.map((load: any) => load()));
   }
@@ -166,17 +172,12 @@
     currentTest = 'Test Harness (API)';
     debugResults = 'Running test harness (API tests)...\n';
 
-    // Ensure all tests are loaded (API + non-API). The filter below will select API tests only.
-    await ensureAllNonApiTestsLoaded();
+    // Reset registry and load only live API tests from src/tests/live
+    clearTests();
+    await ensureAllLiveApiTestsLoaded();
 
     try {
-      const apiTags = new Set(['smoke', 'responses', 'api', 'network', 'reasoning']);
-      const suite = await runAllTests({
-        filter: (t) => {
-          const tags = t.tags ?? [];
-          return tags.some(tag => apiTags.has(tag));
-        }
-      });
+      const suite = await runAllTests();
       debugResults = formatSuiteResultsTextAll(suite);
     } catch (error) {
       debugResults = `❌ Test harness error: ${error}\n`;
