@@ -3,7 +3,6 @@
   import { selectedModel, apiKey, debugVisible } from '../stores/stores';
   import { createEventDispatcher } from 'svelte';
   import CloseIcon from '../assets/close.svg';
-  import { runSmokeTestSuite, formatSuiteResultsText } from '../tests/smokeTests';
   import { runAllTests, formatSuiteResultsText as formatSuiteResultsTextAll } from '../tests/testHarness';
   import '../tests/codeRendererStreaming.test';
   import '../tests/chatScrollState.test';
@@ -167,9 +166,18 @@
     currentTest = 'Test Harness (API)';
     debugResults = 'Running test harness (API tests)...\n';
 
+    // Ensure all tests are loaded (API + non-API). The filter below will select API tests only.
+    await ensureAllNonApiTestsLoaded();
+
     try {
-      const suite = await runSmokeTestSuite();
-      debugResults = formatSuiteResultsText(suite);
+      const apiTags = new Set(['smoke', 'responses', 'api', 'network', 'reasoning']);
+      const suite = await runAllTests({
+        filter: (t) => {
+          const tags = t.tags ?? [];
+          return tags.some(tag => apiTags.has(tag));
+        }
+      });
+      debugResults = formatSuiteResultsTextAll(suite);
     } catch (error) {
       debugResults = `❌ Test harness error: ${error}\n`;
     }
