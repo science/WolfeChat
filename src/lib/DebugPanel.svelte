@@ -26,6 +26,48 @@
     await Promise.all(loaders.map((load: any) => load()));
   }
 
+  // Live API test selection and single-file run support
+  let showLiveApiTestPicker = false;
+  let liveApiTestMap: Record<string, any> = {};
+  let liveApiTestFiles: string[] = [];
+
+  function fileBaseName(p: string): string {
+    return p.replace(/^.*\/tests\/live\//, '');
+  }
+
+  async function toggleLiveApiTestPicker() {
+    showLiveApiTestPicker = !showLiveApiTestPicker;
+    if (showLiveApiTestPicker) {
+      liveApiTestMap = import.meta.glob('../tests/live/**/*.test.ts');
+      liveApiTestFiles = Object.keys(liveApiTestMap).sort();
+      if (liveApiTestFiles.length === 0) {
+        debugResults = 'No live API tests found in src/tests/live.\n';
+      }
+    }
+  }
+
+  async function runSingleLiveApiTest(file: string) {
+    isTesting = true;
+    currentTest = `API Test: ${fileBaseName(file)}`;
+    debugResults = `Running API test: ${fileBaseName(file)}\n`;
+
+    clearTests();
+    try {
+      const loader: any = liveApiTestMap[file];
+      if (!loader) {
+        debugResults += '❌ Could not find loader for selected test file.\n';
+        isTesting = false;
+        return;
+      }
+      await loader();
+      const suite = await runAllTests();
+      debugResults = formatSuiteResultsTextAll(suite);
+    } catch (error) {
+      debugResults = `❌ Error running selected API test: ${error}\n`;
+    }
+    isTesting = false;
+  }
+
   async function runResponsesAPITest() {
     isTesting = true;
     currentTest = 'Responses API';
@@ -263,6 +305,14 @@
     >
       {isTesting && currentTest === 'All Tests' ? 'Running...' : 'Run All Tests'}
     </button>
+
+    <button 
+      class="w-full bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-sm disabled:opacity-50"
+      on:click={toggleLiveApiTestPicker}
+      disabled={isTesting}
+    >
+      {showLiveApiTestPicker ? 'Hide API Test List' : 'Select API test to run'}
+    </button>
     
     <button 
       class="w-full bg-emerald-500 hover:bg-emerald-600 px-3 py-1 rounded text-sm disabled:opacity-50"
@@ -294,6 +344,28 @@
       Clear Results
     </button>
   </div>
+
+  {#if showLiveApiTestPicker}
+    <div class="mt-2 p-2 bg-gray-700 rounded text-xs max-h-40 overflow-y-auto">
+      <div class="flex justify-between items-center mb-2">
+        <span>Select a live API test to run (src/tests/live)</span>
+        <button class="bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded text-xs" on:click={() => showLiveApiTestPicker = false}>Close</button>
+      </div>
+      {#if liveApiTestFiles.length === 0}
+        <div>No API tests found.</div>
+      {:else}
+        {#each liveApiTestFiles as f}
+          <button
+            class="w-full text-left bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded mb-1 disabled:opacity-50"
+            on:click={() => runSingleLiveApiTest(f)}
+            disabled={isTesting}
+          >
+            {fileBaseName(f)}
+          </button>
+        {/each}
+      {/if}
+    </div>
+  {/if}
   
   {#if debugResults}
     <div class="mt-4 p-2 bg-gray-700 rounded text-xs max-h-40 overflow-y-auto">
