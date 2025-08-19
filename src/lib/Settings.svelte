@@ -8,6 +8,7 @@
     import CloseIcon from "../assets/close.svg";
     import { writable, get, derived } from "svelte/store";
   import { onMount } from 'svelte';
+  import { enterBehavior } from '../stores/keyboardSettings';
 
   import {
     apiKey,
@@ -50,9 +51,12 @@ let showTokensToggle = false;
         showTokensToggle = value;
     });
     
+let enterBehaviorLocal: 'newline' | 'send' = 'newline';
+
 onMount(async() => {
    await initializeSettings();
-
+   // Initialize from persisted store
+   enterBehaviorLocal = get(enterBehavior) as 'newline' | 'send';
   });
   function handleShowTokensToggleChange() {
         showTokens.set(showTokensToggle);
@@ -368,6 +372,15 @@ handleClose();
 </div>
 {/if}
 
+
+<div class="mb-4">
+  <label class="block font-medium mb-2">Enter key behavior</label>
+  <select bind:value={enterBehaviorLocal} on:change={() => enterBehavior.set(enterBehaviorLocal)} class="border text-black border-gray-300 p-2 rounded w-full">
+    <option value="newline">Insert a new line</option>
+    <option value="send">Send message</option>
+  </select>
+  <p class="text-xs text-gray-400 mt-1">Tip: Shift+Enter always inserts a new line.</p>
+</div>
 
 <div class="mb-4">
   <label for="api-key" class="block font-medium mb-2">Default Assistant role</label>

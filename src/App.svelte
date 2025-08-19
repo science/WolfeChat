@@ -39,6 +39,7 @@
   import ReasoningInline from './lib/ReasoningInline.svelte';
   import QuickSettings from './lib/QuickSettings.svelte';
   import { ScrollMemory } from './utils/scrollState';
+  import { enterBehavior } from './stores/keyboardSettings';
 
   let fileInputElement; 
   let input: string = "";
@@ -380,17 +381,15 @@ function startEditMessage(i: number) {
   bind:value={input}   
   on:input={autoExpand}
   style="height: 96px; overflow-y: auto; overflow:visible !important;"
-  on:keydown={(event) => {  
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);  
-    if (!$isStreaming && event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey && !isMobile) {  
-      event.preventDefault(); // Prevent default insert line break behavior  
-      processMessage();  
-    }  
-    else if (!$isStreaming && event.key === "Enter" && isMobile) {  
-      // Allow default behavior on mobile, which is to insert a new line  
-      // Optionally, you can explicitly handle mobile enter key behavior here if needed  
-    }  
-  }}  
+  on:keydown={(event) => {
+    if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+      if (!$isStreaming && $enterBehavior === 'send') {
+        event.preventDefault();
+        processMessage();
+      }
+      // else: default behavior inserts a newline
+    }
+  }}
 ></textarea>  
 <button class="bg-chat rounded-lg py-2 px-4 mx-1 ml-0 border-t-2 border-b-2 border-r-2  border-gray-500 rounded-l-none cursor-pointer " on:click={() => { if ($isStreaming) { closeStream(); } else { processMessage(); } }} disabled={!$isStreaming && !input.trim().length}>    
   {#if $isStreaming}    
