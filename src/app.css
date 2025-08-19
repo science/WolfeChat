@@ -10,7 +10,23 @@ body {
     background-color: #21252b;
 }
 
-
   .icon-white {
     filter: invert(75%);
+  }
+
+  /* Chat action icons: make faint whitish grey by default, brighter on hover */
+  .copyButton .copy-icon,
+  .editButton .edit-icon,
+  .deleteButton .delete-icon {
+    /* Neutralize original colors and make light grey */
+    filter: grayscale(1) saturate(0%) invert(85%) brightness(85%) contrast(90%);
+    opacity: 0.85;
+    transition: filter 0.15s ease-in-out, opacity 0.15s ease-in-out;
+  }
+
+  .copyButton:hover .copy-icon,
+  .editButton:hover .edit-icon,
+  .deleteButton:hover .delete-icon {
+    filter: grayscale(1) saturate(0%) invert(95%) brightness(105%) contrast(100%);
+    opacity: 1;
   }
