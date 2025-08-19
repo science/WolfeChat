@@ -4,10 +4,6 @@
   import { createEventDispatcher } from 'svelte';
   import CloseIcon from '../assets/close.svg';
   import { runAllTests, formatSuiteResultsText as formatSuiteResultsTextAll, clearTests } from '../tests/testHarness';
-  import '../tests/codeRendererStreaming.test';
-  import '../tests/chatScrollState.test';
-  import '../tests/modelSelectionPayload.test';
-  import '../tests/chatStreamingScroll.test';
   
   const dispatch = createEventDispatcher();
   
@@ -18,7 +14,7 @@
   // Ensure that all test modules are attached (imported) before running the non-API harness.
   // This dynamically imports every *.test.ts under src/tests so newly added tests are included without manual wiring.
   async function ensureAllNonApiTestsLoaded() {
-    const modules = import.meta.glob('../tests/**/*.test.ts');
+    const modules = import.meta.glob('../tests/nonapi/**/*.test.ts');
     const loaders = Object.values(modules);
     await Promise.all(loaders.map((load: any) => load()));
   }
@@ -195,13 +191,7 @@
     await ensureAllNonApiTestsLoaded();
 
     try {
-      const apiTags = new Set(['smoke', 'responses', 'api', 'network', 'reasoning']);
-      const suite = await runAllTests({
-        filter: (t) => {
-          const tags = t.tags ?? [];
-          return !tags.some(tag => apiTags.has(tag));
-        }
-      });
+      const suite = await runAllTests();
       debugResults = formatSuiteResultsTextAll(suite);
     } catch (error) {
       debugResults = `❌ Non-API test harness error: ${error}\n`;

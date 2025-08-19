@@ -1,7 +1,7 @@
-import type { Test } from './testHarness';
-import { Assert } from './testHarness';
-import { buildResponsesPayload, supportsReasoning } from '../services/openaiService';
-import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
+import type { Test } from '../testHarness';
+import { Assert } from '../testHarness';
+import { buildResponsesPayload, supportsReasoning } from '../../services/openaiService';
+import { reasoningEffort, verbosity, summary } from '../../stores/reasoningSettings';
 
 function makeInput() {
   return [

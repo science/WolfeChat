@@ -1,6 +1,6 @@
 import SvelteMarkdown from 'svelte-markdown';
-import Code from '../renderers/Code.svelte';
-import { registerTest } from './testHarness';
+import Code from '../../renderers/Code.svelte';
+import { registerTest } from '../testHarness';
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
