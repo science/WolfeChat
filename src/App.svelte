@@ -412,5 +412,5 @@ function startEditMessage(i: number) {
 </main>
 
 <style>
-  @import './styles/styles.css';
+  @import './app.css';
 </style>
