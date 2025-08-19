@@ -324,14 +324,14 @@ function startEditMessage(i: number) {
               <!-- Moved all the buttons so they apply to all messages -->             
               {#if !isAudioMessage(message) && !isImageUrl(message.content)}
                 <button class="copyButton w-5" title="Copy Chat Content" aria-label="Copy Chat Content" on:click={() => copyTextToClipboard(message.content)}>
-                  <img class="copy-icon" alt="Copy" src={CopyIcon} />
+                  <img class="copy-icon" alt="Copy" src={CopyIcon} title="Copy Chat Content" />
                 </button>
               {/if}
               <button class="editButton w-5" title="Edit Chat" aria-label="Edit Chat" on:click={() => startEditMessage(i)}>
-                <img class="edit-icon" alt="edit" src={EditIcon} />
+                <img class="edit-icon" alt="edit" src={EditIcon} title="Edit Chat" />
               </button>
               <button class="deleteButton w-5" title="Delete this Chat message" aria-label="Delete this Chat message" on:click={() => deleteMessageFromConversation(i)}>
-                <img class="delete-icon" alt="Delete" src={DeleteIcon} />
+                <img class="delete-icon" alt="Delete" src={DeleteIcon} title="Delete this Chat message" />
               </button>
             </div>
 
