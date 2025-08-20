@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 
 export type ReasoningKind = 'summary' | 'text';
 
@@ -13,12 +13,6 @@ export interface ReasoningPanel {
   done: boolean;
 }
 
-export const reasoningPanels = writable<ReasoningPanel[]>([]);
-
-/**
- * Reasoning windows are top-level containers, one per API Response.
- * They group one or more ReasoningPanels (e.g., summary + text) by responseId.
- */
 export interface ReasoningWindow {
   id: string;
   convId?: number;
@@ -27,7 +21,48 @@ export interface ReasoningWindow {
   open: boolean;
   createdAt: number;
 }
-export const reasoningWindows = writable<ReasoningWindow[]>([]);
+
+// Storage keys
+const REASONING_PANELS_KEY = 'reasoning_panels';
+const REASONING_WINDOWS_KEY = 'reasoning_windows';
+
+// Load from localStorage
+function loadFromStorage<T>(key: string, defaultValue: T[]): T[] {
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error(`Failed to load ${key} from localStorage:`, e);
+  }
+  return defaultValue;
+}
+
+// Save to localStorage
+function saveToStorage<T>(key: string, data: T[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    console.error(`Failed to save ${key} to localStorage:`, e);
+  }
+}
+
+// Initialize stores with persisted data
+const initialPanels = loadFromStorage<ReasoningPanel>(REASONING_PANELS_KEY, []);
+const initialWindows = loadFromStorage<ReasoningWindow>(REASONING_WINDOWS_KEY, []);
+
+export const reasoningPanels = writable<ReasoningPanel[]>(initialPanels);
+export const reasoningWindows = writable<ReasoningWindow[]>(initialWindows);
+
+// Subscribe to changes and persist
+reasoningPanels.subscribe((panels) => {
+  saveToStorage(REASONING_PANELS_KEY, panels);
+});
+
+reasoningWindows.subscribe((windows) => {
+  saveToStorage(REASONING_WINDOWS_KEY, windows);
+});
 
 function genWindowId(convId?: number) {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}-win-${convId ?? 'na'}`;
@@ -76,6 +111,18 @@ export function completeReasoningPanel(id: string) {
   reasoningPanels.update((arr) =>
     arr.map((p) => (p.id === id ? { ...p, open: false, done: true } : p))
   );
+}
+
+// Clear reasoning data for a specific conversation
+export function clearReasoningForConversation(convId: number) {
+  reasoningWindows.update((arr) => arr.filter((w) => w.convId !== convId));
+  reasoningPanels.update((arr) => arr.filter((p) => p.convId !== convId));
+}
+
+// Clear all reasoning data
+export function clearAllReasoning() {
+  reasoningWindows.set([]);
+  reasoningPanels.set([]);
 }
 
 /**
