@@ -154,3 +154,11 @@ export function logSSEEvent(type: string, _data?: any, convId?: number) {
     return next.length > 500 ? next.slice(next.length - 500) : next;
   });
 }
+
+// Expose for testing
+if (typeof window !== 'undefined') {
+  (window as any).startReasoningPanel = startReasoningPanel;
+  (window as any).appendReasoningText = appendReasoningText;
+  (window as any).setReasoningText = setReasoningText;
+  (window as any).completeReasoningPanel = completeReasoningPanel;
+}

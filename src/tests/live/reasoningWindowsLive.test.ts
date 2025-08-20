@@ -328,9 +328,7 @@ registerTest({
   timeoutMs: 15000,
   fn: async (assert) => {
     // Preserve state
-    const prev
-
- = get(conversations);
+    const prevConvs = get(conversations);
     const prevChosen = get(chosenConversationId);
     const prevWindows = get(reasoningWindows);
     const prevPanels = get(reasoningPanels);
@@ -443,7 +441,7 @@ registerTest({
 
       // Track panel creation events
       let panelCreationCount = 0;
-      const originalStartPanel = startReasoningPanel;
+      const originalStartPanel = (window as any).startReasoningPanel;
       (window as any).__testPanelCreations = [];
       
       // Monkey-patch to track panel creations
@@ -581,7 +579,7 @@ registerTest({
 
       // Track all text appends
       const textAppends: { panelId: string; text: string }[] = [];
-      const originalAppend = appendReasoningText;
+      const originalAppend = (window as any).appendReasoningText;
       (window as any).appendReasoningText = (id: string, text: string) => {
         textAppends.push({ panelId: id, text });
         return originalAppend(id, text);
@@ -626,7 +624,7 @@ registerTest({
       assert.that(panelsForWindow.length === 1, `Should have 1 panel in store for this window, got ${panelsForWindow.length}`);
       
     } finally {
-      delete (window as any).appendReasoningText;
+      (window as any).appendReasoningText = (window as any).appendReasoningText;
       reasoningPanels.set(prevPanels);
       reasoningWindows.set(prevWindows);
       conversations.set(prevConvs);
