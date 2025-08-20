@@ -678,7 +678,7 @@ function extractOutputTextFromResponses(obj: any): string {
       const content = Array.isArray(o?.content) ? o.content : [];
       for (const p of content) {
         if (typeof p?.text === 'string') text += p.text;
-        else if (typeof p === 'string') text +=;
+        else if (typeof p === 'string') text += p;
       }
     }
     if (text.trim()) return text.trim();
