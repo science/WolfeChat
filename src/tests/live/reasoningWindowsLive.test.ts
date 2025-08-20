@@ -624,7 +624,7 @@ registerTest({
       assert.that(panelsForWindow.length === 1, `Should have 1 panel in store for this window, got ${panelsForWindow.length}`);
       
     } finally {
-      (window as any).appendReasoningText = (window as any).appendReasoningText;
+      (window as any).appendReasoningText = originalAppend;
       reasoningPanels.set(prevPanels);
       reasoningWindows.set(prevWindows);
       conversations.set(prevConvs);

@@ -94,6 +94,9 @@ export function startReasoningPanel(kind: ReasoningKind, convId?: number, respon
   return id;
 }
 
+/**
+ * @deprecated Use setReasoningText with accumulated text instead to avoid duplication issues
+ */
 export function appendReasoningText(id: string, chunk: string) {
   if (!chunk) return;
   reasoningPanels.update((arr) =>
