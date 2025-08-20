@@ -10,7 +10,7 @@ import { countTicks } from '../utils/generalUtils';
 import { saveAudioBlob, getAudioBlob } from '../idb';
 import { onSendVisionMessageComplete } from '../managers/imageManager';
 import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
-import { startReasoningPanel, appendReasoningText, completeReasoningPanel, logSSEEvent, createReasoningWindow, collapseReasoningWindow } from '../stores/reasoningStore';
+import { startReasoningPanel, appendReasoningText, setReasoningText, completeReasoningPanel, logSSEEvent, createReasoningWindow, collapseReasoningWindow } from '../stores/reasoningStore';
 
 let configuration: Configuration | null = null;
 let openai: OpenAIApi | null = null;
@@ -847,6 +847,17 @@ export async function streamResponseViaResponsesAPI(
 
     const dataStr = dataLines.join('\n');
     if (dataStr === '[DONE]') {
+      // Finalize any still-open reasoning panels
+      if (currentReasoningPanelId) {
+        completeReasoningPanel(currentReasoningPanelId);
+        currentReasoningPanelId = null;
+        aggReasoningText = '';
+      }
+      if (currentSummaryPanelId) {
+        completeReasoningPanel(currentSummaryPanelId);
+        currentSummaryPanelId = null;
+        aggSummaryText = '';
+      }
       callbacks?.onCompleted?.(finalText);
       if (responseWindowId) collapseReasoningWindow(responseWindowId);
       return;
@@ -892,8 +903,9 @@ export async function streamResponseViaResponsesAPI(
         callbacks?.onReasoningStart?.('summary');
       }
       if (typeof text === 'string' && text) {
-        aggSummaryText += text;
-        appendReasoningText(currentSummaryPanelId, text);
+        // Replace with final text to avoid duplication when deltas already streamed
+        setReasoningText(currentSummaryPanelId, String(text));
+        aggSummaryText = String(text);
       }
       completeReasoningPanel(currentSummaryPanelId);
       callbacks?.onReasoningDone?.('summary', aggSummaryText);
@@ -917,8 +929,9 @@ export async function streamResponseViaResponsesAPI(
         callbacks?.onReasoningStart?.('text');
       }
       if (typeof text === 'string' && text) {
-        aggReasoningText += text;
-        appendReasoningText(currentReasoningPanelId, text);
+        // Replace with final text to avoid duplication when deltas already streamed
+        setReasoningText(currentReasoningPanelId, String(text));
+        aggReasoningText = String(text);
       }
       completeReasoningPanel(currentReasoningPanelId);
       callbacks?.onReasoningDone?.('text', aggReasoningText);
@@ -936,6 +949,17 @@ export async function streamResponseViaResponsesAPI(
         callbacks?.onTextDelta?.(deltaText);
       }
     } else if (resolvedType === 'response.completed') {
+      // Finalize any still-open reasoning panels
+      if (currentReasoningPanelId) {
+        completeReasoningPanel(currentReasoningPanelId);
+        currentReasoningPanelId = null;
+        aggReasoningText = '';
+      }
+      if (currentSummaryPanelId) {
+        completeReasoningPanel(currentSummaryPanelId);
+        currentSummaryPanelId = null;
+        aggSummaryText = '';
+      }
       callbacks?.onCompleted?.(finalText, obj);
       if (responseWindowId) collapseReasoningWindow(responseWindowId);
     } else if (resolvedType === 'error') {

@@ -66,6 +66,12 @@ export function appendReasoningText(id: string, chunk: string) {
   );
 }
 
+export function setReasoningText(id: string, text: string) {
+  reasoningPanels.update((arr) =>
+    arr.map((p) => (p.id === id ? { ...p, text: text ?? '' } : p))
+  );
+}
+
 export function completeReasoningPanel(id: string) {
   reasoningPanels.update((arr) =>
     arr.map((p) => (p.id === id ? { ...p, open: false, done: true } : p))
