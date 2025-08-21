@@ -17,7 +17,8 @@ body {
   /* Chat action icons: make faint whitish grey by default, brighter on hover */
   .copyButton .copy-icon,
   .editButton .edit-icon,
-  .deleteButton .delete-icon {
+  .deleteButton .delete-icon,
+  .deleteButton .deleteBelow-icon {
     /* Neutralize original colors and make light grey */
     filter: grayscale(1) saturate(0%) invert(85%) brightness(85%) contrast(90%);
     opacity: 0.85;
@@ -26,7 +27,8 @@ body {
 
   .copyButton:hover .copy-icon,
   .editButton:hover .edit-icon,
-  .deleteButton:hover .delete-icon {
+  .deleteButton:hover .delete-icon,
+  .deleteButton:hover .deleteBelow-icon {
     filter: grayscale(1) saturate(0%) invert(95%) brightness(105%) contrast(100%);
     opacity: 1;
   }
