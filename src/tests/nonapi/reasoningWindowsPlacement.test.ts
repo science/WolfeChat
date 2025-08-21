@@ -51,7 +51,13 @@ function defaultSystemRole(): string {
 }
 
 async function setConversationsState(convs: any[], activeIdx: number) {
-  conversations.set(convs);
+  // Ensure all conversations have IDs
+  const convsWithIds = convs.map((conv, idx) => ({
+    ...conv,
+    id: conv.id || `test-conv-${idx}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  }));
+  
+  conversations.set(convsWithIds);
   chosenConversationId.set(activeIdx);
   await sleep(0);
   await waitFor(() => !!getChatContainer(), 3000);
@@ -65,8 +71,16 @@ async function clearReasoningStores() {
   await sleep(0);
 }
 
-function addReasoningWindowFor(convId: number, anchorIndex: number, opts?: { id?: string; model?: string; summaryText?: string; done?: boolean }) {
-  const id = opts?.id ?? `win-${convId}-${anchorIndex}-${Math.random().toString(36).slice(2, 8)}`;
+function addReasoningWindowFor(convIdx: number, anchorIndex: number, opts?: { id?: string; model?: string; summaryText?: string; done?: boolean }) {
+  const convs = get(conversations);
+  const conv = convs[convIdx];
+  if (!conv || !conv.id) {
+    console.error(`No conversation found at index ${convIdx} or missing ID`);
+    return null;
+  }
+  
+  const conversationId = conv.id; // Use the conversation's unique string ID
+  const id = opts?.id ?? `win-${conversationId}-${anchorIndex}-${Math.random().toString(36).slice(2, 8)}`;
   const model = opts?.model ?? 'gpt-5';
   const text = opts?.summaryText ?? 'Reasoning summary text';
   const done = opts?.done ?? true;
@@ -75,7 +89,7 @@ function addReasoningWindowFor(convId: number, anchorIndex: number, opts?: { id?
     ...arr,
     {
       id,
-      convId,
+      convId: conversationId, // Use string ID instead of numeric index
       anchorIndex,
       open: true,
       model,
@@ -86,6 +100,7 @@ function addReasoningWindowFor(convId: number, anchorIndex: number, opts?: { id?
     {
       id: `panel-${id}`,
       responseId: id,
+      convId: conversationId, // Use string ID here too
       kind: 'summary',
       text,
       done,
@@ -358,6 +373,7 @@ registerTest({
     conversations.update((list: any[]) => [
       ...list,
       {
+        id: `test-conv-b-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         history: [{ role: 'user', content: 'B: new chat start' }],
         conversationTokens: 0,
         assistantRole: defaultSystemRole(),
@@ -413,6 +429,7 @@ registerTest({
     // Replace entire conversations array with a fresh single new chat (index 0 reused)
     conversations.set([
       {
+        id: `test-conv-fresh-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         history: [{ role: 'user', content: 'Fresh new chat' }],
         conversationTokens: 0,
         assistantRole: defaultSystemRole(),
@@ -478,3 +495,6 @@ registerTest({
     assert.that(container.querySelectorAll('details').length === 0, 'After deleting Chat A, its RW must not appear in Chat B');
   },
 });
+
+// Add missing import for get
+import { get } from 'svelte/store';
