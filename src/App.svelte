@@ -16,6 +16,7 @@
   import ParagraphRenderer from "./renderers/Paragraph.svelte";
   import HtmlRenderer from "./renderers/Html.svelte";
   import DeleteIcon from "./assets/delete.svg";
+  import DeleteBelowIcon from "./assets/deleteBelow.svg";
   import CopyIcon from "./assets/CopyIcon.svg"; 
   import UserIcon from "./assets/UserIcon.svg"; 
   import RobotIcon from "./assets/RobotIcon.svg"; 
@@ -27,7 +28,7 @@
   import { afterUpdate } from "svelte";
   import { conversations, chosenConversationId, settingsVisible, helpVisible, debugVisible, clearFileInputSignal } from "./stores/stores";
   import { isAudioMessage, formatMessageForMarkdown } from "./utils/generalUtils";
-  import { routeMessage, newChat, deleteMessageFromConversation } from "./managers/conversationManager";
+  import { routeMessage, newChat, deleteMessageFromConversation, deleteAllMessagesBelow } from "./managers/conversationManager";
   import { copyTextToClipboard } from './utils/generalUtils';
   import { selectedModel, selectedVoice, selectedMode, isStreaming } from './stores/stores';
   import { addRecentModel } from './stores/recentModelsStore';
@@ -168,7 +169,7 @@ function autoExpand(event) {
 
   let lastMessageCount = 0; 
   afterUpdate(() => {
-    const currentMessageCount = $conversations[$chosenConversationId]?.history.length || 0;
+    const currentMessageCount = $conversations[$cho senConversationId]?.history.length || 0;
     if (currentMessageCount > lastMessageCount) {
       // disable scroll to bottom on update
       // scrollChat();
@@ -333,6 +334,11 @@ function startEditMessage(i: number) {
               <button class="deleteButton w-5" title="Delete this Chat message" aria-label="Delete this Chat message" on:click={() => deleteMessageFromConversation(i)}>
                 <img class="delete-icon" alt="Delete" src={DeleteIcon} title="Delete this Chat message" />
               </button>
+              {#if i < $conversations[$chosenConversationId].history.length - 1}
+                <button class="deleteAllBelowButton w-5" title="Delete all messages below" aria-label="Delete all messages below" on:click={() => deleteAllMessagesBelow(i)}>
+                  <img class="delete-all-below-icon" alt="Delete all below" src={DeleteBelowIcon} title="Delete all messages below" />
+                </button>
+              {/if}
             </div>
 
             {/if}

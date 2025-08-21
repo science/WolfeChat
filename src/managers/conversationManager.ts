@@ -3,6 +3,7 @@ import { get, writable } from "svelte/store";
 import { conversations, chosenConversationId, combinedTokens } from "../stores/stores";
 import { type Conversation, defaultAssistantRole } from "../stores/stores";
 import { selectedModel, selectedVoice, audioUrls, base64Images } from '../stores/stores';
+import { reasoningWindows } from '../stores/reasoningStore';
 
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService";
 let streamText = "";
@@ -35,6 +36,38 @@ export function deleteMessageFromConversation(messageIndex: number) {
 
     currentConversations[currentConversationId].history = updatedHistory;
     conversations.set(currentConversations);
+}
+
+export function deleteAllMessagesBelow(messageIndex: number) {
+  const convId = get(chosenConversationId);
+  const convs = get(conversations);
+  
+  if (convId === null || convId === undefined || !convs[convId]) return;
+  
+  const currentHistory = convs[convId].history;
+  
+  // Keep messages from 0 to messageIndex (inclusive)
+  const updatedHistory = currentHistory.slice(0, messageIndex + 1);
+  
+  // Update conversation history
+  conversations.update(allConvs => {
+    const updated = [...allConvs];
+    updated[convId] = {
+      ...updated[convId],
+      history: updatedHistory
+    };
+    return updated;
+  });
+  
+  // Clean up reasoning windows for deleted messages
+  reasoningWindows.update(windows => {
+    // Remove windows anchored to messages that were deleted
+    return windows.filter(w => {
+      if (w.convId !== convId) return true;
+      // Keep windows anchored at or before messageIndex
+      return w.anchorIndex <= messageIndex;
+    });
+  });
 }
 
 
