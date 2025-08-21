@@ -1,9 +1,9 @@
 import type { ChatCompletionRequestMessage } from "openai";
 import { get, writable } from "svelte/store";
-import { conversations, chosenConversationId, combinedTokens } from "../stores/stores";
+import { conversations, chosenConversationId, combinedTokens, createNewConversation } from "../stores/stores";
 import { type Conversation, defaultAssistantRole } from "../stores/stores";
 import { selectedModel, selectedVoice, audioUrls, base64Images } from '../stores/stores';
-import { reasoningWindows } from '../stores/reasoningStore';
+import { reasoningWindows, clearReasoningForConversation } from '../stores/reasoningStore';
 
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService";
 let streamText = "";
@@ -45,6 +45,7 @@ export function deleteAllMessagesBelow(messageIndex: number) {
   if (convId === null || convId === undefined || !convs[convId]) return;
   
   const currentHistory = convs[convId].history;
+  const conversationUniqueId = convs[convId].id;
   
   // Keep messages from 0 to messageIndex (inclusive)
   const updatedHistory = currentHistory.slice(0, messageIndex + 1);
@@ -63,7 +64,7 @@ export function deleteAllMessagesBelow(messageIndex: number) {
   reasoningWindows.update(windows => {
     // Remove windows anchored to messages that were deleted
     return windows.filter(w => {
-      if (w.convId !== convId) return true;
+      if (w.convId !== conversationUniqueId) return true;
       // Keep windows anchored at or before messageIndex
       return w.anchorIndex <= messageIndex;
     });
@@ -81,12 +82,7 @@ export function newChat() {
         chosenConversationId.set(currentConversations.length - 1);
         return;
     }
-    const newConversation: Conversation = {
-        history: [],
-        conversationTokens: 0,
-        assistantRole: get(defaultAssistantRole).role, // Assuming defaultAssistantRole is a svelte store
-        title: "",
-    };
+    const newConversation = createNewConversation();
     conversations.update(conv => [...conv, newConversation]);
     chosenConversationId.set(get(conversations).length - 1);
 }

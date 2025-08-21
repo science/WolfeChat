@@ -1,7 +1,8 @@
 import { type Writable, writable } from "svelte/store";
-  import type { ChatCompletionRequestMessage } from "openai";
+import type { ChatCompletionRequestMessage } from "openai";
 
 export interface Conversation {
+  id: string; // Add unique ID
   history: ChatCompletionRequestMessage[];
   conversationTokens: number;
   assistantRole: string;
@@ -39,10 +40,34 @@ defaultAssistantRole.subscribe((value) => localStorage.setItem("default_assistan
 
 export const chosenConversationId = writable(0);
 
+// Helper to generate unique conversation IDs
+function generateConversationId(): string {
+  return `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Migration function to add IDs to existing conversations
+function migrateConversations(convs: any[]): Conversation[] {
+  return convs.map((conv, index) => {
+    if (!conv.id) {
+      return {
+        ...conv,
+        id: generateConversationId()
+      };
+    }
+    return conv;
+  });
+}
+
 let storedConversations = localStorage.getItem('conversations');
 let parsedConversations: Conversation[] = storedConversations !== null ? JSON.parse(storedConversations) : null;
 
+// Migrate existing conversations to have IDs
+if (parsedConversations) {
+  parsedConversations = migrateConversations(parsedConversations);
+}
+
 export const conversations: Writable<Conversation[]> = writable(parsedConversations || [{
+    id: generateConversationId(),
     history: [],
     conversationTokens: 0,
     assistantRole: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
@@ -98,3 +123,14 @@ export const showTokens = writable(parsedShowTokens);
 showTokens.subscribe(value => {
     localStorage.setItem('show_tokens', JSON.stringify(value));
 });
+
+// Export helper function for creating new conversations
+export function createNewConversation(): Conversation {
+  return {
+    id: generateConversationId(),
+    history: [],
+    conversationTokens: 0,
+    assistantRole: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
+    title: "",
+  };
+}
