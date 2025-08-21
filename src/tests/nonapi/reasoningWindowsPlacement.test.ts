@@ -190,7 +190,7 @@ registerTest({
     msgs = getMessageEls();
     assert.that(getRWDetailsInMessage(msgs[0]).length === 1, 'Chat B shows its own RW');
 
-    // Switch back to Chat A; ensure Chat A’s RW is still present and B’s does not leak
+    // Switch back to Chat A; ensure Chat A's RW is still present and B's does not leak
     chosenConversationId.set(0);
     await sleep(50);
     await waitFor(() => getMessageEls().length >= 2);
@@ -324,5 +324,159 @@ registerTest({
     await waitFor(() => getMessageEls().length >= 2);
     container = getChatContainer()!;
     assert.that(container.querySelectorAll('details').length === 0, 'Chat N continues to show no RW');
+  },
+});
+
+// --- Test 5: New chat appended after RW exists (no leak) ---
+registerTest({
+  id: 'rw-no-leak-on-new-chat-append',
+  name: 'New Chat (append) does not inherit RW from previous chat',
+  tags: ['non-api', 'reasoning', 'ui', 'new-chat'],
+  async fn(assert) {
+    await clearReasoningStores();
+
+    await setConversationsState(
+      [
+        {
+          history: [
+            { role: 'user', content: 'A: hi' },
+            { role: 'assistant', content: 'A: hello' },
+          ],
+          conversationTokens: 0,
+          assistantRole: defaultSystemRole(),
+          title: 'Chat A',
+        },
+      ],
+      0
+    );
+
+    // Add RW for Chat A (convId 0), anchored at the first user message
+    addReasoningWindowFor(0, 0, { id: 'rw-a-0' });
+    await waitFor(() => getChatContainer()!.querySelectorAll('details').length === 1);
+
+    // Append a new chat (Chat B) and switch to it
+    conversations.update((list: any[]) => [
+      ...list,
+      {
+        history: [{ role: 'user', content: 'B: new chat start' }],
+        conversationTokens: 0,
+        assist
+
+Role: defaultSystemRole(),
+        title: 'Chat B',
+      },
+    ]);
+    chosenConversationId.set(1);
+
+    await sleep(50);
+    await waitFor(() => !!getChatContainer(), 2000);
+    await waitFor(() => getMessageEls().length >= 1, 2000);
+
+    const containerB = getChatContainer()!;
+    assert.that(containerB.querySelectorAll('details').length === 0, 'Newly appended chat should show no RW');
+
+    // Switch back to Chat A and ensure its RW is intact
+    chosenConversationId.set(0);
+    await sleep(50);
+    await waitFor(() => getMessageEls().length >= 2, 2000);
+
+    const containerA = getChatContainer()!;
+    assert.that(containerA.querySelectorAll('details').length === 1, 'Original chat still shows its RW after switching back');
+  },
+});
+
+// --- Test 6: Reset to a single new chat (index 0 reuse, no leak) ---
+registerTest({
+  id: 'rw-no-leak-on-new-chat-reset',
+  name: 'Replacing conversation list (fresh new chat) does not inherit RW',
+  tags: ['non-api', 'reasoning', 'ui', 'new-chat'],
+  async fn(assert) {
+    await clearReasoningStores();
+
+    await setConversationsState(
+      [
+        {
+          history: [
+            { role: 'user', content: 'A: hi' },
+            { role: 'assistant', content: 'A: hello' },
+          ],
+          conversationTokens: 0,
+          assistantRole: defaultSystemRole(),
+          title: 'Chat A',
+        },
+      ],
+      0
+    );
+
+    // Add RW to Chat A
+    addReasoningWindowFor(0, 0, { id: 'rw-a-0' });
+    await waitFor(() => getChatContainer()!.querySelectorAll('details').length === 1);
+
+    // Replace entire conversations array with a fresh single new chat (index 0 reused)
+    conversations.set([
+      {
+        history: [{ role: 'user', content: 'Fresh new chat' }],
+        conversationTokens: 0,
+        assistantRole: defaultSystemRole(),
+        title: 'New Chat',
+      },
+    ]);
+    chosenConversationId.set(0);
+
+    await sleep(50);
+    await waitFor(() => !!getChatContainer(), 2000);
+    await waitFor(() => getMessageEls().length >= 1, 2000);
+
+    const container = getChatContainer()!;
+    assert.that(container.querySelectorAll('details').length === 0, 'Fresh new chat should show no RW');
+  },
+});
+
+// --- Test 7: Deleting a chat (reindex) should not leak RW to the next chat ---
+registerTest({
+  id: 'rw-no-leak-on-delete-reindex',
+  name: 'Deleting a conversation does not leak its RW into the next conversation (index reuse)',
+  tags: ['non-api', 'reasoning', 'ui', 'delete', 'reindex'],
+  async fn(assert) {
+    await clearReasoningStores();
+
+    await setConversationsState(
+      [
+        {
+          history: [
+            { role: 'user', content: 'A: user 1' },
+            { role: 'assistant', content: 'A: assistant 1' },
+          ],
+          conversationTokens: 0,
+          assistantRole: defaultSystemRole(),
+          title: 'Chat A',
+        },
+        {
+          history: [
+            { role: 'user', content: 'B: user 1' },
+            { role: 'assistant', content: 'B: assistant 1' },
+          ],
+          conversationTokens: 0,
+          assistantRole: defaultSystemRole(),
+          title: 'Chat B',
+        },
+      ],
+      0
+    );
+
+    // Add RW to Chat A (convId 0)
+    addReasoningWindowFor(0, 0, { id: 'rw-a-0' });
+    await waitFor(() => getChatContainer()!.querySelectorAll('details').length === 1);
+
+    // Delete Chat A; Chat B becomes the only chat at index 0
+    conversations.update((list: any[]) => [list[1]]);
+    chosenConversationId.set(0);
+
+    await sleep(50);
+    await waitFor(() => !!getChatContainer(), 2000);
+    await waitFor(() => getMessageEls().length >= 1, 2000);
+
+    const container = getChatContainer()!;
+    assert.that(container.querySelectorAll('details').length === 0, 'After deleting Chat A, its RW must not appear in Chat B');
   },
 });
