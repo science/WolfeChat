@@ -169,7 +169,7 @@ function autoExpand(event) {
 
   let lastMessageCount = 0; 
   afterUpdate(() => {
-    const currentMessageCount = $conversations[$cho senConversationId]?.history.length || 0;
+    const currentMessageCount = $conversations[$chosenConversationId]?.history.length || 0;
     if (currentMessageCount > lastMessageCount) {
       // disable scroll to bottom on update
       // scrollChat();
