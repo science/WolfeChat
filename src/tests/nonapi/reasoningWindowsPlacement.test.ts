@@ -360,9 +360,7 @@ registerTest({
       {
         history: [{ role: 'user', content: 'B: new chat start' }],
         conversationTokens: 0,
-        assist
-
-Role: defaultSystemRole(),
+        assistantRole: defaultSystemRole(),
         title: 'Chat B',
       },
     ]);
