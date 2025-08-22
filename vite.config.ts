@@ -26,6 +26,8 @@ export default defineConfig({
     optimizeDeps:{
       esbuildOptions: {
         target: "es2022",
+        // Disable sourcemaps for prebundled deps to suppress dev console warnings from .vite/deps
+        sourcemap: false,
       }
     }
 
