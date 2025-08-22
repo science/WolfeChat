@@ -10,7 +10,7 @@ import { countTicks } from '../utils/generalUtils';
 import { saveAudioBlob, getAudioBlob } from '../idb';
 import { onSendVisionMessageComplete } from '../managers/imageManager';
 import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
-import { startReasoningPanel, appendReasoningText, completeReasoningPanel, logSSEEvent, createReasoningWindow, collapseReasoningWindow } from '../stores/reasoningStore';
+import { startReasoningPanel, appendReasoningText, setReasoningText, completeReasoningPanel, logSSEEvent, createReasoningWindow, collapseReasoningWindow } from '../stores/reasoningStore';
 
 let configuration: Configuration | null = null;
 let openai: OpenAIApi | null = null;
@@ -445,7 +445,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
       get(selectedModel),
       {
         onTextDelta: (text) => {
-          const msgTicks = countTicks(text);
+          const msgTicks =countTicks(text);
           tickCounter += msgTicks;
           if (msgTicks === 0) tickCounter = 0;
           if (tickCounter === 3) { ticks = !ticks; tickCounter = 0; }
@@ -818,11 +818,9 @@ export async function streamResponseViaResponsesAPI(
   let buffer = '';
   let finalText = '';
 
-  // Track reasoning panels per stream
-  let currentSummaryPanelId: string | null = null;
-  let currentReasoningPanelId: string | null = null;
-  let aggSummaryText = '';
-  let aggReasoningText = '';
+  // Track reasoning panels per stream - use Map to ensure uniqueness
+  const panelTracker = new Map<string, string>(); // kind -> panelId
+  const panelTextTracker = new Map<string, string>(); // panelId -> accumulated text
   const convIdCtx = uiContext?.convId;
   const anchorIndexCtx = uiContext?.anchorIndex;
 
@@ -847,6 +845,13 @@ export async function streamResponseViaResponsesAPI(
 
     const dataStr = dataLines.join('\n');
     if (dataStr === '[DONE]') {
+      // Finalize any still-open reasoning panels
+      for (const [kind, panelId] of panelTracker.entries()) {
+        completeReasoningPanel(panelId);
+        panelTextTracker.delete(panelId);
+      }
+      panelTracker.clear();
+      panelTextTracker.clear();
       callbacks?.onCompleted?.(finalText);
       if (responseWindowId) collapseReasoningWindow(responseWindowId);
       return;
@@ -867,63 +872,86 @@ export async function streamResponseViaResponsesAPI(
     // Log every SSE type compactly for the collapsible UI (not reused as prompt input)
     logSSEEvent(resolvedType, obj, convIdCtx);
 
-    // Handle reasoning-related events first, then output text
-    if (resolvedType === 'response.reasoning_summary_part.added') {
-      if (!currentSummaryPanelId) {
-        console.debug('[ResponsesStream][Reasoning] start summary panel', { convId: convIdCtx });
-        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx, responseWindowId || undefined);
+    // Handle reasoning-related events
+    if (resolvedType === 'response.reasoning_summary_part.added' || 
+        resolvedType === 'response.reasoning_summary_text.delta' || 
+        resolvedType === 'response.reasoning_summary.delta') {
+      const delta = obj?.delta ?? '';
+      if (!panelTracker.has('summary')) {
+        const panelId = startReasoningPanel('summary', convIdCtx, responseWindowId || undefined);
+        panelTracker.set('summary', panelId);
+        panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('summary', obj?.part);
       }
-    } else if (resolvedType === 'response.reasoning_summary_text.delta' || resolvedType === 'response.reasoning_summary.delta') {
-      const delta = obj?.delta ?? '';
-      if (!currentSummaryPanelId) {
-        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx, responseWindowId || undefined);
-        callbacks?.onReasoningStart?.('summary');
-      }
       if (typeof delta === 'string' && delta) {
-        aggSummaryText += delta;
-        appendReasoningText(currentSummaryPanelId, delta);
+        const panelId = panelTracker.get('summary')!;
+        const currentText = panelTextTracker.get(panelId) || '';
+        const newText = currentText + delta;
+        panelTextTracker.set(panelId, newText);
+        setReasoningText(panelId, newText); // Use set instead of append to avoid duplication
         callbacks?.onReasoningDelta?.('summary', delta);
       }
-    } else if (resolvedType === 'response.reasoning_summary_part.done' || resolvedType === 'response.reasoning_summary_text.done' || resolvedType === 'response.reasoning_summary.done') {
+    } else if (resolvedType === 'response.reasoning_summary_part.done' || 
+               resolvedType === 'response.reasoning_summary_text.done' || 
+               resolvedType === 'response.reasoning_summary.done') {
       const text = obj?.part?.text ?? obj?.text ?? '';
-      if (!currentSummaryPanelId) {
-        currentSummaryPanelId = startReasoningPanel('summary', convIdCtx, responseWindowId || undefined);
-        callbacks?.onReasoningStart?.('summary');
+      const panelId = panelTracker.get('summary');
+      if (panelId) {
+        // Only update if we have final text and it's different from accumulated
+        if (typeof text === 'string' && text) {
+          setReasoningText(panelId, text);
+          panelTextTracker.set(panelId, text);
+        }
+        completeReasoningPanel(panelId);
+        callbacks?.onReasoningDone?.('summary', panelTextTracker.get(panelId) || '');
+        panelTracker.delete('summary');
+        panelTextTracker.delete(panelId);
       }
-      if (typeof text === 'string' && text) {
-        aggSummaryText += text;
-        appendReasoningText(currentSummaryPanelId, text);
-      }
-      completeReasoningPanel(currentSummaryPanelId);
-      callbacks?.onReasoningDone?.('summary', aggSummaryText);
-      currentSummaryPanelId = null;
-      aggSummaryText = '';
-    } else if (resolvedType === 'response.reasoning_text.delta' || resolvedType === 'response.reasoning.delta') {
+    } else if (resolvedType === 'response.reasoning_text.delta' || 
+               resolvedType === 'response.reasoning.delta') {
       const delta = obj?.delta ?? '';
-      if (!currentReasoningPanelId) {
-        currentReasoningPanelId = startReasoningPanel('text', convIdCtx, responseWindowId || undefined);
+      if (!panelTracker.has('text')) {
+        const panelId = startReasoningPanel('text', convIdCtx, responseWindowId || undefined);
+        panelTracker.set('text', panelId);
+        panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('text');
       }
       if (typeof delta === 'string' && delta) {
-        aggReasoningText += delta;
-        appendReasoningText(currentReasoningPanelId, delta);
+        const panelId = panelTracker.get('text')!;
+        const currentText = panelTextTracker.get(panelId) || '';
+        const newText = currentText + delta;
+        panelTextTracker.set(panelId, newText);
+        setReasoningText(panelId, newText); // Use set instead of append to avoid duplication
         callbacks?.onReasoningDelta?.('text', delta);
       }
-    } else if (resolvedType === 'response.reasoning_text.done' || resolvedType === 'response.reasoning.done') {
+    } else if (resolvedType === 'response.reasoning_text.done' || 
+               resolvedType === 'response.reasoning.done') {
       const text = obj?.text ?? '';
-      if (!currentReasoningPanelId) {
-        currentReasoningPanelId = startReasoningPanel('text', convIdCtx, responseWindowId || undefined);
+      
+      // Check if we're completing an existing panel or need to create one
+      let panelId = panelTracker.get('text');
+      
+      // Only create a new panel if we don't have one AND we have text to show
+      if (!panelId && text) {
+        panelId = startReasoningPanel('text', convIdCtx, responseWindowId || undefined);
+        panelTracker.set('text', panelId);
+        panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('text');
       }
-      if (typeof text === 'string' && text) {
-        aggReasoningText += text;
-        appendReasoningText(currentReasoningPanelId, text);
+      
+      if (panelId) {
+        // Set final text if provided, otherwise keep accumulated text
+        if (typeof text === 'string' && text) {
+          setReasoningText(panelId, text);
+          panelTextTracker.set(panelId, text);
+        }
+        completeReasoningPanel(panelId);
+        callbacks?.onReasoningDone?.('text', panelTextTracker.get(panelId) || '');
+        
+        // Clear the panel from tracker to allow next sequence to create a new panel
+        panelTracker.delete('text');
+        panelTextTracker.delete(panelId);
       }
-      completeReasoningPanel(currentReasoningPanelId);
-      callbacks?.onReasoningDone?.('text', aggReasoningText);
-      currentReasoningPanelId = null;
-      aggReasoningText = '';
     } else if (resolvedType === 'response.output_text.delta') {
       const deltaText =
         obj?.delta?.text ??
@@ -936,6 +964,13 @@ export async function streamResponseViaResponsesAPI(
         callbacks?.onTextDelta?.(deltaText);
       }
     } else if (resolvedType === 'response.completed') {
+      // Finalize any still-open reasoning panels
+      for (const [kind, panelId] of panelTracker.entries()) {
+        completeReasoningPanel(panelId);
+        panelTextTracker.delete(panelId);
+      }
+      panelTracker.clear();
+      panelTextTracker.clear();
       callbacks?.onCompleted?.(finalText, obj);
       if (responseWindowId) collapseReasoningWindow(responseWindowId);
     } else if (resolvedType === 'error') {
@@ -960,7 +995,3 @@ export async function streamResponseViaResponsesAPI(
   globalAbortController = null;
   return finalText;
 }
-  
-  
-  
-  

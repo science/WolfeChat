@@ -8,19 +8,22 @@ export function shouldSendOnEnter(params: {
   ctrlKey: boolean;
   metaKey: boolean;
 }): boolean {
-  const {
-    behavior,
-    isStreaming,
-    key,
-    shiftKey,
-    ctrlKey,
-    metaKey,
-  } = params;
+  const { behavior, isStreaming, key, shiftKey, ctrlKey, metaKey } = params;
 
+  // Do not send while streaming or when it's not the Enter key
   if (isStreaming) return false;
-  if (behavior !== 'send') return false;
   if (key !== 'Enter') return false;
-  if (shiftKey || ctrlKey || metaKey) return false;
 
-  return true;
+  // Shift+Enter always inserts a newline
+  if (shiftKey) return false;
+
+  // Ctrl+Enter sends, as long as no other modifiers are pressed
+  if (ctrlKey) {
+    if (metaKey) return false;
+    return true;
+  }
+
+  // Regular Enter respects the behavior and only sends when behavior is 'send'
+  if (metaKey) return false;
+  return behavior === 'send';
 }

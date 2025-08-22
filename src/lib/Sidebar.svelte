@@ -185,7 +185,7 @@ let editingTitleId = null;
             {#if $showTokens === true}
 
             <p class="text-blue-200 tokens z-20 ml-5">
-              {conv.conversationTokens.toFixed(0)}
+              {(Number(conv.conversationTokens ?? 0)).toFixed(0)}
             </p>
             {/if}
 

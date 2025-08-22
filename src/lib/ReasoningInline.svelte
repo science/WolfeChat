@@ -1,13 +1,18 @@
 <script lang="ts">
   import { reasoningWindows, reasoningPanels, type ReasoningPanel, type ReasoningWindow } from '../stores/reasoningStore';
+  import { conversations } from '../stores/stores';
 
   export let convId: number;
   export let anchorIndex: number;
 
+  // Get the conversation's unique ID
+  let conversationUniqueId: string | undefined;
+  $: conversationUniqueId = $conversations[convId]?.id;
+
   // Windows for this conversation anchored to the given user message index
   let windowsForAnchor: ReasoningWindow[] = [];
   $: windowsForAnchor = ($reasoningWindows ?? []).filter(
-    (w) => (w.convId === convId || w.convId === undefined) && w.anchorIndex === anchorIndex
+    (w) => w.convId === conversationUniqueId && w.anchorIndex === anchorIndex
   );
 
   // Group panels by responseId for quick lookup per window

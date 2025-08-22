@@ -1,8 +1,9 @@
 import type { ChatCompletionRequestMessage } from "openai";
 import { get, writable } from "svelte/store";
-import { conversations, chosenConversationId, combinedTokens } from "../stores/stores";
+import { conversations, chosenConversationId, combinedTokens, createNewConversation } from "../stores/stores";
 import { type Conversation, defaultAssistantRole } from "../stores/stores";
 import { selectedModel, selectedVoice, audioUrls, base64Images } from '../stores/stores';
+import { reasoningWindows, clearReasoningForConversation } from '../stores/reasoningStore';
 
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService";
 let streamText = "";
@@ -37,6 +38,39 @@ export function deleteMessageFromConversation(messageIndex: number) {
     conversations.set(currentConversations);
 }
 
+export function deleteAllMessagesBelow(messageIndex: number) {
+  const convId = get(chosenConversationId);
+  const convs = get(conversations);
+  
+  if (convId === null || convId === undefined || !convs[convId]) return;
+  
+  const currentHistory = convs[convId].history;
+  const conversationUniqueId = convs[convId].id;
+  
+  // Keep messages from 0 to messageIndex (inclusive)
+  const updatedHistory = currentHistory.slice(0, messageIndex + 1);
+  
+  // Update conversation history
+  conversations.update(allConvs => {
+    const updated = [...allConvs];
+    updated[convId] = {
+      ...updated[convId],
+      history: updatedHistory
+    };
+    return updated;
+  });
+  
+  // Clean up reasoning windows for deleted messages
+  reasoningWindows.update(windows => {
+    // Remove windows anchored to messages that were deleted
+    return windows.filter(w => {
+      if (w.convId !== conversationUniqueId) return true;
+      // Keep windows anchored at or before messageIndex
+      return w.anchorIndex <= messageIndex;
+    });
+  });
+}
+
 
 
 
@@ -48,12 +82,7 @@ export function newChat() {
         chosenConversationId.set(currentConversations.length - 1);
         return;
     }
-    const newConversation: Conversation = {
-        history: [],
-        conversationTokens: 0,
-        assistantRole: get(defaultAssistantRole).role, // Assuming defaultAssistantRole is a svelte store
-        title: "",
-    };
+    const newConversation = createNewConversation();
     conversations.update(conv => [...conv, newConversation]);
     chosenConversationId.set(get(conversations).length - 1);
 }
@@ -124,18 +153,35 @@ function setTitle(title: string) {
 async function createTitle(currentInput: string) {
     const titleModel = 'gpt-4-turbo-preview';
 
-    let response = await sendRequest([
-    { role: "user", content: currentInput },
-    {
-      role: "user",
-      content: "Generate a title for this conversation, so I can easily reference it later. Maximum 6 words. Don't provide anything other than the title. Don't use quotes.",
-    },
-  ], titleModel); // Pass the titleModel as an argument
+    try {
+        let response = await sendRequest([
+            { role: "user", content: currentInput },
+            {
+                role: "user",
+                content: "Generate a title for this conversation, so I can easily reference it later. Maximum 6 words. Don't provide anything other than the title. Don't use quotes.",
+            },
+        ], titleModel); // Pass the titleModel as an argument
 
-  if (response) {
-    let message = response.data.choices[0].message.content;
-    setTitle(message.toString());
-  }
+        // Check if response has the expected structure
+        if (response && response.data && response.data.choices && response.data.choices.length > 0) {
+            let message = response.data.choices[0].message?.content;
+            if (message) {
+                setTitle(message.toString());
+            } else {
+                console.warn("Title generation: No content in response message");
+                // Set a fallback title based on the input
+                setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''));
+            }
+        } else {
+            console.warn("Title generation: Invalid response structure", response);
+            // Set a fallback title based on the input
+            setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''));
+        }
+    } catch (error) {
+        console.error("Error generating title:", error);
+        // Set a fallback title based on the input
+        setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''));
+    }
 }
 
 export function displayAudioMessage(audioUrl) {

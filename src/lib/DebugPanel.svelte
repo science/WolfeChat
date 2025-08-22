@@ -26,6 +26,48 @@
     await Promise.all(loaders.map((load: any) => load()));
   }
 
+  // Live API test selection and single-file run support
+  let showLiveApiTestPicker = false;
+  let liveApiTestMap: Record<string, any> = {};
+  let liveApiTestFiles: string[] = [];
+
+  function fileBaseName(p: string): string {
+    return p.replace(/^.*\/tests\/live\//, '');
+  }
+
+  async function toggleLiveApiTestPicker() {
+    showLiveApiTestPicker = !showLiveApiTestPicker;
+    if (showLiveApiTestPicker) {
+      liveApiTestMap = import.meta.glob('../tests/live/**/*.test.ts');
+      liveApiTestFiles = Object.keys(liveApiTestMap).sort();
+      if (liveApiTestFiles.length === 0) {
+        debugResults = 'No live API tests found in src/tests/live.\n';
+      }
+    }
+  }
+
+  async function runSingleLiveApiTest(file: string) {
+    isTesting = true;
+    currentTest = `API Test: ${fileBaseName(file)}`;
+    debugResults = `Running API test: ${fileBaseName(file)}\n`;
+
+    clearTests();
+    try {
+      const loader: any = liveApiTestMap[file];
+      if (!loader) {
+        debugResults += '❌ Could not find loader for selected test file.\n';
+        isTesting = false;
+        return;
+      }
+      await loader();
+      const suite = await runAllTests();
+      debugResults = formatSuiteResultsTextAll(suite);
+    } catch (error) {
+      debugResults = `❌ Error running selected API test: ${error}\n`;
+    }
+    isTesting = false;
+  }
+
   async function runResponsesAPITest() {
     isTesting = true;
     currentTest = 'Responses API';
@@ -215,89 +257,123 @@
   }
 </script>
 
-<div class="fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg max-w-lg z-50 max-h-96 overflow-y-auto">
-  <div class="flex justify-between items-center mb-2">
+<div class="fixed bottom-4 right-4 bg-gray-800 text-white rounded-lg shadow-lg max-w-lg z-50 flex flex-col max-h-96">
+  <!-- Fixed header with distinct background -->
+  <div class="flex justify-between items-center p-4 bg-gray-900 rounded-t-lg border-b border-gray-700">
     <h3 class="text-lg font-bold">Debug Panel</h3>
-    <button on:click={closeDebugPanel}>
+    <button on:click={closeDebugPanel} class="hover:bg-gray-700 rounded p-1 transition-colors">
       <img src={CloseIcon} alt="Close" class="w-5 h-5" />
     </button>
   </div>
   
-  <div class="mb-4 text-sm">
-    <p class="mb-1">Current Model: {$selectedModel}</p>
-    <p class="mb-1">API Key: {$apiKey ? '✅ Configured' : '❌ Missing'}</p>
-    {#if currentTest}
-      <p class="mb-1">Current Test: {currentTest}</p>
+  <!-- Scrollable content area -->
+  <div class="overflow-y-auto p-4 flex-1">
+    <div class="mb-4 text-sm">
+      <p class="mb-1">Current Model: {$selectedModel}</p>
+      <p class="mb-1">API Key: {$apiKey ? '✅ Configured' : '❌ Missing'}</p>
+      {#if currentTest}
+        <p class="mb-1">Current Test: {currentTest}</p>
+      {/if}
+    </div>
+    
+    <div class="space-y-2 mb-4">
+      <button 
+        class="w-full bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded text-sm disabled:opacity-50"
+        on:click={runResponsesAPITest}
+        disabled={isTesting}
+      >
+        {isTesting && currentTest === 'Responses API' ? 'Testing...' : 'Test Responses API (non-stream)'}
+      </button>
+
+      <button 
+        class="w-full bg-cyan-700 hover:bg-cyan-800 px-3 py-1 rounded text-sm disabled:opacity-50"
+        on:click={runResponsesStreamingTest}
+        disabled={isTesting}
+      >
+        {isTesting && currentTest === 'Responses Streaming' ? 'Testing...' : 'Test Responses API (stream)'}
+      </button>
+
+      <button 
+        class="w-full bg-fuchsia-600 hover:bg-fuchsia-700 px-3 py-1 rounded text-sm disabled:opacity-50"
+        on:click={runReasoningStreamingTest}
+        disabled={isTesting}
+      >
+        {isTesting && currentTest === 'Reasoning Streaming' ? 'Testing...' : 'Test Reasoning Stream'}
+      </button>
+      
+      <button 
+        class="w-full bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded text-sm disabled:opacity-50"
+        on:click={runAllApiTests}
+        disabled={isTesting}
+      >
+        {isTesting && currentTest === 'All Tests' ? 'Running...' : 'Run All Tests'}
+      </button>
+
+      <button 
+        class="w-full bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-sm disabled:opacity-50"
+        on:click={toggleLiveApiTestPicker}
+        disabled={isTesting}
+      >
+        {showLiveApiTestPicker ? 'Hide API Test List' : 'Select API test to run'}
+      </button>
+      
+      <button 
+        class="w-full bg-emerald-500 hover:bg-emerald-600 px-3 py-1 rounded text-sm disabled:opacity-50"
+        on:click={runNonApiTestHarness}
+        disabled={isTesting}
+      >
+        {isTesting && currentTest === 'Test Harness (non-API)' ? 'Running...' : 'Run Test Harness (non-API)'}
+      </button>
+      
+      <button 
+        class="w-full bg-emerald-600 hover:bg-emerald-700 px-3 py-1 rounded text-sm disabled:opacity-50"
+        on:click={runTestHarness}
+        disabled={isTesting}
+      >
+        {isTesting && currentTest === 'Test Harness (API)' ? 'Running...' : 'Run Test Harness (API)'}
+      </button>
+      
+      <button 
+        class="w-full bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-sm"
+        on:click={showDebugInfo}
+      >
+        Show Debug Info
+      </button>
+      
+      <button 
+        class="w-full bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm"
+        on:click={clearResults}
+      >
+        Clear Results
+      </button>
+    </div>
+
+    {#if showLiveApiTestPicker}
+      <div class="mt-2 p-2 bg-gray-700 rounded text-xs max-h-40 overflow-y-auto">
+        <div class="flex justify-between items-center mb-2">
+          <span>Select a live API test to run (src/tests/live)</span>
+          <button class="bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded text-xs" on:click={() => showLiveApiTestPicker = false}>Close</button>
+        </div>
+        {#if liveApiTestFiles.length === 0}
+          <div>No API tests found.</div>
+        {:else}
+          {#each liveApiTestFiles as f}
+            <button
+              class="w-full text-left bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded mb-1 disabled:opacity-50"
+              on:click={() => runSingleLiveApiTest(f)}
+              disabled={isTesting}
+            >
+              {fileBaseName(f)}
+            </button>
+          {/each}
+        {/if}
+      </div>
+    {/if}
+    
+    {#if debugResults}
+      <div class="mt-4 p-2 bg-gray-700 rounded text-xs max-h-40 overflow-y-auto">
+        <pre>{debugResults}</pre>
+      </div>
     {/if}
   </div>
-  
-  <div class="space-y-2 mb-4">
-    <button 
-      class="w-full bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded text-sm disabled:opacity-50"
-      on:click={runResponsesAPITest}
-      disabled={isTesting}
-    >
-      {isTesting && currentTest === 'Responses API' ? 'Testing...' : 'Test Responses API (non-stream)'}
-    </button>
-
-    <button 
-      class="w-full bg-cyan-700 hover:bg-cyan-800 px-3 py-1 rounded text-sm disabled:opacity-50"
-      on:click={runResponsesStreamingTest}
-      disabled={isTesting}
-    >
-      {isTesting && currentTest === 'Responses Streaming' ? 'Testing...' : 'Test Responses API (stream)'}
-    </button>
-
-    <button 
-      class="w-full bg-fuchsia-600 hover:bg-fuchsia-700 px-3 py-1 rounded text-sm disabled:opacity-50"
-      on:click={runReasoningStreamingTest}
-      disabled={isTesting}
-    >
-      {isTesting && currentTest === 'Reasoning Streaming' ? 'Testing...' : 'Test Reasoning Stream'}
-    </button>
-    
-    <button 
-      class="w-full bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded text-sm disabled:opacity-50"
-      on:click={runAllApiTests}
-      disabled={isTesting}
-    >
-      {isTesting && currentTest === 'All Tests' ? 'Running...' : 'Run All Tests'}
-    </button>
-    
-    <button 
-      class="w-full bg-emerald-500 hover:bg-emerald-600 px-3 py-1 rounded text-sm disabled:opacity-50"
-      on:click={runNonApiTestHarness}
-      disabled={isTesting}
-    >
-      {isTesting && currentTest === 'Test Harness (non-API)' ? 'Running...' : 'Run Test Harness (non-API)'}
-    </button>
-    
-    <button 
-      class="w-full bg-emerald-600 hover:bg-emerald-700 px-3 py-1 rounded text-sm disabled:opacity-50"
-      on:click={runTestHarness}
-      disabled={isTesting}
-    >
-      {isTesting && currentTest === 'Test Harness (API)' ? 'Running...' : 'Run Test Harness (API)'}
-    </button>
-    
-    <button 
-      class="w-full bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-sm"
-      on:click={showDebugInfo}
-    >
-      Show Debug Info
-    </button>
-    
-    <button 
-      class="w-full bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm"
-      on:click={clearResults}
-    >
-      Clear Results
-    </button>
-  </div>
-  
-  {#if debugResults}
-    <div class="mt-4 p-2 bg-gray-700 rounded text-xs max-h-40 overflow-y-auto">
-      <pre>{debugResults}</pre>
-    </div>
-  {/if}
 </div>
