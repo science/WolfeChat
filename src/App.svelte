@@ -319,10 +319,6 @@ function startEditMessage(i: number) {
               {/if}
             </div>
             <div class="toolbelt flex space-x-2 pl-20 mb-2 tools">
-            {#if message.role === 'assistant'}
-            {/if}
-            {#if message.role === 'user'}
-            {/if}
               <!-- Moved all the buttons so they apply to all messages -->             
               {#if !isAudioMessage(message) && !isImageUrl(message.content)}
                 <button class="copyButton w-5" title="Copy Chat Content" aria-label="Copy Chat Content" on:click={() => copyTextToClipboard(message.content)}>

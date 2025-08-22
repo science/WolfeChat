@@ -374,8 +374,8 @@ handleClose();
 
 
 <div class="mb-4">
-  <label class="block font-medium mb-2">Enter key behavior</label>
-  <select bind:value={enterBehaviorLocal} on:change={() => enterBehavior.set(enterBehaviorLocal)} class="border text-black border-gray-300 p-2 rounded w-full">
+  <label for="enter-behavior" class="block font-medium mb-2">Enter key behavior</label>
+  <select id="enter-behavior" bind:value={enterBehaviorLocal} on:change={() => enterBehavior.set(enterBehaviorLocal)} class="border text-black border-gray-300 p-2 rounded w-full">
     <option value="newline">Insert a new line</option>
     <option value="send">Send message</option>
   </select>
