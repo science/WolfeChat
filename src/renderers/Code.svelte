@@ -17,12 +17,12 @@
   import 'prismjs/themes/prism-okaidia.css';
 
   // Support multiple incoming prop names from svelte-markdown
-  export let text;
-  export let value;   // svelte-markdown often passes { value }
-  export let code;    // some renderers pass { code }
+  export let text = undefined;
+  export let value = undefined;   // svelte-markdown often passes { value }
+  export let code = undefined;    // some renderers pass { code }
   export let lang = undefined;
   export let language = undefined; // svelte-markdown may pass { language }
-  export let className; // sometimes language is encoded in className (e.g., "language-js")
+  export let className = undefined; // sometimes language is encoded in className (e.g., "language-js")
 
   let codeElement;
 
