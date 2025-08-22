@@ -49,6 +49,11 @@ export function registerTest(test: Test) {
   registry.push(test);
 }
 
+// Convenience function for defining and registering tests
+export function test(testDef: Test) {
+  registerTest(testDef);
+}
+
 export function clearTests() {
   registry = [];
 }
