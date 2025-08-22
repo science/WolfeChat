@@ -379,7 +379,7 @@ handleClose();
     <option value="newline">Insert a new line</option>
     <option value="send">Send message</option>
   </select>
-  <p class="text-xs text-gray-400 mt-1">Tip: Shift+Enter always inserts a new line.</p>
+  <p class="text-xs text-gray-400 mt-1">Tip: Shift+Enter always inserts a new line. Ctrl+Enter always sends the message.</p>
 </div>
 
 <div class="mb-4">
