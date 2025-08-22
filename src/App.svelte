@@ -41,6 +41,7 @@
   import QuickSettings from './lib/QuickSettings.svelte';
   import { ScrollMemory } from './utils/scrollState';
   import { enterBehavior } from './stores/keyboardSettings';
+  import { shouldSendOnEnter } from './utils/keyboard';
 
   let fileInputElement; 
   let input: string = "";
@@ -388,12 +389,16 @@ function startEditMessage(i: number) {
   on:input={autoExpand}
   style="height: 96px; overflow-y: auto; overflow:visible !important;"
   on:keydown={(event) => {
-    if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
-      if (!$isStreaming && $enterBehavior === 'send') {
-        event.preventDefault();
-        processMessage();
-      }
-      // else: default behavior inserts a newline
+    if (shouldSendOnEnter({
+      behavior: $enterBehavior,
+      isStreaming: $isStreaming,
+      key: event.key,
+      shiftKey: event.shiftKey,
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey
+    })) {
+      event.preventDefault();
+      processMessage();
     }
   }}
 ></textarea>  
