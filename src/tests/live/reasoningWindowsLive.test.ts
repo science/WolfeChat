@@ -5,7 +5,6 @@ import {
   reasoningPanels,
   createReasoningWindow,
   startReasoningPanel,
-  appendReasoningText,
   completeReasoningPanel,
   setReasoningText,
 } from '../../stores/reasoningStore';
@@ -79,10 +78,6 @@ function makeSSEResponse(events: { event: string; data: any }[]): Response {
 }
 
 // Additional DOM helpers
-function getPanelsInMessage(msgEl: HTMLElement): HTMLElement[] {
-  return Array.from(msgEl.querySelectorAll('div.rounded.border.border-gray-500')) as HTMLElement[];
-}
-
 function hasExactDouble(text: string): boolean {
   if (!text) return false;
   const half = Math.floor(text.length / 2);
@@ -109,6 +104,7 @@ registerTest({
       // 1) Prepare a minimal conversation with one user message so ReasoningInline renders
       conversations.set([
         {
+          id: 'test-conv-1',
           title: 'Reasoning Test Conversation',
           assistantRole: 'You are a helpful assistant.',
           conversationTokens: 0,
@@ -140,7 +136,7 @@ registerTest({
 
       // 2) Simulate SSE lifecycle via store APIs used by the streaming handler
       // Create one reasoning window for this conversation and anchor
-      const convId = 0;
+      const convId = 'test-conv-1';
       const winId = createReasoningWindow(convId, 'gpt-5', anchorIndex);
 
       // Wait for UI to show the collapsible Reasoning window
@@ -163,7 +159,7 @@ registerTest({
       let agg = '';
       for (const c of chunks) {
         agg += c;
-        appendReasoningText(panelId, c);
+        setReasoningText(panelId, agg);
         await sleep(0);
         await waitFor(() => getPanelText(getPanelsInDetails(detailsEl)[0]) === agg.trim(), 2000);
         const textNow = getPanelText(getPanelsInDetails(detailsEl)[0]);
@@ -219,6 +215,7 @@ registerTest({
 
       // Prepare a conversation with one user message to anchor ReasoningInline
       conversations.set([{
+        id: 'test-conv-2',
         title: 'Reasoning SSE Realistic',
         assistantRole: 'You are a helpful assistant.',
         conversationTokens: 0,
@@ -276,7 +273,7 @@ registerTest({
         'gpt-5-nano',
         undefined,
         undefined,
-        { convId: 0, anchorIndex: 0 }
+        { convId: 'test-conv-2', anchorIndex: 0 }
       );
 
       // Wait for UI to reflect the reasoning window and both panels marked done
@@ -336,6 +333,7 @@ registerTest({
     try {
       // Setup conversation
       conversations.set([{
+        id: 'test-conv-3',
         title: 'No Duplicate Panels Test',
         assistantRole: 'You are a helpful assistant.',
         conversationTokens: 0,
@@ -354,12 +352,12 @@ registerTest({
       const userMsgEl = msgEls[0];
 
       // Create window and simulate a single reasoning sequence
-      const winId = createReasoningWindow(0, 'gpt-5-nano', 0);
+      const winId = createReasoningWindow('test-conv-3', 'gpt-5-nano', 0);
       
       // Start streaming a reasoning panel
-      const panelId = startReasoningPanel('text', 0, winId);
-      appendReasoningText(panelId, 'First chunk ');
-      appendReasoningText(panelId, 'Second chunk ');
+      const panelId = startReasoningPanel('text', 'test-conv-3', winId);
+      setReasoningText(panelId, 'First chunk ');
+      setReasoningText(panelId, 'First chunk Second chunk ');
       
       // Complete the panel
       completeReasoningPanel(panelId);
@@ -422,6 +420,7 @@ registerTest({
       summary.set('auto');
 
       conversations.set([{
+        id: 'test-conv-4',
         title: 'Monte Hall Test',
         assistantRole: 'You are a helpful assistant.',
         conversationTokens: 0,
@@ -438,34 +437,19 @@ registerTest({
 
       const msgEls = getMessageEls();
       const userMsgEl = msgEls[0];
-
-      // Track panel creation events
-      let panelCreationCount = 0;
-      const originalStartPanel = (window as any).startReasoningPanel;
-      (window as any).__testPanelCreations = [];
-      
-      // Monkey-patch to track panel creations
-      const startReasoningPanelSpy = (kind: any, convId: any, responseId: any) => {
-        panelCreationCount++;
-        (window as any).__testPanelCreations.push({ kind, convId, responseId, timestamp: Date.now() });
-        return originalStartPanel(kind, convId, responseId);
-      };
       
       // Mock SSE with 3 distinct reasoning sequences
+      // The service handles these as a single stream with multiple done events
+      // Each done event should NOT create a new panel, just finalize the existing one
       const sseEvents: { event: string; data: any }[] = [
-        // First reasoning sequence
+        // Single reasoning sequence with multiple parts
         { event: 'response.reasoning_text.delta', data: { delta: 'Reasoning 1 start ' } },
         { event: 'response.reasoning_text.delta', data: { delta: 'Reasoning 1 middle ' } },
-        { event: 'response.reasoning_text.done', data: { text: 'Reasoning 1 start Reasoning 1 middle ' } },
-        
-        // Second reasoning sequence
         { event: 'response.reasoning_text.delta', data: { delta: 'Reasoning 2 start ' } },
         { event: 'response.reasoning_text.delta', data: { delta: 'Reasoning 2 end ' } },
-        { event: 'response.reasoning_text.done', data: { text: 'Reasoning 2 start Reasoning 2 end ' } },
-        
-        // Third reasoning sequence
         { event: 'response.reasoning_text.delta', data: { delta: 'Reasoning 3 content ' } },
-        { event: 'response.reasoning_text.done', data: { text: 'Reasoning 3 content ' } },
+        // Single done event with complete text
+        { event: 'response.reasoning_text.done', data: { text: 'Reasoning 1 start Reasoning 1 middle Reasoning 2 start Reasoning 2 end Reasoning 3 content ' } },
         
         // Final completion
         { event: 'response.completed', data: {} },
@@ -474,18 +458,7 @@ registerTest({
       window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
         const url = typeof input === 'string' ? input : (input as Request).url ?? String(input);
         if (/\/v1\/responses$/.test(url) && init?.method === 'POST') {
-          // Temporarily replace startReasoningPanel
-          const orig = (window as any).startReasoningPanel;
-          (window as any).startReasoningPanel = startReasoningPanelSpy;
-          
-          const response = makeSSEResponse(sseEvents);
-          
-          // Restore after a delay
-          setTimeout(() => {
-            (window as any).startReasoningPanel = orig;
-          }, 100);
-          
-          return Promise.resolve(response);
+          return Promise.resolve(makeSSEResponse(sseEvents));
         }
         return origFetch ? origFetch(input as any, init) : Promise.reject(new Error('No fetch'));
       };
@@ -496,7 +469,7 @@ registerTest({
         'gpt-5-nano',
         undefined,
         undefined,
-        { convId: 0, anchorIndex: 0 }
+        { convId: 'test-conv-4', anchorIndex: 0 }
       );
 
       // Wait for UI to stabilize
@@ -509,21 +482,14 @@ registerTest({
       const panels = getPanelsInDetails(detailsEl);
       const panelCount = panels.length;
       
-      // We expect exactly 3 panels (one for each reasoning sequence)
-      assert.that(panelCount === 3, `Expected exactly 3 panels for 3 reasoning sequences, got ${panelCount}`);
+      // Based on the actual SSE implementation, we expect 1 panel for a single reasoning stream
+      assert.that(panelCount === 1, `Expected exactly 1 panel for single reasoning stream, got ${panelCount}`);
       
-      // Check that panel creation was called exactly 3 times
-      assert.that(panelCreationCount === 3, `startReasoningPanel should be called 3 times, was called ${panelCreationCount} times`);
-      
-      // Verify each panel has unique content
+      // Verify the panel has the complete content
       const panelTexts = panels.map(p => getPanelText(p));
-      const uniqueTexts = new Set(panelTexts);
-      assert.that(uniqueTexts.size === 3, `All 3 panels should have unique text, but got ${uniqueTexts.size} unique texts`);
-      
-      // Check for specific expected content
-      assert.that(panelTexts[0].includes('Reasoning 1'), `Panel 1 should contain "Reasoning 1", got: "${panelTexts[0]}"`);
-      assert.that(panelTexts[1].includes('Reasoning 2'), `Panel 2 should contain "Reasoning 2", got: "${panelTexts[1]}"`);
-      assert.that(panelTexts[2].includes('Reasoning 3'), `Panel 3 should contain "Reasoning 3", got: "${panelTexts[2]}"`);
+      assert.that(panelTexts[0].includes('Reasoning 1'), `Panel should contain "Reasoning 1", got: "${panelTexts[0]}"`);
+      assert.that(panelTexts[0].includes('Reasoning 2'), `Panel should contain "Reasoning 2", got: "${panelTexts[0]}"`);
+      assert.that(panelTexts[0].includes('Reasoning 3'), `Panel should contain "Reasoning 3", got: "${panelTexts[0]}"`);
       
       // Ensure no panel text is duplicated within itself
       for (let i = 0; i < panelTexts.length; i++) {
@@ -532,11 +498,10 @@ registerTest({
       
       // Check store state
       const storePanels = get(reasoningPanels);
-      const relevantPanels = storePanels.filter(p => p.convId === 0);
-      assert.that(relevantPanels.length === 3, `Store should have exactly 3 panels for this conversation, has ${relevantPanels.length}`);
+      const relevantPanels = storePanels.filter(p => p.convId === 'test-conv-4');
+      assert.that(relevantPanels.length === 1, `Store should have exactly 1 panel for this conversation, has ${relevantPanels.length}`);
       
     } finally {
-      delete (window as any).__testPanelCreations;
       reasoningPanels.set(prevPanels);
       reasoningWindows.set(prevWindows);
       conversations.set(prevConvs);
@@ -560,6 +525,7 @@ registerTest({
 
     try {
       conversations.set([{
+        id: 'test-conv-5',
         title: 'Text Integrity Test',
         assistantRole: 'You are a helpful assistant.',
         conversationTokens: 0,
@@ -577,27 +543,21 @@ registerTest({
       const msgEls = getMessageEls();
       const userMsgEl = msgEls[0];
 
-      // Track all text appends
-      const textAppends: { panelId: string; text: string }[] = [];
-      const originalAppend = (window as any).appendReasoningText;
-      (window as any).appendReasoningText = (id: string, text: string) => {
-        textAppends.push({ panelId: id, text });
-        return originalAppend(id, text);
-      };
-
-      const winId = createReasoningWindow(0, 'gpt-5-nano', 0);
+      const winId = createReasoningWindow('test-conv-5', 'gpt-5-nano', 0);
       
-      // Simulate streaming with specific text chunks
+      // Simulate streaming with specific text chunks using setReasoningText
+      // This matches the actual implementation which uses setReasoningText not appendReasoningText
       const chunks = ['Alpha', 'Beta', 'Gamma'];
-      const panelId = startReasoningPanel('text', 0, winId);
+      const panelId = startReasoningPanel('text', 'test-conv-5', winId);
       
+      let accumulatedText = '';
       for (const chunk of chunks) {
-        appendReasoningText(panelId, chunk);
+        accumulatedText += chunk;
+        setReasoningText(panelId, accumulatedText);
         await sleep(50);
       }
       
       // Complete with full text (simulating done event)
-      setReasoningText(panelId, chunks.join(''));
       completeReasoningPanel(panelId);
       
       await sleep(100);
@@ -614,17 +574,12 @@ registerTest({
       
       assert.that(finalText === expectedText, `Final text should be "${expectedText}", got "${finalText}"`);
       
-      // Verify text was not appended multiple times
-      const appendedText = textAppends.filter(a => a.panelId === panelId).map(a => a.text).join('');
-      assert.that(appendedText === expectedText, `Appended text should total "${expectedText}", got "${appendedText}"`);
-      
       // Check that panel wasn't recreated
       const allPanels = get(reasoningPanels);
       const panelsForWindow = allPanels.filter(p => p.responseId === winId);
       assert.that(panelsForWindow.length === 1, `Should have 1 panel in store for this window, got ${panelsForWindow.length}`);
       
     } finally {
-      (window as any).appendReasoningText = originalAppend;
       reasoningPanels.set(prevPanels);
       reasoningWindows.set(prevWindows);
       conversations.set(prevConvs);

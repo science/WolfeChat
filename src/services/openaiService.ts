@@ -246,6 +246,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   let ticks = false;
   let currentHistory = get(conversations)[convId].history;
   const anchorIndex = currentHistory.length - 1;
+  // Get the conversation's unique string ID for reasoning window tracking
+  const conversationUniqueId = get(conversations)[convId]?.id;
 
   const historyMessages = currentHistory.map((historyItem) => ({
     role: historyItem.role,
@@ -312,7 +314,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       finalInput,
-      { convId, anchorIndex }
+      { convId: conversationUniqueId, anchorIndex }
     );
   } finally {
     isStreaming.set(false);
@@ -325,6 +327,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   let ticks = false;
   let currentHistory = get(conversations)[convId].history;
   const anchorIndex = currentHistory.length - 1;
+  // Get the conversation's unique string ID for reasoning window tracking
+  const conversationUniqueId = get(conversations)[convId]?.id;
   
   let roleMsg: ChatCompletionRequestMessage = {
     role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
@@ -407,7 +411,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       input,
-      { convId, anchorIndex }
+      { convId: conversationUniqueId, anchorIndex }
     );
   } finally {
     isStreaming.set(false);
@@ -421,6 +425,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   let ticks = false;
   let currentHistory = get(conversations)[convId].history;
   const anchorIndex = currentHistory.length - 1;
+  // Get the conversation's unique string ID for reasoning window tracking
+  const conversationUniqueId = get(conversations)[convId]?.id;
   
   let roleMsg: ChatCompletionRequestMessage = {
     role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
@@ -483,7 +489,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       input,
-      { convId, anchorIndex }
+      { convId: conversationUniqueId, anchorIndex }
     );
   } finally {
     isStreaming.set(false);
@@ -786,7 +792,7 @@ export async function streamResponseViaResponsesAPI(
   model?: string,
   callbacks?: ResponsesStreamCallbacks,
   inputOverride?: any[],
-  uiContext?: { convId?: number; anchorIndex?: number }
+  uiContext?: { convId?: string; anchorIndex?: number }
 ): Promise<string> {
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
