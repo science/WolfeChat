@@ -45,8 +45,7 @@ There were a number of improvements I wanted to make. This was initially done fo
 ### Copy Any Message
 - A copy button is now present on any message, allowing the user to copy it to their clipboard.
 
-### PDF Upload Queries
-- When using a GPT model, the user can upload a PDF, which is parsed for text entirely browser-side. Then the user may ask the AI questions about the contents of the PDF.
+
 
 ### Mid-conversation Editing
 - Just like on the official UI, the user may edit any message. This branches the conversation at that point.

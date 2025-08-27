@@ -27,7 +27,7 @@
           <ul class="list-disc list-inside mb-4">
               <li>Your API calls are safely made directly in the browser, not server-side. All data is stored in your browser cache or session.</li>
               <li>Switch between GPT, Vision, Dall-E, and TTS models with shared conversation context.</li>
-              <li>Upload PDFs or images and ask the AI questions about their contents.</li>
+              <li>Upload images and ask the AI questions about their contents.</li>
               <li>Copy or delete messages easily.</li>
               <li>Edit messages to change the conversation.</li>
               <li>Safely stop incoming messages.</li>

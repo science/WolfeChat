@@ -3,6 +3,7 @@
 ## Build & Development Commands
 - `npm run dev`: Start dev server with hot reload (Vite on network with `--host`)
 - `npm run build`: Build to `dist/` (commit `dist/` for UI changes before merge)
+  - Note: do not execute `npm run build` without being asked explicitly.
 - `npm run check`: Type-check all TypeScript/Svelte files
 - **Tests**: Custom test harness in `src/tests/`. Run individual test: import in `App.svelte` during dev
 
