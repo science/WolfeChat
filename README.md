@@ -1,4 +1,4 @@
-# SmoothGPT - a ChatGPT API Enhanced UI
+# WolfeChat - a ChatGPT API Enhanced UI
 
 ## Build notes
 
@@ -14,10 +14,10 @@ To run locally for dev:
 npm run dev
 ```
 
-## Older Information
-This is my overhauled and improved ChatGPT API UI, forked from patrikzudel ([PatrikZeros-ChatGPT-API-UI](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI)). Firstly, a **HUGE thank you** to Patrik for his fantastic work in the original version.
+## Credits and History
+WolfeChat is a fork and continuation of prior excellent open-source work. Special thanks to patrikzudel for the original [PatrikZeros-ChatGPT-API-UI](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI), and to the SmoothGPT maintainers for substantial improvements that inspired and informed this project. This repository adapts and extends that lineage for WolfeChat while acknowledging all prior authors.
 
-There were a number of improvements I wanted to make. This was initially done for only my personal use, but now I am offering it publicly.
+This project evolves the UI/UX, features, and codebase organization to fit WolfeChat’s goals while remaining grateful to the projects it builds upon.
 
 ## APP IMPROVEMENTS:
 
@@ -78,4 +78,6 @@ I don't necessarily plan to actively support requests, as I forked the original 
 
 *** 
 
-[See the original readme here.](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI/blob/main/README.md)
+Further reading:
+- Original project: [PatrikZeros-ChatGPT-API-UI](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI)
+- Prior fork: [SmoothGPT](https://github.com/agambon/SmoothGPT)
