@@ -1,9 +1,9 @@
 import { type Writable, writable } from "svelte/store";
-import type { ChatCompletionRequestMessage } from "openai";
+export type ChatMessage = { role: 'system'|'user'|'assistant'; content: any };
 
 export interface Conversation {
   id: string; // Add unique ID
-  history: ChatCompletionRequestMessage[];
+  history: ChatMessage[];
   conversationTokens: number;
   assistantRole: string;
   title: string;

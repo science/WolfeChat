@@ -1,5 +1,5 @@
-import { registerTest } from '../testHarness';
-import { conversations, chosenConversationId } from '../../stores/stores';
+import { registerTest } from '../testHarness.js';
+import { conversations, chosenConversationId } from '../../stores/stores.js';
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -149,10 +149,9 @@ registerTest({
       upIdx--;
     }
 
-    // Extra Up at top should have no effect
-    const beforeExtraUp = container.scrollTop;
+    // Extra Up at top should have no effect (remain at top)
     upBtn.click();
-    await sleep(100);
-    assert.that(approx(container.scrollTop, beforeExtraUp, 2), 'Extra Up at the start should not change scroll position');
+    await sleep(120);
+    assert.that(approx(container.scrollTop, 0, 2), 'Extra Up at the start should remain at top');
   },
 });

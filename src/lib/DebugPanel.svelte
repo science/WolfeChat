@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { testResponsesAPI, testResponsesStreamingAPI, testReasoningStreamingAPI, logDebugInfo } from '../utils/debugUtils';
-  import { selectedModel, apiKey, debugVisible } from '../stores/stores';
+  import { testResponsesAPI, testResponsesStreamingAPI, testReasoningStreamingAPI, logDebugInfo } from '../utils/debugUtils.js';
+  import { selectedModel, apiKey, debugVisible } from '../stores/stores.js';
   import { createEventDispatcher } from 'svelte';
   import CloseIcon from '../assets/close.svg';
-  import { runAllTests, formatSuiteResultsText as formatSuiteResultsTextAll, clearTests } from '../tests/testHarness';
+  import { runAllTests, formatSuiteResultsText as formatSuiteResultsTextAll, clearTests } from '../tests/testHarness.js';
   
   const dispatch = createEventDispatcher();
   

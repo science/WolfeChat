@@ -1,6 +1,9 @@
-import SvelteMarkdown from 'svelte-markdown';
-import Code from '../../renderers/Code.svelte';
-import { registerTest } from '../testHarness';
+// @ts-ignore - svelte-markdown is a Svelte component module not typed for ts-node here
+// Prefer a light mock in Node test runner
+import SvelteMarkdown from './__mocks__/svelte-markdown.js';
+// In Node, import a simple shim instead of .svelte
+import Code from './svelte-code-shim.js';
+import { registerTest } from '../testHarness.js';
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));

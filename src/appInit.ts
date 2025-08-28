@@ -1,8 +1,8 @@
 // appInit.ts
-import { initOpenAIApi } from "./services/openaiService";
-import { clearAllAudioBlobs } from './idb';
-import { apiKey, base64Images } from "./stores/stores";
-import { conversations, chosenConversationId, settingsVisible } from "./stores/stores";
+import { initOpenAIApi } from "./services/openaiService.js";
+import { clearAllAudioBlobs } from './idb.js';
+import { apiKey, base64Images } from "./stores/stores.js";
+import { conversations, chosenConversationId, settingsVisible } from "./stores/stores.js";
 import { get, writable } from "svelte/store";
 
 // Function to set the app height for mobile viewport issues

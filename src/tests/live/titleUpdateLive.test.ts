@@ -1,7 +1,7 @@
-import { registerTest } from '../testHarness';
+import { registerTest } from '../testHarness.js';
 import { get } from 'svelte/store';
-import { apiKey, conversations, chosenConversationId } from '../../stores/stores';
-import { sendRegularMessage } from '../../services/openaiService';
+import { apiKey, conversations, chosenConversationId } from '../../stores/stores.js';
+import { sendRegularMessage } from '../../services/openaiService.js';
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));

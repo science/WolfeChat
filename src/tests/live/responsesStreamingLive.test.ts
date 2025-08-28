@@ -1,7 +1,7 @@
-import { registerTest } from '../testHarness';
+import { registerTest } from '../testHarness.js';
 import { get } from 'svelte/store';
-import { apiKey } from '../../stores/stores';
-import { testResponsesStreamingAPI } from '../../utils/debugUtils';
+import { apiKey } from '../../stores/stores.js';
+import { testResponsesStreamingAPI } from '../../utils/debugUtils.js';
 
 registerTest({
   id: 'live-responses-stream',

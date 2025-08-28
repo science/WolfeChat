@@ -9,11 +9,11 @@
  * If models are not present in the cache, it fails with a special error.
  */
 
-import { registerTest } from '../testHarness';
+import { registerTest } from '../testHarness.js';
 import { get } from 'svelte/store';
-import { modelsStore } from '../../stores/modelStore';
-import { selectedModel, chosenConversationId } from '../../stores/stores';
-import { newChat, routeMessage } from '../../managers/conversationManager';
+import { modelsStore } from '../../stores/modelStore.js';
+import { selectedModel, chosenConversationId } from '../../stores/stores.js';
+import { newChat, routeMessage } from '../../managers/conversationManager.js';
 
 function sleep(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));

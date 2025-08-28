@@ -13,8 +13,8 @@
  *   The second stream runs without suspension to mimic the reported real-world behavior.
  */
 
-import { registerTest, Assert } from '../testHarness';
-import { ScrollMemory } from '../../utils/scrollState';
+import { registerTest, Assert } from '../testHarness.js';
+import { ScrollMemory } from '../../utils/scrollState.js';
 
 function nextFrame(): Promise<void> {
   return new Promise((r) => requestAnimationFrame(() => r()));

@@ -1,11 +1,11 @@
 import type { ChatCompletionRequestMessage } from "openai";
 import { get, writable } from "svelte/store";
-import { conversations, chosenConversationId, combinedTokens, createNewConversation } from "../stores/stores";
-import { type Conversation, defaultAssistantRole } from "../stores/stores";
-import { selectedModel, selectedVoice, audioUrls, base64Images } from '../stores/stores';
-import { reasoningWindows, clearReasoningForConversation } from '../stores/reasoningStore';
+import { conversations, chosenConversationId, combinedTokens, createNewConversation } from "../stores/stores.js";
+import { type Conversation, defaultAssistantRole } from "../stores/stores.js";
+import { selectedModel, selectedVoice, audioUrls, base64Images } from '../stores/stores.js';
+import { reasoningWindows, clearReasoningForConversation } from '../stores/reasoningStore.js';
 
-import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService";
+import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService.js";
 let streamText = "";
 
 
@@ -64,9 +64,10 @@ export function deleteAllMessagesBelow(messageIndex: number) {
   reasoningWindows.update(windows => {
     // Remove windows anchored to messages that were deleted
     return windows.filter(w => {
-      if (w.convId !== conversationUniqueId) return true;
+      // Use strict equality on string IDs; if a window has no convId, keep it
+      if (!w.convId || w.convId !== conversationUniqueId) return true;
       // Keep windows anchored at or before messageIndex
-      return w.anchorIndex <= messageIndex;
+      return (w.anchorIndex ?? Number.NEGATIVE_INFINITY) <= messageIndex;
     });
   });
 }

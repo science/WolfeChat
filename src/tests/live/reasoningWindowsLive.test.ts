@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import { registerTest } from '../testHarness';
+import { registerTest } from '../testHarness.js';
 import {
   reasoningWindows,
   reasoningPanels,
@@ -7,10 +7,10 @@ import {
   startReasoningPanel,
   completeReasoningPanel,
   setReasoningText,
-} from '../../stores/reasoningStore';
-import { conversations, chosenConversationId } from '../../stores/stores';
-import { streamResponseViaResponsesAPI } from '../../services/openaiService';
-import { reasoningEffort, verbosity, summary } from '../../stores/reasoningSettings';
+} from '../../stores/reasoningStore.js';
+import { conversations, chosenConversationId } from '../../stores/stores.js';
+import { streamResponseViaResponsesAPI } from '../../services/openaiService.js';
+import { reasoningEffort, verbosity, summary } from '../../stores/reasoningSettings.js';
 
 // Helpers
 function sleep(ms: number) {

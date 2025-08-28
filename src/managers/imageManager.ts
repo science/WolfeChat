@@ -1,5 +1,5 @@
-import { base64Images } from "../stores/stores";
-import { clearFileInputSignal } from "../stores/stores";
+import { base64Images } from "../stores/stores.js";
+import { clearFileInputSignal } from "../stores/stores.js";
 
 export function handleImageUpload(event) {
     onSendVisionMessageComplete(); // Clear images before adding new ones

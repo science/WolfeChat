@@ -13,7 +13,7 @@
     type DefaultAssistantRole,
     selectedModel,
     showTokens,
-  } from "../stores/stores";
+  } from "../stores/stores.js";
   import CloseIcon from "../assets/close.svg";
   import NewChat from "../assets/NewChat.svg";
   import EditIcon from "../assets/edit.svg";

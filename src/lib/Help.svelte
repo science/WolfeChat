@@ -1,6 +1,6 @@
 <script lang="ts">
     import CloseIcon from "../assets/close.svg";
-    import { helpVisible } from "../stores/stores";
+    import { helpVisible } from "../stores/stores.js";
   
     // Function to close the help modal
     function handleClose() {

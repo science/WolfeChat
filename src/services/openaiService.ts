@@ -1,51 +1,8 @@
 import { get, writable } from 'svelte/store';
-import { Configuration, OpenAIApi } from "openai";
-import type { ChatCompletionRequestMessage,  } from "openai";
-import type  { ChatCompletionRequestMessageRoleEnum } from "openai";
-import { apiKey} from "../stores/stores";
-import { selectedModel, selectedVoice, audioUrls, selectedSize, selectedQuality, defaultAssistantRole, isStreaming, streamContext } from '../stores/stores';
-import { conversations, chosenConversationId, combinedTokens, userRequestedStreamClosure } from "../stores/stores";
-import { setHistory, countTokens, estimateTokens, displayAudioMessage, cleanseMessage } from '../managers/conversationManager';
-import { countTicks } from '../utils/generalUtils';
-import { saveAudioBlob, getAudioBlob } from '../idb';
-import { onSendVisionMessageComplete } from '../managers/imageManager';
-import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
-import { startReasoningPanel, appendReasoningText, setReasoningText, completeReasoningPanel, logSSEEvent, createReasoningWindow, collapseReasoningWindow } from '../stores/reasoningStore';
-
-let configuration: Configuration | null = null;
-let openai: OpenAIApi | null = null;
-let globalAbortController: AbortController | null = null;
-
-
-
-export const closeStream = async () => {
-  if (globalAbortController) {
-    try { globalAbortController.abort(); } catch {}
-    globalAbortController = null;
-  }
-  console.log("Stream closed by user.");
-  isStreaming.set(false);
-
-  const { streamText, convId } = get(streamContext);
-  if (streamText && convId !== null) {
-    const cleanText = streamText.replace(/█+$/, '');
-    const currentHistory = get(conversations)[convId].history;
-    const lastEntry = currentHistory.length ? currentHistory[currentHistory.length - 1] : null;
-
-    if (lastEntry && typeof lastEntry.content === 'string' && lastEntry.content.endsWith("█")) {
-      currentHistory[currentHistory.length - 1] = { ...lastEntry, content: cleanText };
-    } else {
-      currentHistory.push({ role: "assistant", content: cleanText });
-    }
-    await setHistory(currentHistory, convId);
-    streamContext.set({ streamText: '', convId: null });
-  }
-
-  userRequestedStreamClosure.set(true);
-  onSendVisionMessageComplete();
-};
-  
-const errorMessage: ChatCompletionRequestMessage[] = [
+// ChatCompletions SDK removed; using fetch-based Responses API only
+import type { ChatMessage } from "../stores/stores.js";
+// ChatCompletions SDK removed; using fetch-based Responses API only
+const errorMessage: ChatMessage[] = [
   {
     role: "assistant",
     content:
@@ -53,6 +10,7 @@ const errorMessage: ChatCompletionRequestMessage[] = [
   },
 ];
 
+// Deprecated: ChatCompletions SDK initialization removed
 export function initOpenAIApi(): void {
   const key = get(apiKey);
   if (key) {

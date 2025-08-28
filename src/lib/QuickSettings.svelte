@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { selectedModel } from '../stores/stores';
-  import { modelsStore } from '../stores/modelStore';
-  import { recentModelsStore } from '../stores/recentModelsStore';
-  import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
-  import { supportsReasoning } from '../services/openaiService';
+  import { selectedModel } from '../stores/stores.js';
+  import { modelsStore } from '../stores/modelStore.js';
+  import { recentModelsStore } from '../stores/recentModelsStore.js';
+  import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
+  import { supportsReasoning } from '../services/openaiService.js';
 
   let open = false;
   function toggle() { open = !open; }
@@ -42,20 +42,31 @@
     }
 
     if (direction === 'up') {
-      let targetIdx: number | null = (nearIdx >= 0) ? (nearIdx - 1) : floorIdx;
-
-      // At/above the first message: either snap to the first anchor if we're below it,
-      // or do nothing if we're already at/near it.
-      if (targetIdx == null || targetIdx < 0) {
-        if (st > anchors[0] + tol) container.scrollTop = anchors[0];
+      // Deterministic behavior:
+      // - If at/near an anchor i:
+      //   - if i > 0, go to anchors[i-1]
+      //   - if i === 0, go to top (0)
+      // - If between anchors: snap to anchors[floorIdx] (current turn start), or 0 if none
+      (window as any).__chatNavLockUntil = performance.now() + 250;
+      if (nearIdx >= 0) {
+        if (nearIdx > 0) {
+          container.scrollTop = anchors[nearIdx - 1];
+        } else {
+          container.scrollTop = 0;
+        }
         return;
       }
-      container.scrollTop = anchors[targetIdx];
+      if (floorIdx >= 0) {
+        container.scrollTop = anchors[floorIdx];
+      } else {
+        container.scrollTop = 0;
+      }
       return;
     }
 
     // direction === 'down'
     let targetIdx = (nearIdx >= 0) ? (nearIdx + 1) : (floorIdx + 1);
+    (window as any).__chatNavLockUntil = performance.now() + 250;
     if (targetIdx >= anchors.length) {
       container.scrollTop = container.scrollHeight - container.clientHeight;
     } else {

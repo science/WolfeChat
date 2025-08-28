@@ -1,7 +1,7 @@
-import { registerTest } from '../testHarness';
-import { enterBehavior } from '../../stores/keyboardSettings';
+import { registerTest } from '../testHarness.js';
+import { enterBehavior } from '../../stores/keyboardSettings.js';
 import { get } from 'svelte/store';
-import { shouldSendOnEnter } from '../../utils/keyboard';
+import { shouldSendOnEnter } from '../../utils/keyboard.js';
 
 registerTest({
   id: 'enter-behavior-send',

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { reasoningWindows, reasoningPanels, type ReasoningPanel, type ReasoningWindow } from '../stores/reasoningStore';
-  import { conversations } from '../stores/stores';
+  import { reasoningWindows, reasoningPanels, type ReasoningPanel, type ReasoningWindow } from '../stores/reasoningStore.js';
+  import { conversations } from '../stores/stores.js';
 
   export let convId: number;
   export let anchorIndex: number;

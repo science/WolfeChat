@@ -1,14 +1,14 @@
 <script lang="ts">
-    import { selectedModel, selectedVoice, selectedMode, showTokens, selectedSize, selectedQuality } from '../stores/stores';
-    import { modelsStore } from '../stores/modelStore';
-    import { recentModelsStore } from '../stores/recentModelsStore';
-    import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
-    import { supportsReasoning } from '../services/openaiService';
+    import { selectedModel, selectedVoice, selectedMode, showTokens, selectedSize, selectedQuality } from '../stores/stores.js';
+    import { modelsStore } from '../stores/modelStore.js';
+    import { recentModelsStore } from '../stores/recentModelsStore.js';
+    import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
+    import { supportsReasoning } from '../services/openaiService.js';
     import { createEventDispatcher } from 'svelte';
     import CloseIcon from "../assets/close.svg";
     import { writable, get, derived } from "svelte/store";
   import { onMount } from 'svelte';
-  import { enterBehavior } from '../stores/keyboardSettings';
+  import { enterBehavior } from '../stores/keyboardSettings.js';
 
   import {
     apiKey,
@@ -16,7 +16,7 @@
     combinedTokens,
     defaultAssistantRole,
     type DefaultAssistantRole,
-  } from "../stores/stores";
+  } from "../stores/stores.js";
 
   const dispatch = createEventDispatcher();
 

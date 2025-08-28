@@ -1,5 +1,5 @@
 import { writable, get, type Writable } from 'svelte/store';
-import { modelsStore } from './modelStore';
+import { modelsStore } from './modelStore.js';
 
 const RECENT_MODELS_LS_KEY = 'recent_models';
 const MAX_RECENT = 5;

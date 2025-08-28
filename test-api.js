@@ -157,9 +157,9 @@ async function runTests() {
   }
   
   // Test with different models
-  const testModels = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo-preview'];
+  const modelsToTest = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo-preview'];
   
-  for (const model of testModels) {
+  for (const model of modelsToTest) {
     // Check if model is available
     const isAvailable = models.some(m => m.id === model);
     if (!isAvailable) {

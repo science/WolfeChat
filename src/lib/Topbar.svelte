@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { menuVisible } from "../stores/stores";
+  import { menuVisible } from "../stores/stores.js";
   import MenuIcon from "../assets/menu.svg";
   import addIcon from "../assets/add.svg";
   const dispatch = createEventDispatcher();

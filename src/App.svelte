@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';  
-  import { initApp, cleanupApp } from './appInit';
+  import { initApp, cleanupApp } from './appInit.js';
   import AudioPlayer from './lib/AudioPlayer.svelte';
   import Topbar from "./lib/Topbar.svelte";
   import Sidebar from "./lib/Sidebar.svelte";
@@ -26,22 +26,22 @@
   import WaitIcon from "./assets/wait.svg"; 
   import  UploadIcon from "./assets/upload-icon.svg";
   import { afterUpdate } from "svelte";
-  import { conversations, chosenConversationId, settingsVisible, helpVisible, debugVisible, clearFileInputSignal } from "./stores/stores";
-  import { isAudioMessage, formatMessageForMarkdown } from "./utils/generalUtils";
-  import { routeMessage, newChat, deleteMessageFromConversation, deleteAllMessagesBelow } from "./managers/conversationManager";
-  import { copyTextToClipboard } from './utils/generalUtils';
-  import { selectedModel, selectedVoice, selectedMode, isStreaming } from './stores/stores';
-  import { addRecentModel } from './stores/recentModelsStore';
-  import { reloadConfig } from './services/openaiService';
-  import { handleImageUpload, onSendVisionMessageComplete } from './managers/imageManager';
-  import { base64Images } from './stores/stores';
-  import { closeStream } from './services/openaiService';  
+  import { conversations, chosenConversationId, settingsVisible, helpVisible, debugVisible, clearFileInputSignal } from "./stores/stores.js";
+  import { isAudioMessage, formatMessageForMarkdown } from "./utils/generalUtils.js";
+  import { routeMessage, newChat, deleteMessageFromConversation, deleteAllMessagesBelow } from "./managers/conversationManager.js";
+  import { copyTextToClipboard } from './utils/generalUtils.js';
+  import { selectedModel, selectedVoice, selectedMode, isStreaming } from './stores/stores.js';
+  import { addRecentModel } from './stores/recentModelsStore.js';
+  import { reloadConfig } from './services/openaiService.js';
+  import { handleImageUpload, onSendVisionMessageComplete } from './managers/imageManager.js';
+  import { base64Images } from './stores/stores.js';
+  import { closeStream } from './services/openaiService.js';  
   import DebugPanel from './lib/DebugPanel.svelte';
   import ReasoningInline from './lib/ReasoningInline.svelte';
   import QuickSettings from './lib/QuickSettings.svelte';
-  import { ScrollMemory } from './utils/scrollState';
-  import { enterBehavior } from './stores/keyboardSettings';
-  import { shouldSendOnEnter } from './utils/keyboard';
+  import { ScrollMemory } from './utils/scrollState.js';
+  import { enterBehavior } from './stores/keyboardSettings.js';
+  import { shouldSendOnEnter } from './utils/keyboard.js';
 
   let fileInputElement; 
   let input: string = "";
