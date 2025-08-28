@@ -1,7 +1,8 @@
 export default class CodeShim {
-  constructor({ target, props } = {}) {
+  constructor(options = {}) {
+    const { target = null, props = {} } = options;
     this.target = target;
-    this.props = props || {};
+    this.props = props;
     this.render();
   }
   $set(props) {

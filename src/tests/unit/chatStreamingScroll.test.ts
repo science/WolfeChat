@@ -4,8 +4,8 @@
  * We simulate streaming by increasing the content height and triggering restore calls the app would do.
  */
 
-import { registerTest, Assert } from './testHarness.js';
-import { ScrollMemory } from '../utils/scrollState.js';
+import { registerTest, Assert } from '../testHarness.js';
+import { ScrollMemory } from '../../utils/scrollState.js';
 
 function nextFrame(): Promise<void> {
   return new Promise((r) => requestAnimationFrame(() => r()));

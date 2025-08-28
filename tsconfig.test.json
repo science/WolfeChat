@@ -1,0 +1,38 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "checkJs": false,
+    "strict": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": false,
+    "noEmit": true,
+    "types": ["node"],
+    "lib": ["ES2020", "DOM"],
+    "paths": {
+      "svelte": ["./src/tests/mocks/svelte.js"],
+      "svelte/*": ["./src/tests/mocks/svelte/*"],
+      "*.svelte": ["./src/tests/mocks/svelte-component.js"]
+    }
+  },
+  "include": [
+    "test-runner.ts",
+    "src/tests/**/*.ts",
+    "src/tests/**/*.js",
+    "src/utils/**/*.ts",
+    "src/managers/**/*.ts",
+    "src/stores/**/*.ts",
+    "src/services/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.svelte"
+  ]
+}

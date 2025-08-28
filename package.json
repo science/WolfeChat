@@ -8,15 +8,17 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "test": "TS_NODE_TRANSPILE_ONLY=1 node --loader ts-node/esm test-runner.ts",
-    "test:live": "node --loader ts-node/esm test-runner.ts --live",
-    "test:smoke": "node --loader ts-node/esm test-runner.ts --tag smoke"
+    "test": "node run-tests.mjs",
+    "test:live": "node run-tests.mjs --live",
+    "test:all": "node run-tests.mjs --suite all",
+    "test:old": "TS_NODE_TRANSPILE_ONLY=1 node --loader ts-node/esm test-runner.ts"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^2.0.2",
     "@tsconfig/svelte": "^3.0.0",
     "@types/jsdom": "^21.1.7",
     "autoprefixer": "^10.4.13",
+    "esbuild": "^0.25.9",
     "fast-glob": "^3.3.3",
     "jsdom": "^26.1.0",
     "postcss": "^8.4.21",

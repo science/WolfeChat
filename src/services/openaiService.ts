@@ -1,6 +1,52 @@
 import { get, writable } from 'svelte/store';
 // ChatCompletions SDK removed; using fetch-based Responses API only
 import type { ChatMessage } from "../stores/stores.js";
+import { 
+  apiKey, 
+  conversations, 
+  chosenConversationId, 
+  selectedModel, 
+  selectedSize,
+  selectedQuality,
+  defaultAssistantRole
+} from "../stores/stores.js";
+import { reasoningEffort, verbosity, summary } from "../stores/reasoningSettings.js";
+import {
+  createReasoningWindow,
+  collapseReasoningWindow,
+  startReasoningPanel,
+  setReasoningText,
+  completeReasoningPanel,
+  logSSEEvent
+} from "../stores/reasoningStore.js";
+import {
+  setHistory,
+  cleanseMessage,
+  displayAudioMessage,
+  countTokens,
+  estimateTokens
+} from "../managers/conversationManager.js";
+import { onSendVisionMessageComplete } from "../managers/imageManager.js";
+import { countTicks } from "../utils/generalUtils.js";
+import { saveAudioBlob, getAudioBlob } from "../idb.js";
+
+// Type definitions for legacy OpenAI SDK compatibility
+type ChatCompletionRequestMessage = ChatMessage;
+type ChatCompletionRequestMessageRoleEnum = 'system' | 'user' | 'assistant';
+type OpenAIApi = any;
+
+// Legacy globals for backward compatibility
+let openai: OpenAIApi = null;
+let configuration: any = null;
+
+// Global abort controller for streaming
+let globalAbortController: AbortController | null = null;
+
+// Streaming state management
+export const isStreaming = writable(false);
+export const userRequestedStreamClosure = writable(false);
+export const streamContext = writable<{ streamText: string; convId: any }>({ streamText: '', convId: null });
+
 // ChatCompletions SDK removed; using fetch-based Responses API only
 const errorMessage: ChatMessage[] = [
   {
@@ -14,8 +60,8 @@ const errorMessage: ChatMessage[] = [
 export function initOpenAIApi(): void {
   const key = get(apiKey);
   if (key) {
-    configuration = new Configuration({ apiKey: key });
-    openai = new OpenAIApi(configuration);
+    configuration = { apiKey: key };
+    openai = { configured: true };
     console.log("OpenAI API initialized.");
   } else {
     console.warn("API key is not set. Please set the API key before initializing.");

@@ -4,8 +4,8 @@
  * ScrollMemory utility is used in the app.
  */
 
-import { registerTest, Assert } from './testHarness.js';
-import { ScrollMemory } from '../utils/scrollState.js';
+import { registerTest, Assert } from '../testHarness.js';
+import { ScrollMemory } from '../../utils/scrollState.js';
 
 function sleep(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));

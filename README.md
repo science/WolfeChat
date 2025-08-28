@@ -14,6 +14,41 @@ To run locally for dev:
 npm run dev
 ```
 
+## Testing
+
+The project includes a comprehensive test suite with automatic test discovery based on folder structure.
+
+### Running Tests
+
+```bash
+# Run unit tests (default)
+npm run test
+
+# Run live/API tests (requires OpenAI API key)
+npm run test:live
+
+# Run specific test suite
+node run-tests.mjs --suite unit          # Unit tests only
+node run-tests.mjs --suite browser-nonlive  # Browser tests (future)
+node run-tests.mjs --suite live          # API tests only
+node run-tests.mjs --suite all           # All tests
+
+# Filter tests
+node run-tests.mjs --tag keyboard        # Run tests tagged 'keyboard'
+node run-tests.mjs --name "scroll"       # Run tests containing 'scroll' in name
+```
+
+### Test Organization
+
+Tests are automatically discovered based on their location:
+- `src/tests/unit/` - Unit tests that run in Node.js with JSDOM
+- `src/tests/browser-nonlive/` - Tests requiring a real browser (future implementation)
+- `src/tests/live/` - Tests that require external APIs (OpenAI, etc.)
+
+Simply add a `*.test.ts` file to the appropriate folder and it will be automatically included in the test suite.
+
+See [CLI_TESTING.md](CLI_TESTING.md) for detailed testing documentation.
+
 ## Credits and History
 WolfeChat is a fork and continuation of prior excellent open-source work. Special thanks to patrikzudel for the original [PatrikZeros-ChatGPT-API-UI](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI), and to agambon for the improvements in [SmoothGPT](https://github.com/agambon/SmoothGPT) that led to this project. This repository adapts and extends that lineage for WolfeChat while acknowledging all prior authors and licensing.
 
