@@ -266,7 +266,7 @@ function startEditMessage(i: number) {
               </div>
               <div class="relative ml-3 font-bold">
                   {#if message.role === 'assistant'}
-                    ChatGPT
+                    {message.model ? `AI Response (${message.model})` : 'AI Response'}
                   {:else}
                     You
                   {/if}

@@ -190,7 +190,8 @@ export function displayAudioMessage(audioUrl) {
   role: "assistant",
   content: "Audio file generated.",
   audioUrl: audioUrl,
-  isAudio: true 
+  isAudio: true,
+  model: get(selectedModel)
 } as ChatCompletionRequestMessage;
 
 setHistory([...get(conversations)[get(chosenConversationId)].history, audioMessage]);

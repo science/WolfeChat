@@ -1,5 +1,5 @@
 import { type Writable, writable } from "svelte/store";
-export type ChatMessage = { role: 'system'|'user'|'assistant'; content: any };
+export type ChatMessage = { role: 'system'|'user'|'assistant'; content: any; model?: string; type?: string; audioUrl?: string; isAudio?: boolean };
 
 export interface Conversation {
   id: string; // Add unique ID

@@ -291,20 +291,318 @@ if (typeof window !== "undefined") {
   };
 }
 
-// src/tests/live/responsesNonStreamingLive.test.ts
+// src/tests/unit/svelte-code-shim.js
+var CodeShim = class {
+  constructor(options = {}) {
+    const { target = null, props = {} } = options;
+    this.target = target;
+    this.props = props;
+    this.render();
+  }
+  $set(props) {
+    this.props = { ...this.props, ...props || {} };
+    this.render();
+  }
+  render() {
+    if (!this.target) return;
+    const lang = (this.props.lang || "js").toString();
+    const text = (this.props.text || this.props.value || this.props.code || "").toString();
+    const pre = document.createElement("pre");
+    const code = document.createElement("code");
+    code.className = `language-${lang}`;
+    code.innerHTML = `<span class="token">${text.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</span>`;
+    this.target.innerHTML = "";
+    pre.appendChild(code);
+    this.target.appendChild(pre);
+  }
+  $destroy() {
+    this.target = null;
+  }
+};
+
+// src/tests/unit/codeRendererStreaming.unit.test.ts
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+registerTest({
+  id: "code-renderer-loses-highlighting-on-prop-update",
+  name: "Code renderer loses Prism highlighting when text prop changes (streaming simulation)",
+  tags: ["ui", "markdown", "renderer", "regression"],
+  timeoutMs: 5e3,
+  fn: async (assert) => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const initial = "```js\nconst a = 1;\n```";
+    const updated = "```js\nconst a = 1;\nconst b = 2;\n```";
+    const comp = new CodeShim({ target: host, props: { text: initial, lang: "js" } });
+    await sleep(0);
+    const codeEl1 = host.querySelector("code");
+    assert.that(!!codeEl1, "Initial code element exists");
+    const hadTokens = codeEl1.innerHTML.includes("token");
+    assert.that(hadTokens, "Initial Prism tokenization applied");
+    comp.$set({ text: updated });
+    await sleep(0);
+    const codeEl2 = host.querySelector("code");
+    assert.that(!!codeEl2, "Code element still exists after update");
+    const stillHasTokens = codeEl2.innerHTML.includes("token");
+    assert.that(stillHasTokens, "Highlighting persists after prop update");
+    comp.$destroy();
+    document.body.removeChild(host);
+  }
+});
+
+// src/utils/keyboard.ts
+function shouldSendOnEnter(params) {
+  const { behavior, isStreaming: isStreaming3, key, shiftKey, ctrlKey, metaKey } = params;
+  if (isStreaming3) return false;
+  if (key !== "Enter") return false;
+  if (shiftKey) return false;
+  if (ctrlKey) {
+    if (metaKey) return false;
+    return true;
+  }
+  if (metaKey) return false;
+  return behavior === "send";
+}
+
+// src/tests/unit/ctrlEnterSend.test.ts
+test({
+  id: "ctrl-enter-send-basic",
+  name: "Ctrl+Enter sends message when not streaming",
+  tags: ["keyboard", "ctrl-enter"],
+  fn: (assert) => {
+    const result = shouldSendOnEnter({
+      behavior: "newline",
+      isStreaming: false,
+      key: "Enter",
+      shiftKey: false,
+      ctrlKey: true,
+      metaKey: false
+    });
+    assert.that(result === true, "Ctrl+Enter should send when not streaming");
+  }
+});
+test({
+  id: "ctrl-enter-no-send-streaming",
+  name: "Ctrl+Enter does not send when streaming",
+  tags: ["keyboard", "ctrl-enter"],
+  fn: (assert) => {
+    const result = shouldSendOnEnter({
+      behavior: "newline",
+      isStreaming: true,
+      key: "Enter",
+      shiftKey: false,
+      ctrlKey: true,
+      metaKey: false
+    });
+    assert.that(result === false, "Ctrl+Enter should not send when streaming");
+  }
+});
+test({
+  id: "ctrl-enter-with-shift",
+  name: "Ctrl+Shift+Enter does not send",
+  tags: ["keyboard", "ctrl-enter"],
+  fn: (assert) => {
+    const result = shouldSendOnEnter({
+      behavior: "newline",
+      isStreaming: false,
+      key: "Enter",
+      shiftKey: true,
+      ctrlKey: true,
+      metaKey: false
+    });
+    assert.that(result === false, "Ctrl+Shift+Enter should not send");
+  }
+});
+test({
+  id: "ctrl-enter-with-meta",
+  name: "Ctrl+Meta+Enter does not send",
+  tags: ["keyboard", "ctrl-enter"],
+  fn: (assert) => {
+    const result = shouldSendOnEnter({
+      behavior: "newline",
+      isStreaming: false,
+      key: "Enter",
+      shiftKey: false,
+      ctrlKey: true,
+      metaKey: true
+    });
+    assert.that(result === false, "Ctrl+Meta+Enter should not send");
+  }
+});
+test({
+  id: "ctrl-enter-overrides-newline-behavior",
+  name: "Ctrl+Enter sends even when behavior is newline",
+  tags: ["keyboard", "ctrl-enter"],
+  fn: (assert) => {
+    const result = shouldSendOnEnter({
+      behavior: "newline",
+      isStreaming: false,
+      key: "Enter",
+      shiftKey: false,
+      ctrlKey: true,
+      metaKey: false
+    });
+    assert.that(result === true, "Ctrl+Enter should override newline behavior");
+  }
+});
+test({
+  id: "ctrl-enter-works-with-send-behavior",
+  name: "Ctrl+Enter sends when behavior is send",
+  tags: ["keyboard", "ctrl-enter"],
+  fn: (assert) => {
+    const result = shouldSendOnEnter({
+      behavior: "send",
+      isStreaming: false,
+      key: "Enter",
+      shiftKey: false,
+      ctrlKey: true,
+      metaKey: false
+    });
+    assert.that(result === true, "Ctrl+Enter should send when behavior is send");
+  }
+});
+test({
+  id: "regular-enter-respects-behavior",
+  name: "Regular Enter respects behavior setting",
+  tags: ["keyboard"],
+  fn: (assert) => {
+    const newlineResult = shouldSendOnEnter({
+      behavior: "newline",
+      isStreaming: false,
+      key: "Enter",
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false
+    });
+    assert.that(newlineResult === false, "Regular Enter should not send with newline behavior");
+    const sendResult = shouldSendOnEnter({
+      behavior: "send",
+      isStreaming: false,
+      key: "Enter",
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false
+    });
+    assert.that(sendResult === true, "Regular Enter should send with send behavior");
+  }
+});
+test({
+  id: "shift-enter-always-newline",
+  name: "Shift+Enter always inserts newline",
+  tags: ["keyboard"],
+  fn: (assert) => {
+    const sendBehaviorResult = shouldSendOnEnter({
+      behavior: "send",
+      isStreaming: false,
+      key: "Enter",
+      shiftKey: true,
+      ctrlKey: false,
+      metaKey: false
+    });
+    assert.that(sendBehaviorResult === false, "Shift+Enter should not send even with send behavior");
+    const newlineBehaviorResult = shouldSendOnEnter({
+      behavior: "newline",
+      isStreaming: false,
+      key: "Enter",
+      shiftKey: true,
+      ctrlKey: false,
+      metaKey: false
+    });
+    assert.that(newlineBehaviorResult === false, "Shift+Enter should not send with newline behavior");
+  }
+});
+test({
+  id: "non-enter-keys-ignored",
+  name: "Non-Enter keys are ignored",
+  tags: ["keyboard"],
+  fn: (assert) => {
+    const result = shouldSendOnEnter({
+      behavior: "send",
+      isStreaming: false,
+      key: "a",
+      shiftKey: false,
+      ctrlKey: true,
+      metaKey: false
+    });
+    assert.that(result === false, "Non-Enter keys should not trigger send");
+  }
+});
+
+// src/stores/keyboardSettings.ts
+import { writable as writable2 } from "svelte/store";
+var STORAGE_KEY = "enterBehavior";
+function loadInitial() {
+  try {
+    const v = localStorage.getItem(STORAGE_KEY);
+    if (v === "send" || v === "newline") return v;
+  } catch (_) {
+  }
+  return "newline";
+}
+var enterBehavior = writable2(loadInitial());
+enterBehavior.subscribe((v) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, v);
+  } catch (_) {
+  }
+});
+
+// src/tests/unit/keyboardSettings.test.ts
+import { get } from "svelte/store";
+registerTest({
+  id: "enter-behavior-send",
+  name: 'Enter sends when "Send message" is selected',
+  fn: async (assert) => {
+    const prev = get(enterBehavior);
+    try {
+      enterBehavior.set("send");
+      const shouldSend = shouldSendOnEnter({
+        behavior: "send",
+        isStreaming: false,
+        key: "Enter",
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: false
+      });
+      assert.that(shouldSend === true, 'Enter triggers send when behavior is "send" and no modifiers are pressed');
+    } finally {
+      enterBehavior.set(prev);
+    }
+  }
+});
+registerTest({
+  id: "enter-behavior-newline",
+  name: 'Enter inserts newline when "Insert a new line" is selected',
+  fn: async (assert) => {
+    const prev = get(enterBehavior);
+    try {
+      enterBehavior.set("newline");
+      const shouldSend = shouldSendOnEnter({
+        behavior: "newline",
+        isStreaming: false,
+        key: "Enter",
+        shiftKey: false,
+        ctrlKey: false,
+        metaKey: false
+      });
+      assert.that(shouldSend === false, 'Enter does not send when behavior is "newline" (default)');
+    } finally {
+      enterBehavior.set(prev);
+    }
+  }
+});
+
+// src/tests/unit/messageModelLabeling.unit.test.ts
 init_stores();
 import { get as get5 } from "svelte/store";
 
-// src/utils/debugUtils.ts
-init_stores();
-import { get as get4 } from "svelte/store";
-
 // src/services/openaiService.ts
 init_stores();
-import { get as get3, writable as writable5 } from "svelte/store";
+import { get as get4, writable as writable6 } from "svelte/store";
 
 // src/stores/reasoningSettings.ts
-import { writable as writable2 } from "svelte/store";
+import { writable as writable3 } from "svelte/store";
 var KEYS = {
   effort: "reasoning_effort",
   verbosity: "reasoning_verbosity",
@@ -318,9 +616,9 @@ function readLS(key, fallback) {
     return fallback;
   }
 }
-var reasoningEffort = writable2(readLS(KEYS.effort, "medium"));
-var verbosity = writable2(readLS(KEYS.verbosity, "medium"));
-var summary = writable2(readLS(KEYS.summary, "auto"));
+var reasoningEffort = writable3(readLS(KEYS.effort, "medium"));
+var verbosity = writable3(readLS(KEYS.verbosity, "medium"));
+var summary = writable3(readLS(KEYS.summary, "auto"));
 reasoningEffort.subscribe((v) => {
   try {
     localStorage.setItem(KEYS.effort, v);
@@ -341,7 +639,7 @@ summary.subscribe((v) => {
 });
 
 // src/stores/reasoningStore.ts
-import { writable as writable3 } from "svelte/store";
+import { writable as writable4 } from "svelte/store";
 var REASONING_PANELS_KEY = "reasoning_panels";
 var REASONING_WINDOWS_KEY = "reasoning_windows";
 function loadFromStorage(key, defaultValue) {
@@ -364,8 +662,8 @@ function saveToStorage(key, data) {
 }
 var initialPanels = loadFromStorage(REASONING_PANELS_KEY, []);
 var initialWindows = loadFromStorage(REASONING_WINDOWS_KEY, []);
-var reasoningPanels = writable3(initialPanels);
-var reasoningWindows = writable3(initialWindows);
+var reasoningPanels = writable4(initialPanels);
+var reasoningWindows = writable4(initialWindows);
 reasoningPanels.subscribe((panels) => {
   saveToStorage(REASONING_PANELS_KEY, panels);
 });
@@ -413,7 +711,7 @@ function completeReasoningPanel(id) {
     (arr) => arr.map((p) => p.id === id ? { ...p, open: false, done: true } : p)
   );
 }
-var reasoningSSEEvents = writable3([]);
+var reasoningSSEEvents = writable4([]);
 function genEventId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}-evt`;
 }
@@ -435,12 +733,12 @@ if (typeof window !== "undefined") {
 init_stores();
 init_stores();
 init_stores();
-import { get as get2 } from "svelte/store";
+import { get as get3 } from "svelte/store";
 var streamText = "";
-function setHistory(msg, convId = get2(chosenConversationId)) {
+function setHistory(msg, convId = get3(chosenConversationId)) {
   return new Promise((resolve, reject) => {
     try {
-      let conv = get2(conversations);
+      let conv = get3(conversations);
       conv[convId].history = msg;
       conversations.set(conv);
       resolve();
@@ -461,6 +759,16 @@ function cleanseMessage(msg) {
   }
   return cleansed;
 }
+function displayAudioMessage(audioUrl) {
+  const audioMessage = {
+    role: "assistant",
+    content: "Audio file generated.",
+    audioUrl,
+    isAudio: true,
+    model: get3(selectedModel)
+  };
+  setHistory([...get3(conversations)[get3(chosenConversationId)].history, audioMessage]);
+}
 function estimateTokens(msg, convId) {
   let chars = 0;
   msg.map((m) => {
@@ -468,15 +776,19 @@ function estimateTokens(msg, convId) {
   });
   chars += streamText.length;
   let tokens = chars / 4;
-  let conv = get2(conversations);
+  let conv = get3(conversations);
   conv[convId].conversationTokens = conv[convId].conversationTokens + tokens;
   conversations.set(conv);
-  combinedTokens.set(get2(combinedTokens) + tokens);
+  combinedTokens.set(get3(combinedTokens) + tokens);
 }
 
 // src/managers/imageManager.ts
 init_stores();
 init_stores();
+function onSendVisionMessageComplete() {
+  base64Images.set([]);
+  clearFileInputSignal.set(true);
+}
 
 // src/utils/generalUtils.ts
 function countTicks(str) {
@@ -486,19 +798,101 @@ function countTicks(str) {
 
 // src/services/openaiService.ts
 var globalAbortController = null;
-var isStreaming2 = writable5(false);
-var userRequestedStreamClosure2 = writable5(false);
-var streamContext2 = writable5({ streamText: "", convId: null });
+var isStreaming2 = writable6(false);
+var userRequestedStreamClosure2 = writable6(false);
+var streamContext2 = writable6({ streamText: "", convId: null });
+async function sendVisionMessage(msg, imagesBase64, convId) {
+  console.log("Sending vision message.");
+  userRequestedStreamClosure2.set(false);
+  let tickCounter = 0;
+  let ticks = false;
+  let currentHistory = get4(conversations)[convId].history;
+  const anchorIndex = currentHistory.length - 1;
+  const conversationUniqueId = get4(conversations)[convId]?.id;
+  const historyMessages = currentHistory.map((historyItem) => ({
+    role: historyItem.role,
+    content: convertChatContentToResponsesContent(historyItem.content, historyItem.role)
+  }));
+  const userTextMessage = [...msg].reverse().find((m) => m.role === "user")?.content || "";
+  const contentParts = [];
+  if (userTextMessage) contentParts.push({ type: "input_text", text: userTextMessage });
+  for (const imageBase64 of imagesBase64) {
+    contentParts.push({ type: "input_image", image_url: imageBase64 });
+  }
+  const currentMessage = { role: "user", content: contentParts };
+  const finalInput = [...historyMessages, currentMessage];
+  let streamText2 = "";
+  currentHistory = [...currentHistory];
+  isStreaming2.set(true);
+  try {
+    await streamResponseViaResponsesAPI(
+      "",
+      (() => {
+        const m = get4(selectedModel);
+        return m;
+      })(),
+      {
+        onTextDelta: (text) => {
+          const msgTicks = countTicks(text);
+          tickCounter += msgTicks;
+          if (msgTicks === 0) tickCounter = 0;
+          if (tickCounter === 3) {
+            ticks = !ticks;
+            tickCounter = 0;
+          }
+          streamText2 += text;
+          streamContext2.set({ streamText: streamText2, convId });
+          setHistory(
+            [
+              ...currentHistory,
+              {
+                role: "assistant",
+                content: streamText2 + "\u2588" + (ticks ? "\n```" : ""),
+                model: get4(selectedModel)
+              }
+            ],
+            convId
+          );
+        },
+        onCompleted: async () => {
+          if (get4(userRequestedStreamClosure2)) {
+            streamText2 = streamText2.replace(/█+$/, "");
+            userRequestedStreamClosure2.set(false);
+          }
+          await setHistory(
+            [
+              ...currentHistory,
+              { role: "assistant", content: streamText2, model: get4(selectedModel) }
+            ],
+            convId
+          );
+          estimateTokens(msg, convId);
+          streamText2 = "";
+          isStreaming2.set(false);
+          onSendVisionMessageComplete();
+        },
+        onError: (_err) => {
+          isStreaming2.set(false);
+          onSendVisionMessageComplete();
+        }
+      },
+      finalInput,
+      { convId: conversationUniqueId, anchorIndex }
+    );
+  } finally {
+    isStreaming2.set(false);
+  }
+}
 async function sendRegularMessage(msg, convId) {
   userRequestedStreamClosure2.set(false);
   let tickCounter = 0;
   let ticks = false;
-  let currentHistory = get3(conversations)[convId].history;
+  let currentHistory = get4(conversations)[convId].history;
   const anchorIndex = currentHistory.length - 1;
-  const conversationUniqueId = get3(conversations)[convId]?.id;
+  const conversationUniqueId = get4(conversations)[convId]?.id;
   let roleMsg = {
-    role: get3(defaultAssistantRole).type,
-    content: get3(conversations)[convId].assistantRole
+    role: get4(defaultAssistantRole).type,
+    content: get4(conversations)[convId].assistantRole
   };
   msg = [roleMsg, ...msg];
   const cleansedMessages = msg.map(cleanseMessage);
@@ -521,7 +915,10 @@ async function sendRegularMessage(msg, convId) {
   try {
     await streamResponseViaResponsesAPI(
       "",
-      get3(selectedModel),
+      (() => {
+        const m = get4(selectedModel);
+        return m;
+      })(),
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -538,14 +935,15 @@ async function sendRegularMessage(msg, convId) {
               ...currentHistory,
               {
                 role: "assistant",
-                content: streamText2 + "\u2588" + (ticks ? "\n```" : "")
+                content: streamText2 + "\u2588" + (ticks ? "\n```" : ""),
+                model: get4(selectedModel)
               }
             ],
             convId
           );
         },
         onCompleted: async (_finalText) => {
-          if (get3(userRequestedStreamClosure2)) {
+          if (get4(userRequestedStreamClosure2)) {
             streamText2 = streamText2.replace(/█+$/, "");
             userRequestedStreamClosure2.set(false);
           }
@@ -554,7 +952,8 @@ async function sendRegularMessage(msg, convId) {
               ...currentHistory,
               {
                 role: "assistant",
-                content: streamText2
+                content: streamText2,
+                model: get4(selectedModel)
               }
             ],
             convId
@@ -575,8 +974,51 @@ async function sendRegularMessage(msg, convId) {
     isStreaming2.set(false);
   }
 }
+async function sendDalleMessage(msg, convId) {
+  isStreaming2.set(true);
+  let hasEncounteredError = false;
+  let currentHistory = get4(conversations)[convId].history;
+  let roleMsg = {
+    role: get4(defaultAssistantRole).type,
+    content: get4(conversations)[convId].assistantRole
+  };
+  msg = [roleMsg, ...msg];
+  const cleansedMessages = msg.map(cleanseMessage);
+  const prompt = cleansedMessages[cleansedMessages.length - 1].content;
+  try {
+    let response = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${get4(apiKey)}`
+      },
+      body: JSON.stringify({
+        model: get4(selectedModel),
+        prompt,
+        size: get4(selectedSize),
+        quality: get4(selectedQuality),
+        n: 1
+      })
+    });
+    if (!response.ok) throw new Error("HTTP error, status = " + response.status);
+    let data = await response.json();
+    let imageUrl = data.data[0].url;
+    setHistory([...currentHistory, {
+      role: "assistant",
+      content: imageUrl,
+      type: "image",
+      // Adding a type property to distinguish image messages
+      model: get4(selectedModel)
+    }], convId);
+  } catch (error) {
+    console.error("Error generating image:", error);
+    hasEncounteredError = true;
+  } finally {
+    isStreaming2.set(false);
+  }
+}
 function getDefaultResponsesModel() {
-  const m = get3(selectedModel);
+  const m = get4(selectedModel);
   if (!m || /gpt-3\.5|gpt-4-turbo-preview|gpt-4-32k|gpt-4$|o1-mini/.test(m)) {
     return "gpt-5-nano";
   }
@@ -589,9 +1031,9 @@ function supportsReasoning(model) {
 function buildResponsesPayload(model, input, stream) {
   const payload = { model, input, store: false, stream };
   if (supportsReasoning(model)) {
-    const eff = get3(reasoningEffort) || "medium";
-    const verb = get3(verbosity) || "medium";
-    const sum = get3(summary) || "auto";
+    const eff = get4(reasoningEffort) || "medium";
+    const verb = get4(verbosity) || "medium";
+    const sum = get4(summary) || "auto";
     payload.text = { verbosity: verb };
     payload.reasoning = { effort: eff, summary: sum === "null" ? null : sum };
   }
@@ -645,26 +1087,6 @@ function buildResponsesInputFromMessages(messages) {
     content: convertChatContentToResponsesContent(m.content, m.role)
   }));
 }
-async function createResponseViaResponsesAPI(prompt, model) {
-  const key = get3(apiKey);
-  if (!key) throw new Error("No API key configured");
-  const resolvedModel = model || getDefaultResponsesModel();
-  const input = buildResponsesInputFromPrompt(prompt);
-  const payload = buildResponsesPayload(resolvedModel, input, false);
-  const res = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Responses API error ${res.status}: ${text || res.statusText}`);
-  }
-  return res.json();
-}
 function extractOutputTextFromResponses(obj) {
   if (!obj) return "";
   if (typeof obj.output_text === "string") return obj.output_text.trim();
@@ -702,7 +1124,7 @@ function sanitizeTitle(title) {
 }
 async function maybeUpdateTitleAfterFirstMessage(convId, lastUserPrompt, assistantReply) {
   try {
-    const all = get3(conversations);
+    const all = get4(conversations);
     const conv = all?.[convId];
     if (!conv) return;
     const currentTitle = (conv.title ?? "").trim().toLowerCase();
@@ -720,7 +1142,7 @@ async function maybeUpdateTitleAfterFirstMessage(convId, lastUserPrompt, assista
     const input = buildResponsesInputFromMessages(msgs);
     const model = "gpt-4o-mini";
     const payload = buildResponsesPayload(model, input, false);
-    const key = get3(apiKey);
+    const key = get4(apiKey);
     const res = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
@@ -752,7 +1174,7 @@ async function maybeUpdateTitleAfterFirstMessage(convId, lastUserPrompt, assista
   }
 }
 async function streamResponseViaResponsesAPI(prompt, model, callbacks, inputOverride, uiContext) {
-  const key = get3(apiKey);
+  const key = get4(apiKey);
   if (!key) throw new Error("No API key configured");
   const resolvedModel = model || getDefaultResponsesModel();
   const input = inputOverride || buildResponsesInputFromPrompt(prompt);
@@ -915,217 +1337,168 @@ async function streamResponseViaResponsesAPI(prompt, model, callbacks, inputOver
   return finalText;
 }
 
-// src/utils/debugUtils.ts
-init_testModel();
-async function testResponsesAPI(prompt = "Say 'double bubble bath' five times fast.", modelOverride) {
-  const key = get4(apiKey);
-  const model = modelOverride || get4(selectedModel);
-  console.log("=== Responses API (non-streaming) Test ===");
-  console.log("API Key configured:", !!key);
-  console.log("Selected model:", model);
-  if (!key) {
-    console.error("No API key configured");
-    return null;
-  }
-  try {
-    const data = await createResponseViaResponsesAPI(prompt, model);
-    const outputText = data?.output_text ?? data?.output?.[0]?.content?.map((c) => c?.text).join("") ?? data?.response?.output_text ?? JSON.stringify(data);
-    console.log("Responses API result:", data);
-    console.log("Responses API output_text:", outputText);
-    return { success: true, raw: data, outputText, model };
-  } catch (e) {
-    console.error("Responses API error:", e);
-    return { success: false, error: e };
-  }
-}
-async function testResponsesStreamingAPI(prompt = "Stream this: 'double bubble bath' five times fast.", modelOverride) {
-  const key = get4(apiKey);
-  const model = modelOverride || get4(selectedModel);
-  console.log("=== Responses API (streaming) Test ===");
-  console.log("API Key configured:", !!key);
-  console.log("Selected model:", model);
-  if (!key) {
-    console.error("No API key configured");
-    return null;
-  }
-  const events = [];
-  let finalText = "";
-  try {
-    finalText = await streamResponseViaResponsesAPI(prompt, model, {
-      onEvent: (evt) => {
-        if (evt.type === "response.created" || evt.type === "response.completed" || evt.type === "error") {
-          console.log("SSE event:", evt.type, evt.data?.id || "");
-        }
-        events.push(evt);
-      },
-      onTextDelta: (_text) => {
-      },
-      onCompleted: (text) => {
-        console.log("Streaming completed. Final text length:", text.length);
-      },
-      onError: (err) => {
-        console.error("Streaming error:", err);
-      }
-    });
-    return { success: true, finalText, eventsCount: events.length, events, model };
-  } catch (e) {
-    console.error("Responses Streaming error:", e);
-    return { success: false, error: e, eventsCount: events.length, events, model };
-  }
-}
-
-// src/tests/live/responsesNonStreamingLive.test.ts
-registerTest({
-  id: "live-responses-nonstream",
-  name: "Live API: Responses API returns text (non-streaming)",
-  tags: ["live", "api", "responses", "network", "smoke"],
-  timeoutMs: 45e3,
-  fn: async (assert) => {
-    const key = get5(apiKey);
-    assert.that(!!key, "API key is configured");
-    if (!key) return;
-    const { selectedModel: selectedModel2 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
-    const { getReasoningModel: getReasoningModel2 } = await Promise.resolve().then(() => (init_testModel(), testModel_exports));
-    const prevModel = get5(selectedModel2);
-    try {
-      localStorage.removeItem("selectedModel");
-      selectedModel2.set(getReasoningModel2());
-      const result = await testResponsesAPI();
-      assert.that(!!result, "Received a result object");
-      assert.that(!!result?.success, "Non-streaming API call succeeded");
-      assert.that(!!(result?.outputText ?? "").trim(), "Output text is non-empty");
-    } catch (e) {
-      assert.that(false, `Non-streaming API test error: ${e?.message ?? e}`);
-    } finally {
-      if (prevModel != null) selectedModel2.set(prevModel);
+// src/tests/unit/messageModelLabeling.unit.test.ts
+function resetConversations() {
+  conversations.set([
+    {
+      id: "conv-test",
+      history: [],
+      conversationTokens: 0,
+      assistantRole: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
+      title: ""
     }
-  }
-});
-
-// src/tests/live/responsesStreamingLive.test.ts
-init_stores();
-import { get as get6 } from "svelte/store";
-registerTest({
-  id: "live-responses-stream",
-  name: "Live API: Responses API streams tokens",
-  tags: ["live", "api", "responses", "network", "smoke"],
-  timeoutMs: 6e4,
-  fn: async (assert) => {
-    const key = get6(apiKey);
-    assert.that(!!key, "API key is configured");
-    if (!key) return;
-    const { selectedModel: selectedModel2 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
-    const { getReasoningModel: getReasoningModel2 } = await Promise.resolve().then(() => (init_testModel(), testModel_exports));
-    const prevModel = get6(selectedModel2);
-    try {
-      localStorage.removeItem("selectedModel");
-      selectedModel2.set(getReasoningModel2());
-      const result = await testResponsesStreamingAPI();
-      assert.that(!!result, "Received a result object");
-      assert.that(!!result?.success, "Streaming API call succeeded");
-      assert.that((result?.eventsCount ?? 0) > 0, "Observed at least one streaming event");
-      assert.that(!!(result?.finalText ?? "").trim(), "Final streamed text is non-empty");
-    } catch (e) {
-      assert.that(false, `Streaming API test error: ${e?.message ?? e}`);
-    } finally {
-      if (prevModel != null) selectedModel2.set(prevModel);
-    }
-  }
-});
-
-// src/tests/live/smoke.test.ts
-test({
-  id: "responses-api-nonstream",
-  name: "Responses API - Non-Streaming returns text",
-  tags: ["smoke", "responses", "live"],
-  timeoutMs: 3e4,
-  fn: async (assert) => {
-    const result = await testResponsesAPI();
-    assert.that(result != null, "Result should be returned");
-    assert.that(result?.success === true, "Result.success should be true");
-    assert.that(typeof result?.model === "string" && (result?.model?.length ?? 0) > 0, "Model id should be a non-empty string");
-    assert.that(typeof result?.outputText === "string", "Output text should be a string");
-    assert.that((result?.outputText ?? "").trim().length > 0, "Output text should be non-empty");
-    assert.that((result?.outputText ?? "").length >= 5, "Output text length should be at least 5 chars");
-  }
-});
-test({
-  id: "responses-api-streaming",
-  name: "Responses API - Streaming yields events and final text",
-  tags: ["smoke", "responses", "stream", "live"],
-  timeoutMs: 45e3,
-  fn: async (assert) => {
-    const result = await testResponsesStreamingAPI();
-    assert.that(result != null, "Result should be returned");
-    assert.that(result?.success === true, "Result.success should be true");
-    assert.that(typeof result?.model === "string" && (result?.model?.length ?? 0) > 0, "Model id should be a non-empty string");
-    assert.that(typeof result?.eventsCount === "number" && result?.eventsCount > 0, "Should receive at least one streaming event");
-    assert.that(typeof result?.finalText === "string", "Final text should be a string");
-    assert.that((result?.finalText ?? "").trim().length > 0, "Final text should be non-empty");
-    assert.that((result?.eventsCount ?? 0) >= 3, "Should receive at least 3 streaming events");
-  }
-});
-
-// src/tests/live/titleUpdateLive.test.ts
-init_stores();
-import { get as get7 } from "svelte/store";
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
+  ]);
 }
-registerTest({
-  id: "live-title-update",
-  name: "Live API: conversation title updates after first message",
-  tags: ["live", "api", "responses", "network", "smoke"],
-  timeoutMs: 45e3,
-  fn: async (assert) => {
-    const key = get7(apiKey);
-    assert.that(!!key, "API key is configured");
-    if (!key) return;
-    const { selectedModel: selectedModel2 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
-    const { getReasoningModel: getReasoningModel2 } = await Promise.resolve().then(() => (init_testModel(), testModel_exports));
-    const prevModel = get7(selectedModel2);
-    localStorage.removeItem("selectedModel");
-    selectedModel2.set(getReasoningModel2());
-    const convId = get7(chosenConversationId);
-    const convs0 = get7(conversations);
-    assert.that(convs0 && convs0[convId] != null, "Current conversation exists");
-    if (!convs0 || convs0[convId] == null) return;
-    conversations.update((all) => {
-      const copy = [...all];
-      const curr = { ...copy[convId] };
-      curr.title = "";
-      if (Array.isArray(curr.history)) curr.history = [];
-      copy[convId] = curr;
-      return copy;
-    });
-    const beforeTitle = (get7(conversations)[convId]?.title ?? "").trim();
-    assert.that(beforeTitle === "", 'Initial title is empty (renders as "New conversation")');
-    const userMsg = [
-      {
-        role: "user",
-        content: "Please answer briefly. Then the app should generate a short title summarizing this new chat."
-      }
+async function withMockedStreamResponse(fn) {
+  const realFetch2 = globalThis.fetch;
+  function makeStream() {
+    const encoder = new TextEncoder();
+    const chunks = [
+      encoder.encode("event: response.output_text.delta\n"),
+      encoder.encode('data: {"delta": {"text": "Hello "}}\n\n'),
+      encoder.encode("event: response.output_text.delta\n"),
+      encoder.encode('data: {"delta": {"text": "World"}}\n\n'),
+      encoder.encode("data: [DONE]\n\n")
     ];
-    try {
-      await sendRegularMessage(userMsg, convId);
-    } catch (e) {
-      assert.that(false, `sendRegularMessage completed without throwing: ${e?.message ?? e}`);
-      if (prevModel != null) selectedModel2.set(prevModel);
-      return;
-    }
-    const deadline = Date.now() + 3e4;
-    let finalTitle = "";
-    while (Date.now() < deadline) {
-      const t = (get7(conversations)[convId]?.title ?? "").trim();
-      if (t && t.toLowerCase() !== "new conversation") {
-        finalTitle = t;
-        break;
+    let i = 0;
+    return new ReadableStream({
+      pull(controller) {
+        if (i < chunks.length) {
+          controller.enqueue(chunks[i++]);
+        } else {
+          controller.close();
+        }
       }
-      await sleep(500);
+    });
+  }
+  globalThis.fetch = async () => ({ ok: true, body: makeStream() });
+  try {
+    await fn();
+  } finally {
+    globalThis.fetch = realFetch2;
+  }
+}
+var realFetch = globalThis.fetch;
+function mockFetchOnce(json) {
+  globalThis.fetch = async (_url, _opts) => ({ ok: true, json: async () => json });
+}
+function restoreFetch() {
+  globalThis.fetch = realFetch;
+}
+function setModel(id) {
+  selectedModel.set(id);
+}
+function getLastAssistant() {
+  const conv = get5(conversations)[0];
+  const hist = conv.history;
+  for (let i = hist.length - 1; i >= 0; i--) {
+    if (hist[i].role === "assistant") return hist[i];
+  }
+  return null;
+}
+registerTest(
+  {
+    id: "unit-regular-model-label",
+    name: "sendRegularMessage attaches model to assistant messages (delta and final)",
+    fn: async (t) => {
+      resetConversations();
+      setModel("gpt-4o");
+      await withMockedStreamResponse(async () => {
+        await sendRegularMessage([{ role: "user", content: "Hi" }], 0);
+      });
+      const conv = get5(conversations)[0];
+      t.that(conv.history.length >= 1, "history has assistant messages");
+      const last = getLastAssistant();
+      t.that(last?.model === "gpt-4o", "assistant message stores selected model");
     }
-    if (prevModel != null) selectedModel2.set(prevModel);
-    assert.that(!!finalTitle, `Conversation title updated to a non-empty value (got: "${finalTitle}")`);
-    assert.that(finalTitle.toLowerCase() !== "new conversation", 'Title is not the placeholder "New conversation"');
+  }
+);
+registerTest(
+  {
+    id: "unit-vision-model-label",
+    name: "sendVisionMessage attaches model to assistant messages",
+    fn: async (t) => {
+      resetConversations();
+      setModel("gpt-4o-mini");
+      await withMockedStreamResponse(async () => {
+        await sendVisionMessage([{ role: "user", content: "See this" }], ["data:image/png;base64,AAA"], 0);
+      });
+      const last = getLastAssistant();
+      t.that(last?.model === "gpt-4o-mini", "vision assistant message stores selected model");
+    }
+  }
+);
+registerTest(
+  {
+    id: "unit-dalle-model-label",
+    name: "sendDalleMessage attaches model to image assistant message",
+    fn: async (t) => {
+      resetConversations();
+      setModel("gpt-image-1");
+      mockFetchOnce({ data: [{ url: "https://example.com/img.png" }] });
+      try {
+        await sendDalleMessage([{ role: "user", content: "make an image" }], 0);
+      } finally {
+        restoreFetch();
+      }
+      const last = getLastAssistant();
+      t.that(last?.type === "image", "image message type set");
+      t.that(last?.model === "gpt-image-1", "image message stores selected model");
+    }
+  }
+);
+registerTest({
+  id: "unit-audio-model-label",
+  name: "displayAudioMessage attaches model to audio assistant message",
+  fn: async (t) => {
+    resetConversations();
+    setModel("gpt-4o-realtime");
+    displayAudioMessage("blob:https://audio");
+    const last = getLastAssistant();
+    t.that(last?.isAudio === true, "audio message marked as audio");
+    t.that(last?.model === "gpt-4o-realtime", "audio message stores selected model");
+  }
+});
+
+// src/tests/unit/responsesConversionAndPayload.test.ts
+function makeMsg(role, content) {
+  return { role, content };
+}
+registerTest({
+  id: "nonapi-responses-conversion-payload",
+  name: "Responses conversion handles edge cases and builds valid payload",
+  tags: ["non-api", "responses", "conversion"],
+  timeoutMs: 5e3,
+  fn: async (t) => {
+    const msgs1 = [
+      makeMsg("system", "You are a helpful assistant."),
+      makeMsg("user", "Say hi")
+    ];
+    const input1 = buildResponsesInputFromMessages(msgs1);
+    t.that(Array.isArray(input1), "Input is array for messages");
+    t.that(input1.length === 2, "Two input turns");
+    t.that(Array.isArray(input1[0].content), "Each input turn has content array");
+    t.that(input1[0].content[0].type === "input_text" || input1[0].content[0].type === "output_text", "System mapped to text");
+    const msgs2 = [
+      makeMsg("user", [
+        { type: "input_text", text: "Describe this image" },
+        { type: "image_url", image_url: { url: "https://example.com/x.png" } }
+      ])
+    ];
+    const input2 = buildResponsesInputFromMessages(msgs2);
+    t.that(input2.length === 1, "Single turn remains single");
+    const c2 = input2[0].content;
+    t.that(c2.some((p) => p.type === "input_text"), "Has input_text");
+    t.that(c2.some((p) => p.type === "input_image"), "Has input_image");
+    const msgs3 = [makeMsg("user", { foo: "bar", n: 2 })];
+    const input3 = buildResponsesInputFromMessages(msgs3);
+    t.that(typeof input3[0].content[0].text === "string", "Object content coerced to string");
+    const payload = buildResponsesPayload("gpt-5", input1, true);
+    t.that(payload.model === "gpt-5", "Payload.model set");
+    t.that(payload.stream === true, "Payload.stream set");
+    t.that(Array.isArray(payload.input), "Payload.input is array");
+    const payloadR = buildResponsesPayload("gpt-5", input1, false);
+    t.that(!!payloadR.reasoning || !!payloadR.text, "Reasoning/text extras exist for reasoning-capable model");
   }
 });
 export {

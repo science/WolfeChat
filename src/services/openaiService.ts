@@ -292,7 +292,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   try {
     await streamResponseViaResponsesAPI(
       '',
-      get(selectedModel),
+      ((): string => { const m = get(selectedModel); return m; })(),
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -307,6 +307,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText + "█" + (ticks ? "\n```" : ""),
+                model: get(selectedModel),
               },
             ],
             convId
@@ -320,7 +321,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
           await setHistory(
             [
               ...currentHistory,
-              { role: "assistant", content: streamText },
+              { role: "assistant", content: streamText, model: get(selectedModel) },
             ],
             convId
           );
@@ -381,7 +382,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   try {
     await streamResponseViaResponsesAPI(
       '',
-      get(selectedModel),
+      ((): string => { const m = get(selectedModel); return m; })(),
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -399,6 +400,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText + "█" + (ticks ? "\n```" : ""),
+                model: get(selectedModel),
               },
             ],
             convId
@@ -415,6 +417,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText,
+                model: get(selectedModel),
               },
             ],
             convId
@@ -483,7 +486,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
       setHistory([...currentHistory, {
         role: "assistant",
         content: imageUrl,
-        type: "image" // Adding a type property to distinguish image messages
+        type: "image", // Adding a type property to distinguish image messages
+        model: get(selectedModel)
       }], convId);
   
     } catch (error) {
