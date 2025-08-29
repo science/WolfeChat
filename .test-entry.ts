@@ -1,7 +1,6 @@
 // Auto-generated test entry point
 export { runAllTests, formatSuiteResultsText, clearTests } from './src/tests/testHarness.js';
-import './src/tests/unit/codeRendererStreaming.unit.test.ts';
-import './src/tests/unit/ctrlEnterSend.test.ts';
-import './src/tests/unit/keyboardSettings.test.ts';
-import './src/tests/unit/reasoningPayload.test.ts';
-import './src/tests/unit/responsesConversionAndPayload.test.ts';
+import './src/tests/live/responsesNonStreamingLive.test.ts';
+import './src/tests/live/responsesStreamingLive.test.ts';
+import './src/tests/live/smoke.test.ts';
+import './src/tests/live/titleUpdateLive.test.ts';

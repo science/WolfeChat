@@ -152,7 +152,7 @@ function setTitle(title: string) {
   }
 
 async function createTitle(currentInput: string) {
-    const titleModel = 'gpt-4-turbo-preview';
+    const titleModel = 'gpt-4o-mini';  // Use a modern model that works with Responses API
 
     try {
         let response = await sendRequest([

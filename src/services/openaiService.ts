@@ -497,8 +497,11 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
 // Choose a sensible default Responses-capable model
 function getDefaultResponsesModel() {
   const m = get(selectedModel);
-  if (!m || /gpt-3\.5|gpt-4-turbo-preview|gpt-4-32k|gpt-4$/.test(m)) {
-    return 'gpt-4o-mini';
+  // If no model is set, or it's an old/incompatible model, use gpt-5-nano as default for tests
+  // This includes o1-mini which is not compatible with Responses API
+  if (!m || /gpt-3\.5|gpt-4-turbo-preview|gpt-4-32k|gpt-4$|o1-mini/.test(m)) {
+    // Use gpt-5-nano as the default for better test compatibility
+    return 'gpt-5-nano';
   }
   return m;
 }

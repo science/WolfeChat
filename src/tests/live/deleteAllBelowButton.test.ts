@@ -12,6 +12,7 @@ import {
 } from '../../stores/reasoningStore.js';
 import { reasoningEffort } from '../../stores/reasoningSettings.js';
 import { streamResponseViaResponsesAPI } from '../../services/openaiService.js';
+import { getReasoningModel } from '../testModel';
 
 // Helper functions
 function sleep(ms: number) {
@@ -98,7 +99,7 @@ registerTest({
 
     try {
       // Setup: Configure for reasoning
-      selectedModel.set('gpt-5-nano');
+      selectedModel.set(getReasoningModel());
       reasoningEffort.set('low');
 
       // Create initial conversation
@@ -216,7 +217,7 @@ registerTest({
         // Stream the response
         await streamResponseViaResponsesAPI(
           userText,
-          'gpt-5-nano',
+          getReasoningModel(),
           undefined,
           undefined,
           { convId: String(convId), anchorIndex: userMsgIndex }

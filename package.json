@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "node run-tests.mjs",
+    "pretest:live": "vite build",
     "test:live": "node run-tests.mjs --live",
     "test:all": "node run-tests.mjs --suite all",
     "test:old": "TS_NODE_TRANSPILE_ONLY=1 node --loader ts-node/esm test-runner.ts"

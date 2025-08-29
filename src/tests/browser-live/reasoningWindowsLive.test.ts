@@ -8,9 +8,10 @@ import {
   completeReasoningPanel,
   setReasoningText,
 } from '../../stores/reasoningStore.js';
-import { conversations, chosenConversationId } from '../../stores/stores.js';
+import { conversations, chosenConversationId, selectedModel } from '../../stores/stores.js';
 import { streamResponseViaResponsesAPI } from '../../services/openaiService.js';
 import { reasoningEffort, verbosity, summary } from '../../stores/reasoningSettings.js';
+import { getReasoningModel } from '../testModel';
 
 // Helpers
 function sleep(ms: number) {
@@ -99,8 +100,12 @@ registerTest({
     const prevChosen = get(chosenConversationId);
     const prevWindows = get(reasoningWindows);
     const prevPanels = get(reasoningPanels);
+    const prevModel = get(selectedModel);
 
     try {
+      // Setup model for reasoning tests
+      localStorage.removeItem('selectedModel');
+      selectedModel.set(getReasoningModel());
       // 1) Prepare a minimal conversation with one user message so ReasoningInline renders
       conversations.set([
         {
@@ -137,7 +142,7 @@ registerTest({
       // 2) Simulate SSE lifecycle via store APIs used by the streaming handler
       // Create one reasoning window for this conversation and anchor
       const convId = 'test-conv-1';
-      const winId = createReasoningWindow(convId, 'gpt-5', anchorIndex);
+      const winId = createReasoningWindow(convId, getReasoningModel(), anchorIndex);
 
       // Wait for UI to show the collapsible Reasoning window
       await waitFor(() => getReasoningDetailsInMessage(userMsgEl).length === 1, 3000);
@@ -189,6 +194,7 @@ registerTest({
       reasoningWindows.set(prevWindows);
       conversations.set(prevConvs);
       chosenConversationId.set(prevChosen);
+      if (prevModel != null) selectedModel.set(prevModel);
       await sleep(0);
     }
   },
@@ -205,9 +211,13 @@ registerTest({
     const prevChosen = get(chosenConversationId);
     const prevWindows = get(reasoningWindows);
     const prevPanels = get(reasoningPanels);
+    const prevModel = get(selectedModel);
     const origFetch = window.fetch?.bind(window);
 
     try {
+      // Setup model for reasoning tests
+      localStorage.removeItem('selectedModel');
+      selectedModel.set(getReasoningModel());
       // Configure reasoning settings to match requested scenario
       reasoningEffort.set('high');
       verbosity.set('low');
@@ -270,7 +280,7 @@ registerTest({
       // Kick off the real streaming path
       await streamResponseViaResponsesAPI(
         'Explain the Monte Hall problem using logic. Think hard about the answer.',
-        'gpt-5-nano',
+        getReasoningModel(),
         undefined,
         undefined,
         { convId: 'test-conv-2', anchorIndex: 0 }
@@ -312,6 +322,7 @@ registerTest({
       reasoningWindows.set(prevWindows);
       conversations.set(prevConvs);
       chosenConversationId.set(prevChosen);
+      if (prevModel != null) selectedModel.set(prevModel);
       await sleep(0);
       if (origFetch) window.fetch = origFetch;
     }
@@ -329,8 +340,12 @@ registerTest({
     const prevChosen = get(chosenConversationId);
     const prevWindows = get(reasoningWindows);
     const prevPanels = get(reasoningPanels);
+    const prevModel = get(selectedModel);
 
     try {
+      // Setup model for reasoning tests
+      localStorage.removeItem('selectedModel');
+      selectedModel.set(getReasoningModel());
       // Setup conversation
       conversations.set([{
         id: 'test-conv-3',
@@ -352,7 +367,7 @@ registerTest({
       const userMsgEl = msgEls[0];
 
       // Create window and simulate a single reasoning sequence
-      const winId = createReasoningWindow('test-conv-3', 'gpt-5-nano', 0);
+      const winId = createReasoningWindow('test-conv-3', getReasoningModel(), 0);
       
       // Start streaming a reasoning panel
       const panelId = startReasoningPanel('text', 'test-conv-3', winId);
@@ -396,6 +411,7 @@ registerTest({
       reasoningWindows.set(prevWindows);
       conversations.set(prevConvs);
       chosenConversationId.set(prevChosen);
+      if (prevModel != null) selectedModel.set(prevModel);
       await sleep(0);
     }
   },
@@ -411,9 +427,13 @@ registerTest({
     const prevChosen = get(chosenConversationId);
     const prevWindows = get(reasoningWindows);
     const prevPanels = get(reasoningPanels);
+    const prevModel = get(selectedModel);
     const origFetch = window.fetch?.bind(window);
 
     try {
+      // Setup model for reasoning tests
+      localStorage.removeItem('selectedModel');
+      selectedModel.set(getReasoningModel());
       // Configure reasoning settings
       reasoningEffort.set('high');
       verbosity.set('low');
@@ -466,7 +486,7 @@ registerTest({
       // Execute the stream
       await streamResponseViaResponsesAPI(
         'Explain the Monte Hall problem using logic. Think hard about the answer.',
-        'gpt-5-nano',
+        getReasoningModel(),
         undefined,
         undefined,
         { convId: 'test-conv-4', anchorIndex: 0 }
@@ -506,6 +526,7 @@ registerTest({
       reasoningWindows.set(prevWindows);
       conversations.set(prevConvs);
       chosenConversationId.set(prevChosen);
+      if (prevModel != null) selectedModel.set(prevModel);
       await sleep(0);
       if (origFetch) window.fetch = origFetch;
     }
@@ -522,8 +543,12 @@ registerTest({
     const prevChosen = get(chosenConversationId);
     const prevWindows = get(reasoningWindows);
     const prevPanels = get(reasoningPanels);
+    const prevModel = get(selectedModel);
 
     try {
+      // Setup model for reasoning tests
+      localStorage.removeItem('selectedModel');
+      selectedModel.set(getReasoningModel());
       conversations.set([{
         id: 'test-conv-5',
         title: 'Text Integrity Test',
@@ -543,7 +568,7 @@ registerTest({
       const msgEls = getMessageEls();
       const userMsgEl = msgEls[0];
 
-      const winId = createReasoningWindow('test-conv-5', 'gpt-5-nano', 0);
+      const winId = createReasoningWindow('test-conv-5', getReasoningModel(), 0);
       
       // Simulate streaming with specific text chunks using setReasoningText
       // This matches the actual implementation which uses setReasoningText not appendReasoningText
@@ -584,6 +609,7 @@ registerTest({
       reasoningWindows.set(prevWindows);
       conversations.set(prevConvs);
       chosenConversationId.set(prevChosen);
+      if (prevModel != null) selectedModel.set(prevModel);
       await sleep(0);
     }
   },

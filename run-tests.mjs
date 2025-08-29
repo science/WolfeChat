@@ -92,7 +92,7 @@ global.Prism = {
   }
 };
 
-// Seed stores for nonapi tests
+// Seed stores; map env key if available
 function seedTestStores() {
   // Seed model cache with reasoning-capable models
   const models = [
@@ -115,7 +115,14 @@ function seedTestStores() {
   localStorageMap.set('selectedMode', 'GPT');
   localStorageMap.set('selectedSize', '1024x1024');
   localStorageMap.set('selectedQuality', 'standard');
-  localStorageMap.set('api_key', JSON.stringify('test-api-key'));
+
+  // Prefer real env key for live tests; fallback for unit tests
+  const envKey = process.env.OPENAI_API_KEY || null;
+  if (envKey) {
+    localStorageMap.set('api_key', JSON.stringify(envKey));
+  } else {
+    localStorageMap.set('api_key', JSON.stringify('test-api-key'));
+  }
   
   // Initialize conversations with proper structure
   const testConversation = {
@@ -195,11 +202,15 @@ async function loadTestHarness(suite) {
       case 'live':
         patterns = ['src/tests/live/**/*.test.ts'];
         break;
+      case 'browser-live':
+        patterns = ['src/tests/browser-live/**/*.test.ts'];
+        break;
       case 'all':
         patterns = [
           'src/tests/unit/**/*.test.ts',
           'src/tests/browser-nonlive/**/*.test.ts',
-          'src/tests/live/**/*.test.ts'
+          'src/tests/live/**/*.test.ts',
+          'src/tests/browser-live/**/*.test.ts'
         ];
         break;
       case 'nonapi': // Deprecated - kept for backward compatibility, maps to unit
@@ -285,7 +296,7 @@ function parseArgs() {
       opts.name = args[++i];
     } else if ((arg === '-s' || arg === '--suite' || arg === '--group') && args[i + 1]) {
       const suiteArg = args[++i].toLowerCase();
-      if (['unit', 'browser-nonlive', 'live', 'all', 'nonapi'].includes(suiteArg)) {
+      if (['unit', 'browser-nonlive', 'live', 'browser-live', 'all', 'nonapi'].includes(suiteArg)) {
         opts.suite = suiteArg;
       }
     } else if (arg === '--live') {
@@ -295,7 +306,7 @@ function parseArgs() {
 Usage: node run-tests.mjs [options]
 
 Options:
-  -s, --suite <name>   Run test suite: 'unit' (default), 'browser-nonlive', 'live', or 'all'
+  -s, --suite <name>   Run test suite: 'unit' (default), 'browser-nonlive', 'live', 'browser-live', or 'all'
   --group <name>       Alias for --suite
   --live               Shorthand for --suite live
   -t, --tag <tag>      Filter tests by tag

@@ -22,7 +22,27 @@ export const menuVisible = writable(false)
 let storedApiKey = localStorage.getItem("api_key")
 let parsedApiKey = storedApiKey !== null ? JSON.parse(storedApiKey) : null;
 
-export const apiKey:Writable<string|null> = writable(parsedApiKey)
+// Resolve API key from env when localStorage is empty
+let envApiKey: string | null = null;
+try {
+  // Node/test environments
+  // @ts-ignore
+  if (typeof process !== 'undefined' && process?.env?.OPENAI_API_KEY) {
+    // @ts-ignore
+    envApiKey = String(process.env.OPENAI_API_KEY);
+  }
+  // Vite/browser builds
+  // @ts-ignore
+  if (!envApiKey && typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_OPENAI_API_KEY) {
+    // @ts-ignore
+    envApiKey = String((import.meta as any).env.VITE_OPENAI_API_KEY);
+  }
+} catch {}
+
+const initialApiKey: string | null = parsedApiKey ?? envApiKey ?? null;
+
+export const apiKey:Writable<string|null> = writable(initialApiKey)
+// Persist to localStorage so downstream code keeps reading from the same source
 apiKey.subscribe((value) => localStorage.setItem("api_key", JSON.stringify(value)));
 
 let storedCombinedTokens = localStorage.getItem('combined_tokens');

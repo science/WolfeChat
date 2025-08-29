@@ -13,7 +13,14 @@ registerTest({
     assert.that(!!key, 'API key is configured');
     if (!key) return;
 
+    const { selectedModel } = await import('../../stores/stores.js');
+    const { getReasoningModel } = await import('../testModel.js');
+    const prevModel = get(selectedModel as any);
+
     try {
+      localStorage.removeItem('selectedModel');
+      (selectedModel as any).set(getReasoningModel());
+
       const result = await testResponsesStreamingAPI();
       assert.that(!!result, 'Received a result object');
       assert.that(!!result?.success, 'Streaming API call succeeded');
@@ -21,6 +28,8 @@ registerTest({
       assert.that(!!(result?.finalText ?? '').trim(), 'Final streamed text is non-empty');
     } catch (e) {
       assert.that(false, `Streaming API test error: ${e?.message ?? e}`);
+    } finally {
+      if (prevModel != null) (selectedModel as any).set(prevModel);
     }
   }
 });

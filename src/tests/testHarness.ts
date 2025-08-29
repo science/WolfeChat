@@ -104,7 +104,77 @@ export interface SuiteResult {
   results: TestResult[];
 }
 
+// Test isolation utilities
+export function clearTestEnvironment() {
+  // Clear all localStorage keys that could affect tests
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('selectedModel');
+    localStorage.removeItem('conversations');
+    localStorage.removeItem('default_assistant_role');
+    localStorage.removeItem('selectedMode');
+    localStorage.removeItem('selectedVoice');
+    localStorage.removeItem('selectedSize');
+    localStorage.removeItem('selectedQuality');
+    localStorage.removeItem('combined_tokens');
+    localStorage.removeItem('show_tokens');
+    localStorage.removeItem('api_key'); // Be careful with this one - only clear if needed
+  }
+}
+
+export async function withCleanEnvironment<T>(fn: () => Promise<T>): Promise<T> {
+  clearTestEnvironment();
+  try {
+    return await fn();
+  } finally {
+    // Optionally restore environment if needed
+  }
+}
+
+export async function withModel<T>(model: string, fn: () => Promise<T>): Promise<T> {
+  if (typeof localStorage !== 'undefined') {
+    const previousModel = localStorage.getItem('selectedModel');
+    localStorage.setItem('selectedModel', model);
+    
+    // Also update the store if available
+    try {
+      const { selectedModel } = await import('../stores/stores.js');
+      selectedModel.set(model);
+    } catch (e) {
+      // Store might not be available in all test contexts
+    }
+    
+    try {
+      return await fn();
+    } finally {
+      // Restore previous model
+      if (previousModel !== null) {
+        localStorage.setItem('selectedModel', previousModel);
+      } else {
+        localStorage.removeItem('selectedModel');
+      }
+    }
+  } else {
+    return await fn();
+  }
+}
+
 export async function runAllTests(opts?: SuiteOptions): Promise<SuiteResult> {
+  // Clear environment before running test suite
+  clearTestEnvironment();
+  
+  // Set default model for tests if using the test model
+  try {
+    const { getReasoningModel } = await import('../tests/testModel.js');
+    const { selectedModel } = await import('../stores/stores.js');
+    const testModel = getReasoningModel();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('selectedModel', testModel);
+    }
+    selectedModel.set(testModel);
+  } catch (e) {
+    // Test model might not be available in all contexts
+  }
+  
   const tests = (opts?.filter ? registry.filter(opts.filter) : registry).slice();
   const suiteStart = performance.now();
   const results: TestResult[] = [];
