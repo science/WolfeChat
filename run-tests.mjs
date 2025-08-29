@@ -342,6 +342,14 @@ async function main() {
     console.log(text);
     
     clearTests();
+
+    // Clean teardown: close JSDOM window to release timers/handles keeping event loop alive
+    try {
+      if (global.window && typeof global.window.close === 'function') {
+        global.window.close();
+      }
+    } catch {}
+
     process.exitCode = results.failed > 0 ? 1 : 0;
   } catch (error) {
     console.error('Test runner failed:', error);
