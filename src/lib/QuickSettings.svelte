@@ -1,15 +1,31 @@
 <script lang="ts">
-  import { selectedModel } from '../stores/stores';
-  import { modelsStore } from '../stores/modelStore';
-  import { recentModelsStore } from '../stores/recentModelsStore';
-  import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
-  import { supportsReasoning } from '../services/openaiService';
+  import { selectedModel } from '../stores/stores.js';
+  import { modelsStore } from '../stores/modelStore.js';
+  import { recentModelsStore } from '../stores/recentModelsStore.js';
+  import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
+  import { supportsReasoning } from '../services/openaiService.js';
 
   let open = false;
   function toggle() { open = !open; }
   $: isReasoningModel = supportsReasoning($selectedModel || '');
 
-  function getChatContainer(): HTMLElement | null {
+   async function clearConversation() {
+     try {
+       const idx = get(chosenConversationId);
+       const convs = get(conversations);
+       const oldConv = convs[idx];
+       // Create a new empty chat at end and select it
+       const newConv = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, history: [], conversationTokens: 0, assistantRole: convs[idx]?.assistantRole ?? "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.", title: '' };
+       conversations.update((arr) => [...arr, newConv]);
+       chosenConversationId.set(get(conversations).length - 1);
+       // Delete the old conversation by index
+       conversations.update((arr) => arr.filter((_, i) => i !== idx));
+     } catch (e) {
+       console.error('Failed to clear conversation', e);
+     }
+   }
+
+   function getChatContainer(): HTMLElement | null {
     const root = document.querySelector('.main-content-area') as HTMLElement | null;
     if (!root) return null;
     return root.querySelector('.overflow-y-auto') as HTMLElement | null;
@@ -23,6 +39,10 @@
       return (r.top - cRect.top) + container.scrollTop;
     });
   }
+
+  import ClearChat from '../assets/ClearChat.svg';
+  import { conversations, chosenConversationId } from '../stores/stores.js';
+  import { get } from 'svelte/store';
 
   function navigateAnchors(direction: 'up' | 'down') {
     const container = getChatContainer();
@@ -42,20 +62,31 @@
     }
 
     if (direction === 'up') {
-      let targetIdx: number | null = (nearIdx >= 0) ? (nearIdx - 1) : floorIdx;
-
-      // At/above the first message: either snap to the first anchor if we're below it,
-      // or do nothing if we're already at/near it.
-      if (targetIdx == null || targetIdx < 0) {
-        if (st > anchors[0] + tol) container.scrollTop = anchors[0];
+      // Deterministic behavior:
+      // - If at/near an anchor i:
+      //   - if i > 0, go to anchors[i-1]
+      //   - if i === 0, go to top (0)
+      // - If between anchors: snap to anchors[floorIdx] (current turn start), or 0 if none
+      (window as any).__chatNavLockUntil = performance.now() + 250;
+      if (nearIdx >= 0) {
+        if (nearIdx > 0) {
+          container.scrollTop = anchors[nearIdx - 1];
+        } else {
+          container.scrollTop = 0;
+        }
         return;
       }
-      container.scrollTop = anchors[targetIdx];
+      if (floorIdx >= 0) {
+        container.scrollTop = anchors[floorIdx];
+      } else {
+        container.scrollTop = 0;
+      }
       return;
     }
 
     // direction === 'down'
     let targetIdx = (nearIdx >= 0) ? (nearIdx + 1) : (floorIdx + 1);
+    (window as any).__chatNavLockUntil = performance.now() + 250;
     if (targetIdx >= anchors.length) {
       container.scrollTop = container.scrollHeight - container.clientHeight;
     } else {
@@ -153,6 +184,16 @@
           aria-label="Go to next turn"
           on:click={() => navigateAnchors('down')}
         >▼ Down</button>
+
+        <button
+          type="button"
+          class="bg-primary text-white/80 px-3 py-1 rounded border border-gray-600 hover:bg-secondary flex items-center justify-center"
+          title="Clear Conversation"
+          aria-label="Clear Conversation"
+          on:click={clearConversation}
+        >
+          <img src={ClearChat} alt="Clear Conversation" class="w-5 h-5" />
+        </button>
       </div>
 
       <slot />

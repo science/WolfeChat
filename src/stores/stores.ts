@@ -1,9 +1,9 @@
 import { type Writable, writable } from "svelte/store";
-import type { ChatCompletionRequestMessage } from "openai";
+export type ChatMessage = { role: 'system'|'user'|'assistant'; content: any; model?: string; type?: string; audioUrl?: string; isAudio?: boolean };
 
 export interface Conversation {
   id: string; // Add unique ID
-  history: ChatCompletionRequestMessage[];
+  history: ChatMessage[];
   conversationTokens: number;
   assistantRole: string;
   title: string;
@@ -22,7 +22,27 @@ export const menuVisible = writable(false)
 let storedApiKey = localStorage.getItem("api_key")
 let parsedApiKey = storedApiKey !== null ? JSON.parse(storedApiKey) : null;
 
-export const apiKey:Writable<string|null> = writable(parsedApiKey)
+// Resolve API key from env when localStorage is empty
+let envApiKey: string | null = null;
+try {
+  // Node/test environments
+  // @ts-ignore
+  if (typeof process !== 'undefined' && process?.env?.OPENAI_API_KEY) {
+    // @ts-ignore
+    envApiKey = String(process.env.OPENAI_API_KEY);
+  }
+  // Vite/browser builds
+  // @ts-ignore
+  if (!envApiKey && typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_OPENAI_API_KEY) {
+    // @ts-ignore
+    envApiKey = String((import.meta as any).env.VITE_OPENAI_API_KEY);
+  }
+} catch {}
+
+const initialApiKey: string | null = parsedApiKey ?? envApiKey ?? null;
+
+export const apiKey:Writable<string|null> = writable(initialApiKey)
+// Persist to localStorage so downstream code keeps reading from the same source
 apiKey.subscribe((value) => localStorage.setItem("api_key", JSON.stringify(value)));
 
 let storedCombinedTokens = localStorage.getItem('combined_tokens');
@@ -39,6 +59,31 @@ export const defaultAssistantRole = writable(parsedDefaultAssistantRole || {
 defaultAssistantRole.subscribe((value) => localStorage.setItem("default_assistant_role", JSON.stringify(value)));
 
 export const chosenConversationId = writable(0);
+import { get } from 'svelte/store';
+
+export function deleteConversationByIndex(index: number) {
+  conversations.update((convs) => {
+    if (index < 0 || index >= convs.length) return convs;
+    const convId = convs[index].id;
+    const next = convs.filter((_, i) => i !== index);
+    // Adjust chosen index
+    let newIndex = 0;
+    if (next.length > 0) {
+      if (index <= get(chosenConversationId)) newIndex = Math.max(0, get(chosenConversationId) - 1);
+      else newIndex = Math.min(get(chosenConversationId), next.length - 1);
+    } else {
+      next.push(createNewConversation());
+      newIndex = 0;
+    }
+    chosenConversationId.set(newIndex);
+    return next;
+  });
+}
+
+export function findConversationIndexById(id: string): number {
+  const convs = get(conversations);
+  return convs.findIndex(c => c.id === id);
+}
 
 // Helper to generate unique conversation IDs
 function generateConversationId(): string {
@@ -106,7 +151,7 @@ selectedModel.subscribe(value => {
 
   export const base64Images = writable([]);
   export const clearFileInputSignal = writable(false);
-  export const clearPDFInputSignal = writable(false);
+
 
   export const isStreaming = writable(false);  
   export const userRequestedStreamClosure = writable(false);  

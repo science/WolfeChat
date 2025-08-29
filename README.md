@@ -1,4 +1,4 @@
-# SmoothGPT - a ChatGPT API Enhanced UI
+# WolfeChat - a ChatGPT API Enhanced UI
 
 ## Build notes
 
@@ -14,45 +14,71 @@ To run locally for dev:
 npm run dev
 ```
 
-## Older Information
-This is my overhauled and improved ChatGPT API UI, forked from patrikzudel ([PatrikZeros-ChatGPT-API-UI](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI)). Firstly, a **HUGE thank you** to Patrik for his fantastic work in the original version.
+## Testing
 
-There were a number of improvements I wanted to make. This was initially done for only my personal use, but now I am offering it publicly.
+The project includes a comprehensive test suite with automatic test discovery based on folder structure.
+
+### Running Tests
+
+```bash
+# Run unit tests (default)
+npm run test
+
+# Run live/API tests (requires OpenAI API key)
+npm run test:live
+
+# Run specific test suite
+node run-tests.mjs --suite unit          # Unit tests only
+node run-tests.mjs --suite browser-nonlive  # Browser tests (future)
+node run-tests.mjs --suite live          # API tests only
+node run-tests.mjs --suite all           # All tests
+
+# Filter tests
+node run-tests.mjs --tag keyboard        # Run tests tagged 'keyboard'
+node run-tests.mjs --name "scroll"       # Run tests containing 'scroll' in name
+```
+
+### Test Organization
+
+Tests are automatically discovered based on their location:
+- `src/tests/unit/` - Unit tests that run in Node.js with JSDOM
+- `src/tests/browser-nonlive/` - Tests requiring a real browser (future implementation)
+- `src/tests/live/` - Tests that require external APIs (OpenAI, etc.)
+
+Simply add a `*.test.ts` file to the appropriate folder and it will be automatically included in the test suite.
+
+See [CLI_TESTING.md](CLI_TESTING.md) for detailed testing documentation.
+
+## Credits and History
+WolfeChat is a fork and continuation of prior excellent open-source work. Special thanks to patrikzudel for the original [PatrikZeros-ChatGPT-API-UI](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI), and to agambon for the improvements in [SmoothGPT](https://github.com/agambon/SmoothGPT) that led to this project. This repository adapts and extends that lineage for WolfeChat while acknowledging all prior authors and licensing.
+
+This project evolves the UI/UX, features, and codebase organization to fit WolfeChat’s goals while remaining grateful to the projects it builds upon.
 
 ## APP IMPROVEMENTS:
 
-### Fully Modularized
-- I refactored the codebase to be modularized, instead of being contained in one large file. This makes extending the code much easier.
+### Responsive
+The app is upgraded to work better on phones (tested on Firefox/Android).
 
-### Export and Import Session
-- Because all data is browser-side, wiping cache will wipe the data. The user can now preserve their conversations by exporting their session file.
+### Quick Settings
+Added a Quick Settings menu to make it easy to switch between different models in the same conversation. Also, when using a Reasoning model like GPT-5, it is quick to increase or decrease the reasoning and verbosity settings in a single conversation.
 
-### API Checking
-- The settings pane has a button to conduct an API check and let the user know if the API key is working or not.
+### Support for Reasoning Models like GPT-5
+Reasoning, Verbosity, and Summary are all configurable when using GPT-5
+Reasoning data from server is displayed in the chat, when available. The reasoning text is _not_ sent back to the AI model as context during conversations
 
-### Model Selection
-- Instead of it being hardcoded to use a certain model, the settings pane now queries the API for a list of available models, and the user may select one. The UI will display the currently active model in the side pane.
+### More Settings Options
+"Enter" key behavior can be configured to either "send messages" or "add linefeeds to the chat message."
 
-### Support for Text-To-Speech and Vision Models
-- In the settings pane you can select a mode: GPT, GPT + Vision, or TTS. The list of available models dynamically filters.
+### Message Management
+- A copy button is now present on any message.
+- A delete button lets you remove any message, either user or AI messages.
+- A delete all below button lets you fork the chat from that point in the conversation.
 
-### Text-To-Speech
-- With a TTS model selected, the settings pane also allows a user to select a Voice model. Then the user can submit text to be converted into an MP3. The resulting message displays a play button and a download button. Note that these are ephemeral: they are only stored in the active session and will no longer work if you reload the page.
-
-### Image Recognition
-- With a Vision model selected, the user can upload one or more images to the API. The UI will dynamically update to expose the image upload button when this mode is selected. The AI will be able to see and tell you about the images.
-
-### Copy Any Message
-- A copy button is now present on any message, allowing the user to copy it to their clipboard.
-
-### PDF Upload Queries
-- When using a GPT model, the user can upload a PDF, which is parsed for text entirely browser-side. Then the user may ask the AI questions about the contents of the PDF.
-
-### Mid-conversation Editing
-- Just like on the official UI, the user may edit any message. This branches the conversation at that point.
+### Using new OpenAI Responses API
+Deprecated ChatResponses API, which enables extensibility and Reasoning window streaming.
 
 ### Improved Autoscroll
-- The conversation now allows the user to safely scroll up while text is streaming in. If the user scrolls back down to the bottom, the chat window snaps back into scrolling mode.
+- The conversation now allows the user to safely scroll up while text is streaming in. Also provided are up/down buttons in Quick Settings to jump between long prompts (especially useful on phones)
 
 ### Improved UI
 - The UI more closely resembles the official ChatGPT interface, with better icons, avatars, and expanding text areas.
@@ -79,4 +105,6 @@ I don't necessarily plan to actively support requests, as I forked the original 
 
 *** 
 
-[See the original readme here.](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI/blob/main/README.md)
+Further reading:
+- Original project: [PatrikZeros-ChatGPT-API-UI](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI)
+- Prior fork: [SmoothGPT](https://github.com/agambon/SmoothGPT)

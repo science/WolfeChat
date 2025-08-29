@@ -1,7 +1,9 @@
 // Debug utilities for SmoothGPT chat issues
 import { get } from 'svelte/store';
-import { apiKey, selectedModel } from '../stores/stores';
-import { createResponseViaResponsesAPI, streamResponseViaResponsesAPI, sendRequest, buildResponsesInputFromMessages } from '../services/openaiService';
+import { apiKey, selectedModel } from '../stores/stores.js';
+import type { ChatMessage } from '../stores/stores.js';
+import { createResponseViaResponsesAPI, streamResponseViaResponsesAPI, sendRequest, buildResponsesInputFromMessages } from '../services/openaiService.js';
+import { getReasoningModel } from '../tests/testModel.js';
 
 export interface DebugInfo {
   apiKeyConfigured: boolean;
@@ -568,9 +570,9 @@ export async function testSSEJSImplementation() {
   }
 }
 
-export async function testResponsesAPI(prompt: string = "Say 'double bubble bath' five times fast.") {
+export async function testResponsesAPI(prompt: string = "Say 'double bubble bath' five times fast.", modelOverride?: string) {
   const key = get(apiKey);
-  const model = get(selectedModel);
+  const model = modelOverride || get(selectedModel);
 
   console.log('=== Responses API (non-streaming) Test ===');
   console.log('API Key configured:', !!key);
@@ -597,9 +599,9 @@ export async function testResponsesAPI(prompt: string = "Say 'double bubble bath
   }
 }
 
-export async function testResponsesStreamingAPI(prompt: string = "Stream this: 'double bubble bath' five times fast.") {
+export async function testResponsesStreamingAPI(prompt: string = "Stream this: 'double bubble bath' five times fast.", modelOverride?: string) {
   const key = get(apiKey);
-  const model = get(selectedModel);
+  const model = modelOverride || get(selectedModel);
 
   console.log('=== Responses API (streaming) Test ===');
   console.log('API Key configured:', !!key);
@@ -637,9 +639,9 @@ export async function testResponsesStreamingAPI(prompt: string = "Stream this: '
   }
 }
 
-export async function testResponsesStreamingWithHistory() {
+export async function testResponsesStreamingWithHistory(modelOverride?: string) {
   const key = get(apiKey);
-  const model = get(selectedModel);
+  const model = modelOverride || get(selectedModel);
 
   console.log('=== Responses API Streaming With History Test ===');
   console.log('API Key configured:', !!key);
@@ -650,11 +652,11 @@ export async function testResponsesStreamingWithHistory() {
     return null;
   }
 
-  const messages = [
-    { role: 'system', content: 'You are a helpful assistant.' },
-    { role: 'user', content: 'Say "Hello."' },
-    { role: 'assistant', content: 'Hello.' },
-    { role: 'user', content: 'Now say "world".' }
+  const messages: ChatMessage[] = [
+    { role: 'system' as const, content: 'You are a helpful assistant.' },
+    { role: 'user' as const, content: 'Say "Hello."' },
+    { role: 'assistant' as const, content: 'Hello.' },
+    { role: 'user' as const, content: 'Now say "world".' }
   ];
 
   const input = buildResponsesInputFromMessages(messages);
@@ -688,12 +690,12 @@ export async function testResponsesStreamingWithHistory() {
 
 /**
  * Mirrors the title-generation path in the live app, which calls sendRequest(...)
- * with a model like 'gpt-4-turbo-preview' that may not support reasoning.effort.
+ * with a model that may not support reasoning.effort.
  * This should reproduce the 400 unsupported_parameter error when applicable.
  */
-export async function testCreateTitleFlow(currentInput: string = "This is a sample conversation about testing.") {
+export async function testCreateTitleFlow(currentInput: string = "This is a sample conversation about testing.", modelOverride?: string) {
   const key = get(apiKey);
-  const model = 'gpt-4-turbo-preview';
+  const model = modelOverride || 'gpt-4o-mini';  // Use a modern model that works with Responses API
 
   console.log('=== Title Flow Responses API Test ===');
   console.log('API Key configured:', !!key);
@@ -819,28 +821,24 @@ function supportsReasoningLocal(model: string): boolean {
  * - reasoningSummaryText, reasoningText: concatenated reasoning content (if any)
  * - outputText: concatenated final output text
  */
-export async function testReasoningStreamingAPI(prompt?: string) {
+export async function testReasoningStreamingAPI(prompt?: string, modelOverride?: string) {
   const key = get(apiKey);
   const selected = get(selectedModel);
+  const model = modelOverride || getReasoningModel();
 
   console.log('=== Reasoning Streaming Test (multi-variant) ===');
   console.log('API Key configured:', !!key);
   console.log('Selected model:', selected);
+  console.log('Using model for test:', model);
 
   if (!key) {
     console.error('No API key configured');
     return null;
   }
 
-  // Keep using o3-mini for consistency (as discussed), but allow easy swapping here if needed.
-  const model = 'o3-mini';
-  if ((selected || '').toLowerCase() !== model) {
-    console.warn(`Reasoning test will use "${model}" regardless of selected model ("${selected}").`);
-  }
-
-  const messages = [
-    { role: 'system', content: 'You are a helpful assistant. Think step by step internally and provide a concise final answer.' },
-    { role: 'user', content: prompt || 'Please solve: 24 * 17. Provide the final numeric answer; you may think step-by-step internally.' }
+  const messages: ChatMessage[] = [
+    { role: 'system' as const, content: 'You are a helpful assistant. Think step by step internally and provide a concise final answer.' },
+    { role: 'user' as const, content: prompt || 'Please solve: 24 * 17. Provide the final numeric answer; you may think step-by-step internally.' }
   ];
   const input = buildResponsesInputFromMessages(messages);
 

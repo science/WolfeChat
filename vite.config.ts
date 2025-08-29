@@ -11,12 +11,7 @@ export default defineConfig({
       target: "es2022",
       rollupOptions: {
         output: {
-          // PDF.js might benefit from this for handling assets like workers
-          manualChunks(id) {
-            if (id.includes('pdf.worker.min.js')) {
-              return 'pdf.worker.min';
-            }
-          }
+
         }
       }
     },

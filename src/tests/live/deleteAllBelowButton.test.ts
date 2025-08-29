@@ -1,16 +1,18 @@
 import { get } from 'svelte/store';
-import { registerTest } from '../testHarness';
+import { tick } from 'svelte';
+import { registerTest } from '../testHarness.js';
 import {
   conversations,
   chosenConversationId,
   selectedModel,
-} from '../../stores/stores';
+} from '../../stores/stores.js';
 import {
   reasoningWindows,
   reasoningPanels,
-} from '../../stores/reasoningStore';
-import { reasoningEffort } from '../../stores/reasoningSettings';
-import { streamResponseViaResponsesAPI } from '../../services/openaiService';
+} from '../../stores/reasoningStore.js';
+import { reasoningEffort } from '../../stores/reasoningSettings.js';
+import { streamResponseViaResponsesAPI } from '../../services/openaiService.js';
+import { getReasoningModel } from '../testModel';
 
 // Helper functions
 function sleep(ms: number) {
@@ -85,7 +87,7 @@ registerTest({
   id: 'delete-all-below-button-functionality',
   name: 'Delete All Below: button deletes all messages and reasoning windows below clicked message',
   tags: ['live', 'ui', 'delete'],
-  timeoutMs: 30000,
+  timeoutMs: 60000,
   fn: async (assert) => {
     // Preserve state
     const prevConvs = get(conversations);
@@ -97,11 +99,12 @@ registerTest({
 
     try {
       // Setup: Configure for reasoning
-      selectedModel.set('gpt-5-nano');
+      selectedModel.set(getReasoningModel());
       reasoningEffort.set('low');
 
       // Create initial conversation
       conversations.set([{
+        id: 'test-conv-1',
         title: 'Delete Below Test',
         assistantRole: 'You are a helpful assistant.',
         conversationTokens: 0,
@@ -111,8 +114,45 @@ registerTest({
       reasoningWindows.set([]);
       reasoningPanels.set([]);
 
-      await sleep(0);
-      await waitFor(() => !!getChatContainer(), 5000);
+      // Ensure DOM has app container
+      if (!document.getElementById('app')) {
+        const appDiv = document.createElement('div');
+        appDiv.id = 'app';
+        document.body.appendChild(appDiv);
+      }
+
+      // Try to mount App if not already mounted
+      let app = (window as any).__svelteApp;
+      if (!app && !getChatContainer()) {
+        try {
+          const App = (await import('../../App.svelte')).default;
+          app = new App({
+            target: document.getElementById('app')!
+          });
+          (window as any).__svelteApp = app;
+          await tick();
+        } catch (e) {
+          console.warn('Could not mount App, assuming it is already mounted:', e);
+        }
+      }
+
+      await sleep(100);
+      await tick();
+      
+      // Wait for chat container with better error reporting
+      await waitFor(() => {
+        const container = getChatContainer();
+        if (!container) {
+          // Check if main-content-area exists
+          const mainArea = document.querySelector('.main-content-area');
+          if (!mainArea) {
+            console.log('No .main-content-area found in DOM');
+          } else {
+            console.log('Found .main-content-area but no .overflow-y-auto inside');
+          }
+        }
+        return !!container;
+      }, 10000);
 
       // Track messages and reasoning windows as we create them
       const messageTracker: {
@@ -133,7 +173,9 @@ registerTest({
           return updated;
         });
         
+        await tick();
         await sleep(100);
+        await tick();
         const userMsgIndex = get(conversations)[convId].history.length - 1;
         
         // Track user message
@@ -175,13 +217,14 @@ registerTest({
         // Stream the response
         await streamResponseViaResponsesAPI(
           userText,
-          'gpt-5-nano',
+          getReasoningModel(),
           undefined,
           undefined,
-          { convId, anchorIndex: userMsgIndex }
+          { convId: String(convId), anchorIndex: userMsgIndex }
         );
 
         await sleep(200);
+        await tick();
         
         // Track assistant message
         const assistantMsgIndex = get(conversations)[convId].history.length - 1;
@@ -195,12 +238,16 @@ registerTest({
 
       // Create a sequence of messages
       await addExchange('First question', 'First AI response', true);
+      await tick();
       await addExchange('Second question', 'Second AI response', true);
+      await tick();
       await addExchange('Third question', 'Third AI response', true);
+      await tick();
       await addExchange('Fourth question', 'Fourth AI response', false); // No reasoning on last one
+      await tick();
 
       // Verify all messages are present
-      await waitFor(() => getMessageEls().length === 8, 5000); // 4 user + 4 assistant
+      await waitFor(() => getMessageEls().length === 8, 10000); // 4 user + 4 assistant
       const allMessages = getMessageEls();
       assert.that(allMessages.length === 8, `Should have 8 messages, got ${allMessages.length}`);
 
@@ -227,16 +274,17 @@ registerTest({
       
       assert.that(!!deleteAllButton, 'Delete all below button should exist on message');
       
-      // Remember which messages should remain vs be deleted
+      // Remember which messages should remain
       const shouldRemainIndices = [0, 1, 2]; // First user, first assistant, second user
-      const shouldDeleteIndices = [3, 4, 5, 6, 7]; // Everything after second user message
       
       // Click the button
       deleteAllButton?.click();
+      await tick();
       await sleep(200);
+      await tick();
       
       // Wait for DOM to update
-      await waitFor(() => getMessageEls().length === 3, 3000);
+      await waitFor(() => getMessageEls().length === 3, 10000);
       
       // Verify correct messages remain
       const remainingMessages = getMessageEls();
@@ -268,7 +316,7 @@ registerTest({
       
       // Verify reasoning windows in store
       const finalWindows = get(reasoningWindows);
-      const windowsForConv = finalWindows.filter(w => w.convId === 0);
+       const windowsForConv = finalWindows.filter(w => w.convId === 'test-conv-1');
       assert.that(windowsForConv.length === 1, `Should have 1 reasoning window remaining, got ${windowsForConv.length}`);
       
     } finally {
@@ -297,6 +345,7 @@ registerTest({
     try {
       // Create a simple conversation with messages
       conversations.set([{
+        id: 'test-conv-2',
         title: 'UI Test',
         assistantRole: 'You are a helpful assistant.',
         conversationTokens: 0,
@@ -309,9 +358,31 @@ registerTest({
       }]);
       chosenConversationId.set(0);
 
-      await sleep(0);
+      // Ensure App is mounted
+      if (!document.getElementById('app')) {
+        const appDiv = document.createElement('div');
+        appDiv.id = 'app';
+        document.body.appendChild(appDiv);
+      }
+      
+      let app = (window as any).__svelteApp;
+      if (!app && !getChatContainer()) {
+        try {
+          const App = (await import('../../App.svelte')).default;
+          app = new App({
+            target: document.getElementById('app')!
+          });
+          (window as any).__svelteApp = app;
+          await tick();
+        } catch (e) {
+          console.warn('Could not mount App, assuming it is already mounted:', e);
+        }
+      }
+
+      await sleep(100);
+      await tick();
       await waitFor(() => !!getChatContainer(), 5000);
-      await waitFor(() => getMessageEls().length === 4, 3000);
+      await waitFor(() => getMessageEls().length === 4, 10000);
 
       const messages = getMessageEls();
       
@@ -365,6 +436,7 @@ registerTest({
     try {
       // Test case 1: Delete from first message (should delete everything except first)
       conversations.set([{
+        id: 'test-conv-3',
         title: 'Edge Case Test',
         assistantRole: 'You are a helpful assistant.',
         conversationTokens: 0,
@@ -377,16 +449,40 @@ registerTest({
       }]);
       chosenConversationId.set(0);
 
-      await sleep(0);
-      await waitFor(() => getMessageEls().length === 4, 3000);
+      // Ensure App is mounted
+      if (!document.getElementById('app')) {
+        const appDiv = document.createElement('div');
+        appDiv.id = 'app';
+        document.body.appendChild(appDiv);
+      }
+      
+      let app = (window as any).__svelteApp;
+      if (!app && !getChatContainer()) {
+        try {
+          const App = (await import('../../App.svelte')).default;
+          app = new App({
+            target: document.getElementById('app')!
+          });
+          (window as any).__svelteApp = app;
+          await tick();
+        } catch (e) {
+          console.warn('Could not mount App, assuming it is already mounted:', e);
+        }
+      }
+
+      await sleep(100);
+      await tick();
+      await waitFor(() => getMessageEls().length === 4, 10000);
 
       let messages = getMessageEls();
       const firstMsgBtn = getDeleteAllBelowButton(messages[0]);
       assert.that(!!firstMsgBtn, 'First message should have delete-all-below button');
       
       firstMsgBtn?.click();
+      await tick();
       await sleep(200);
-      await waitFor(() => getMessageEls().length === 1, 3000);
+      await tick();
+      await waitFor(() => getMessageEls().length === 1, 10000);
       
       messages = getMessageEls();
       assert.that(messages.length === 1, 'Should have only 1 message after deleting all below first');
@@ -394,6 +490,7 @@ registerTest({
       
       // Test case 2: Empty conversation should not crash
       conversations.set([{
+        id: 'test-conv-4',
         title: 'Empty Test',
         assistantRole: 'You are a helpful assistant.',
         conversationTokens: 0,
@@ -406,6 +503,7 @@ registerTest({
       
       // Test case 3: Single message should not have delete-all-below button
       conversations.set([{
+        id: 'test-conv-5',
         title: 'Single Message Test',
         assistantRole: 'You are a helpful assistant.',
         conversationTokens: 0,
@@ -414,7 +512,8 @@ registerTest({
         ],
       }]);
       await sleep(100);
-      await waitFor(() => getMessageEls().length === 1, 3000);
+      await tick();
+      await waitFor(() => getMessageEls().length === 1, 10000);
       
       messages = getMessageEls();
       const singleMsgBtn = getDeleteAllBelowButton(messages[0]);

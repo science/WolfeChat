@@ -66,6 +66,11 @@ export class ScrollMemory {
   }
 
   saveCurrent() {
+    // Respect a global navigation lock to avoid jitter after programmatic jumps
+    try {
+      const lockUntil = (window as any).__chatNavLockUntil as number | undefined;
+      if (typeof lockUntil === 'number' && performance.now() < lockUntil) return;
+    } catch {}
     if (!this.container || this.key == null || this.pendingRestore || this.suspended) return;
     const denom = this.container.scrollHeight - this.container.clientHeight;
     // Ignore saves while not scrollable; this avoids overwriting a meaningful ratio with 0
@@ -96,6 +101,12 @@ export class ScrollMemory {
     const key = this.key;
     if (!container || key == null) return;
     if (this.suspended) return;
+
+    // Respect a global navigation lock to avoid jitter after programmatic jumps
+    try {
+      const lockUntil = (window as any).__chatNavLockUntil as number | undefined;
+      if (typeof lockUntil === 'number' && performance.now() < lockUntil) return;
+    } catch {}
 
     // Guard: only perform mutation-driven restores when we're in a pendingRestore phase
     // (e.g., after switching conversations). This prevents ratio-based restores from

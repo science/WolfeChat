@@ -1,51 +1,71 @@
 import { get, writable } from 'svelte/store';
-import { Configuration, OpenAIApi } from "openai";
-import type { ChatCompletionRequestMessage,  } from "openai";
-import type  { ChatCompletionRequestMessageRoleEnum } from "openai";
-import { apiKey} from "../stores/stores";
-import { selectedModel, selectedVoice, audioUrls, selectedSize, selectedQuality, defaultAssistantRole, isStreaming, streamContext } from '../stores/stores';
-import { conversations, chosenConversationId, combinedTokens, userRequestedStreamClosure } from "../stores/stores";
-import { setHistory, countTokens, estimateTokens, displayAudioMessage, cleanseMessage } from '../managers/conversationManager';
-import { countTicks } from '../utils/generalUtils';
-import { saveAudioBlob, getAudioBlob } from '../idb';
-import { onSendVisionMessageComplete } from '../managers/imageManager';
-import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings';
-import { startReasoningPanel, appendReasoningText, setReasoningText, completeReasoningPanel, logSSEEvent, createReasoningWindow, collapseReasoningWindow } from '../stores/reasoningStore';
+// ChatCompletions SDK removed; using fetch-based Responses API only
+import type { ChatMessage } from "../stores/stores.js";
+import { 
+  apiKey, 
+  conversations, 
+  chosenConversationId, 
+  selectedModel, 
+  selectedSize,
+  selectedQuality,
+  defaultAssistantRole
+} from "../stores/stores.js";
+import { reasoningEffort, verbosity, summary } from "../stores/reasoningSettings.js";
+import {
+  createReasoningWindow,
+  collapseReasoningWindow,
+  startReasoningPanel,
+  setReasoningText,
+  completeReasoningPanel,
+  logSSEEvent
+} from "../stores/reasoningStore.js";
+import {
+  setHistory,
+  cleanseMessage,
+  displayAudioMessage,
+  countTokens,
+  estimateTokens
+} from "../managers/conversationManager.js";
+import { onSendVisionMessageComplete } from "../managers/imageManager.js";
+import { countTicks } from "../utils/generalUtils.js";
+import { saveAudioBlob, getAudioBlob } from "../idb.js";
 
-let configuration: Configuration | null = null;
-let openai: OpenAIApi | null = null;
+// Type definitions for legacy OpenAI SDK compatibility
+type ChatCompletionRequestMessage = ChatMessage;
+type ChatCompletionRequestMessageRoleEnum = 'system' | 'user' | 'assistant';
+type OpenAIApi = any;
+
+// Legacy globals for backward compatibility
+let openai: OpenAIApi = null;
+let configuration: any = null;
+
+// Global abort controller for streaming
 let globalAbortController: AbortController | null = null;
 
-
-
-export const closeStream = async () => {
-  if (globalAbortController) {
-    try { globalAbortController.abort(); } catch {}
-    globalAbortController = null;
-  }
-  console.log("Stream closed by user.");
-  isStreaming.set(false);
-
-  const { streamText, convId } = get(streamContext);
-  if (streamText && convId !== null) {
-    const cleanText = streamText.replace(/█+$/, '');
-    const currentHistory = get(conversations)[convId].history;
-    const lastEntry = currentHistory.length ? currentHistory[currentHistory.length - 1] : null;
-
-    if (lastEntry && typeof lastEntry.content === 'string' && lastEntry.content.endsWith("█")) {
-      currentHistory[currentHistory.length - 1] = { ...lastEntry, content: cleanText };
-    } else {
-      currentHistory.push({ role: "assistant", content: cleanText });
+// Gracefully stop an in-flight streaming response
+export function closeStream() {
+  try {
+    userRequestedStreamClosure.set(true);
+    const ctrl = globalAbortController;
+    if (ctrl) {
+      ctrl.abort();
     }
-    await setHistory(currentHistory, convId);
-    streamContext.set({ streamText: '', convId: null });
+  } catch (e) {
+    console.warn('closeStream abort failed:', e);
+  } finally {
+    globalAbortController = null;
+    isStreaming.set(false);
   }
+}
 
-  userRequestedStreamClosure.set(true);
-  onSendVisionMessageComplete();
-};
-  
-const errorMessage: ChatCompletionRequestMessage[] = [
+
+// Streaming state management
+export const isStreaming = writable(false);
+export const userRequestedStreamClosure = writable(false);
+export const streamContext = writable<{ streamText: string; convId: any }>({ streamText: '', convId: null });
+
+// ChatCompletions SDK removed; using fetch-based Responses API only
+const errorMessage: ChatMessage[] = [
   {
     role: "assistant",
     content:
@@ -53,11 +73,12 @@ const errorMessage: ChatCompletionRequestMessage[] = [
   },
 ];
 
+// Deprecated: ChatCompletions SDK initialization removed
 export function initOpenAIApi(): void {
   const key = get(apiKey);
   if (key) {
-    configuration = new Configuration({ apiKey: key });
-    openai = new OpenAIApi(configuration);
+    configuration = { apiKey: key };
+    openai = { configured: true };
     console.log("OpenAI API initialized.");
   } else {
     console.warn("API key is not set. Please set the API key before initializing.");
@@ -246,6 +267,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   let ticks = false;
   let currentHistory = get(conversations)[convId].history;
   const anchorIndex = currentHistory.length - 1;
+  // Get the conversation's unique string ID for reasoning window tracking
+  const conversationUniqueId = get(conversations)[convId]?.id;
 
   const historyMessages = currentHistory.map((historyItem) => ({
     role: historyItem.role,
@@ -269,7 +292,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   try {
     await streamResponseViaResponsesAPI(
       '',
-      get(selectedModel),
+      ((): string => { const m = get(selectedModel); return m; })(),
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -284,6 +307,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText + "█" + (ticks ? "\n```" : ""),
+                model: get(selectedModel),
               },
             ],
             convId
@@ -297,7 +321,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
           await setHistory(
             [
               ...currentHistory,
-              { role: "assistant", content: streamText },
+              { role: "assistant", content: streamText, model: get(selectedModel) },
             ],
             convId
           );
@@ -312,7 +336,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       finalInput,
-      { convId, anchorIndex }
+      { convId: conversationUniqueId, anchorIndex }
     );
   } finally {
     isStreaming.set(false);
@@ -325,6 +349,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   let ticks = false;
   let currentHistory = get(conversations)[convId].history;
   const anchorIndex = currentHistory.length - 1;
+  // Get the conversation's unique string ID for reasoning window tracking
+  const conversationUniqueId = get(conversations)[convId]?.id;
   
   let roleMsg: ChatCompletionRequestMessage = {
     role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
@@ -356,7 +382,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   try {
     await streamResponseViaResponsesAPI(
       '',
-      get(selectedModel),
+      ((): string => { const m = get(selectedModel); return m; })(),
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -374,6 +400,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText + "█" + (ticks ? "\n```" : ""),
+                model: get(selectedModel),
               },
             ],
             convId
@@ -390,6 +417,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText,
+                model: get(selectedModel),
               },
             ],
             convId
@@ -407,89 +435,14 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       input,
-      { convId, anchorIndex }
+      { convId: conversationUniqueId, anchorIndex }
     );
   } finally {
     isStreaming.set(false);
   }
 }
 
-  export async function sendPDFMessage(msg: ChatCompletionRequestMessage[], convId, pdfOutput) {
-  userRequestedStreamClosure.set(false);
 
-  let tickCounter = 0;
-  let ticks = false;
-  let currentHistory = get(conversations)[convId].history;
-  const anchorIndex = currentHistory.length - 1;
-  
-  let roleMsg: ChatCompletionRequestMessage = {
-    role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
-    content: get(conversations)[convId].assistantRole,
-  };
-
-  let systemMessage: ChatCompletionRequestMessage = {
-    role: 'system',
-    content: pdfOutput,
-  };
-
-  const chatMessages = [roleMsg, systemMessage, ...msg].map(cleanseMessage);
-  const input = buildResponsesInputFromMessages(chatMessages);
-
-  let streamText = "";
-  currentHistory = [...currentHistory];
-  isStreaming.set(true);
-
-  try {
-    await streamResponseViaResponsesAPI(
-      '',
-      get(selectedModel),
-      {
-        onTextDelta: (text) => {
-          const msgTicks =countTicks(text);
-          tickCounter += msgTicks;
-          if (msgTicks === 0) tickCounter = 0;
-          if (tickCounter === 3) { ticks = !ticks; tickCounter = 0; }
-          streamText += text;
-          streamContext.set({ streamText, convId });
-          setHistory(
-            [
-              ...currentHistory,
-              {
-                role: "assistant",
-                content: streamText + "█" + (ticks ? "\n```" : ""),
-              },
-            ],
-            convId
-          );
-        },
-        onCompleted: async () => {
-          if (get(userRequestedStreamClosure)) {
-            streamText = streamText.replace(/█+$/, '');
-            userRequestedStreamClosure.set(false);
-          }
-          await setHistory(
-            [
-              ...currentHistory,
-              { role: "assistant", content: streamText },
-            ],
-            convId
-          );
-          estimateTokens(msg, convId);
-          streamText = "";
-          isStreaming.set(false);
-        },
-        onError: (_err) => {
-          isStreaming.set(false);
-        },
-      },
-      input,
-      { convId, anchorIndex }
-    );
-  } finally {
-    isStreaming.set(false);
-  }
-}
-  
 
 
   export async function sendDalleMessage(msg: ChatCompletionRequestMessage[], convId) {
@@ -533,7 +486,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
       setHistory([...currentHistory, {
         role: "assistant",
         content: imageUrl,
-        type: "image" // Adding a type property to distinguish image messages
+        type: "image", // Adding a type property to distinguish image messages
+        model: get(selectedModel)
       }], convId);
   
     } catch (error) {
@@ -547,8 +501,11 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
 // Choose a sensible default Responses-capable model
 function getDefaultResponsesModel() {
   const m = get(selectedModel);
-  if (!m || /gpt-3\.5|gpt-4-turbo-preview|gpt-4-32k|gpt-4$/.test(m)) {
-    return 'gpt-4o-mini';
+  // If no model is set, or it's an old/incompatible model, use gpt-5-nano as default for tests
+  // This includes o1-mini which is not compatible with Responses API
+  if (!m || /gpt-3\.5|gpt-4-turbo-preview|gpt-4-32k|gpt-4$|o1-mini/.test(m)) {
+    // Use gpt-5-nano as the default for better test compatibility
+    return 'gpt-5-nano';
   }
   return m;
 }
@@ -786,7 +743,7 @@ export async function streamResponseViaResponsesAPI(
   model?: string,
   callbacks?: ResponsesStreamCallbacks,
   inputOverride?: any[],
-  uiContext?: { convId?: number; anchorIndex?: number }
+  uiContext?: { convId?: string; anchorIndex?: number }
 ): Promise<string> {
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');

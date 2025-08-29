@@ -1,7 +1,7 @@
-import { registerTest } from '../testHarness';
+import { registerTest } from '../testHarness.js';
 import { get } from 'svelte/store';
-import { apiKey, conversations, chosenConversationId } from '../../stores/stores';
-import { sendRegularMessage } from '../../services/openaiService';
+import { apiKey, conversations, chosenConversationId } from '../../stores/stores.js';
+import { sendRegularMessage } from '../../services/openaiService.js';
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -16,6 +16,13 @@ registerTest({
     const key = get(apiKey);
     assert.that(!!key, 'API key is configured');
     if (!key) return;
+
+    // Force a sane model for the initial send regardless of persisted localStorage
+    const { selectedModel } = await import('../../stores/stores.js');
+    const { getReasoningModel } = await import('../testModel.js');
+    const prevModel = get(selectedModel as any);
+    localStorage.removeItem('selectedModel');
+    (selectedModel as any).set(getReasoningModel());
 
     const convId = get(chosenConversationId);
     // Ensure the current conversation exists
@@ -34,10 +41,8 @@ registerTest({
     });
 
     const beforeTitle = (get(conversations)[convId]?.title ?? '').trim();
-    // UI shows "New conversation" when title === '', so we expect '' here
     assert.that(beforeTitle === '', 'Initial title is empty (renders as "New conversation")');
 
-    // Send the first user message; app flow should trigger a follow-up title generation
     const userMsg = [
       {
         role: 'user',
@@ -50,6 +55,8 @@ registerTest({
       await sendRegularMessage(userMsg as any, convId);
     } catch (e) {
       assert.that(false, `sendRegularMessage completed without throwing: ${e?.message ?? e}`);
+      // Restore model before exiting
+      if (prevModel != null) (selectedModel as any).set(prevModel);
       return;
     }
 
@@ -64,6 +71,9 @@ registerTest({
       }
       await sleep(500);
     }
+
+    // Restore prior model selection
+    if (prevModel != null) (selectedModel as any).set(prevModel);
 
     assert.that(!!finalTitle, `Conversation title updated to a non-empty value (got: "${finalTitle}")`);
     assert.that(finalTitle.toLowerCase() !== 'new conversation', 'Title is not the placeholder "New conversation"');
