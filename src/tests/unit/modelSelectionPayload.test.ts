@@ -32,7 +32,7 @@ async function captureNextPayload(run: () => Promise<void> | void): Promise<Capt
   function shouldCapture(input: RequestInfo | URL): boolean {
     try {
       const url = typeof input === 'string' ? input : (input as Request).url ?? String(input);
-      return /\/v1\/(responses|chat\/completions)/.test(url);
+       return /\/v1\/(responses|chat\/completions|audio\/speech|images\/generations)/.test(url);
     } catch {
       return true;
     }
@@ -51,17 +51,21 @@ async function captureNextPayload(run: () => Promise<void> | void): Promise<Capt
       }
     }
     // Prevent any real network activity in this non-API test
-    return Promise.reject(new Error('Intercepted fetch (non-API test): prevented network call'));
+     // Resolve with a dummy Response-like object to let flows continue
+     return Promise.resolve({ ok: true, json: async()=>({}), text: async()=>'', status: 200 });
   }) as any;
 
   try {
     await Promise.resolve(run());
+    // give store subscriptions a chance to propagate
+    await sleep(0);
   } catch {
     // The call site may surface our interception error; ignore it for this test
   }
 
-  // Allow any queued microtasks in the send flow to run and trigger fetch
+  // Allow queued microtasks and an extra frame to ensure send flow triggers fetch
   await sleep(0);
+  await new Promise<void>((r) => requestAnimationFrame(() => r()));
 
   // Restore fetch before returning
   (window as any).fetch = originalFetch;
