@@ -21,7 +21,9 @@
   const dispatch = createEventDispatcher();
   let placeholder = `You are a helpful assistant.`;
 
-  function newChat() {
+   import ClearChat from "../assets/ClearChat.svg";
+
+   function newChat() {
     dispatch("new-chat");
   }
 
@@ -137,10 +139,27 @@ let editingTitleId = null;
       <button on:click={() => {menuVisible.set(false);}} class="md:hidden z-20 flex py-3 px-3 items-center gap-3 rounded-md hover:bg-hover hover:opacity-hover transition-colors duration-200 cursor-pointer text-sm mb-2 flex-shrink-0 border border-white/50">
         Close menu
       </button>
-      <button class="flex justify-between items-center py-3 px-3 cursor-pointer w-full text-left hover:bg-gray-700 rounded-lg z-20" on:click={newChat}>
+      <div class="flex justify-between items-center py-3 px-3 w-full rounded-lg z-20">
         <p class="text-center font-bold text-2xl m-0">WolfeChat</p>
-        <img src={NewChat} alt="New chat" class="w-6 h-6 filter-white z-20">
-    </button>
+        <div class="flex items-center gap-2">
+          <button title="Clear Conversation" aria-label="Clear Conversation" class="w-6 h-6 flex items-center justify-center hover:opacity-80" on:click={() => {
+            // Create fresh conversation then delete current
+            const idx = $chosenConversationId;
+            const convs = $conversations;
+            const newConv = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, history: [], conversationTokens: 0, assistantRole: convs[idx]?.assistantRole ?? "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.", title: '' };
+            conversations.set([...convs, newConv]);
+            chosenConversationId.set($conversations.length); // select newly appended index
+            // remove old index
+            conversations.set($conversations.filter((_, i) => i !== idx));
+          }}>
+            <img src={ClearChat} alt="Clear Conversation" class="w-6 h-6 filter-white" />
+          </button>
+          <button class="hover:bg-gray-700 rounded-lg p-1" title="New Conversation" aria-label="New Conversation" on:click={newChat}>
+            <img src={NewChat} alt="New chat" class="w-6 h-6 filter-white z-20">
+          </button>
+        </div>
+      </div>
+
     
      
      

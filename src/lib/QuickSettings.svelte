@@ -9,7 +9,23 @@
   function toggle() { open = !open; }
   $: isReasoningModel = supportsReasoning($selectedModel || '');
 
-  function getChatContainer(): HTMLElement | null {
+   async function clearConversation() {
+     try {
+       const idx = get(chosenConversationId);
+       const convs = get(conversations);
+       const oldConv = convs[idx];
+       // Create a new empty chat at end and select it
+       const newConv = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, history: [], conversationTokens: 0, assistantRole: convs[idx]?.assistantRole ?? "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.", title: '' };
+       conversations.update((arr) => [...arr, newConv]);
+       chosenConversationId.set(get(conversations).length - 1);
+       // Delete the old conversation by index
+       conversations.update((arr) => arr.filter((_, i) => i !== idx));
+     } catch (e) {
+       console.error('Failed to clear conversation', e);
+     }
+   }
+
+   function getChatContainer(): HTMLElement | null {
     const root = document.querySelector('.main-content-area') as HTMLElement | null;
     if (!root) return null;
     return root.querySelector('.overflow-y-auto') as HTMLElement | null;
@@ -23,6 +39,10 @@
       return (r.top - cRect.top) + container.scrollTop;
     });
   }
+
+  import ClearChat from '../assets/ClearChat.svg';
+  import { conversations, chosenConversationId } from '../stores/stores.js';
+  import { get } from 'svelte/store';
 
   function navigateAnchors(direction: 'up' | 'down') {
     const container = getChatContainer();
@@ -164,6 +184,16 @@
           aria-label="Go to next turn"
           on:click={() => navigateAnchors('down')}
         >▼ Down</button>
+
+        <button
+          type="button"
+          class="bg-primary text-white/80 px-3 py-1 rounded border border-gray-600 hover:bg-secondary flex items-center justify-center"
+          title="Clear Conversation"
+          aria-label="Clear Conversation"
+          on:click={clearConversation}
+        >
+          <img src={ClearChat} alt="Clear Conversation" class="w-5 h-5" />
+        </button>
       </div>
 
       <slot />
