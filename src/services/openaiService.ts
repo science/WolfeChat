@@ -42,6 +42,23 @@ let configuration: any = null;
 // Global abort controller for streaming
 let globalAbortController: AbortController | null = null;
 
+// Gracefully stop an in-flight streaming response
+export function closeStream() {
+  try {
+    userRequestedStreamClosure.set(true);
+    const ctrl = globalAbortController;
+    if (ctrl) {
+      ctrl.abort();
+    }
+  } catch (e) {
+    console.warn('closeStream abort failed:', e);
+  } finally {
+    globalAbortController = null;
+    isStreaming.set(false);
+  }
+}
+
+
 // Streaming state management
 export const isStreaming = writable(false);
 export const userRequestedStreamClosure = writable(false);

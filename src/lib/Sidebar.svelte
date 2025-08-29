@@ -100,7 +100,7 @@ let editingTitleId = null;
     let url = URL.createObjectURL(blob);
     let a = document.createElement("a");
     a.href = url;
-    a.download = "smoothgpt-session.json";
+    a.download = "wolfechat-session.json";
     a.click();
     URL.revokeObjectURL(url);
   
