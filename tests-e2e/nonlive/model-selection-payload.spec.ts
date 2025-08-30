@@ -73,7 +73,8 @@ test.describe('Model selection drives request payload.model', () => {
     await page.goto('/');
 
     // Find the input and send a message
-    const input = page.getByRole('textbox');
+    const input = page.getByRole('textbox', { name: 'Chat input' });
+    await input.waitFor({ state: 'visible' });
     await input.click();
     await input.fill('Hello');
 
@@ -128,6 +129,7 @@ test.describe('Model selection drives request payload.model', () => {
     }
 
     // Send again and assert second phase
+    await input.waitFor({ state: 'visible' });
     await input.click();
     await input.fill('Again');
 
