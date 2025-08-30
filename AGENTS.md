@@ -2,6 +2,7 @@
 
 ## Build & Development Commands
 - `npm run dev`: Start dev server with hot reload (Vite on network with `--host`)
+  - You never need to run the dev server: there is always a dev server instance running already.
 - `npm run build`: Build to `dist/` (commit `dist/` for UI changes before merge)
   - Note: do not execute `npm run build` without being asked explicitly.
 - `npm run check`: Type-check all TypeScript/Svelte files
@@ -53,3 +54,5 @@ Use semantic, production-stable locators first. Avoid brittle selectors. Preferr
 - Prefer intercepting network requests to assert payloads instead of inspecting internal state.
 
 - Keep tests resilient to copy and minor markup changes by leaning on ARIA roles/labels and semantic attributes already in production UI.
+
+- When using live LLM models, prefer 'gpt-5-nano' as the reasoning model, and use gpt-3.5-turbo as the non-reasoning model. These models are very inexpensive and so don't cause budget problems when running in test environments.
