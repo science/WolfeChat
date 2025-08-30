@@ -25,21 +25,41 @@ window.addEventListener('load', () => {
   style.textContent = `* { transition: none !important; animation: none !important; }`;
   document.head.appendChild(style);
 
-  // Dynamically import test modules for the chosen suite
+  // Global error telemetry
+  window.addEventListener('error', (e) => {
+    console.error('[testMode:onerror]', e.message, (e as any).error?.stack || '');
+  });
+  window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
+    console.error('[testMode:unhandledrejection]', (e.reason && (e.reason.message || String(e.reason))) || 'unknown', e.reason?.stack || '');
+  });
+
+  // Dynamically import test modules for the chosen suite, guarded per-file to pinpoint failures
   try {
     console.log('[testMode] importing test modules for suite:', suite);
-    let modules: Record<string, unknown> = {};
+    let mods: Record<string, () => Promise<unknown>> = {};
     if (suite === 'browser-nonlive') {
-      modules = import.meta.glob('src/tests/browser-nonlive/*.test.ts', { eager: true });
+      mods = import.meta.glob('src/tests/browser-nonlive/*.test.ts');
     } else if (suite === 'browser-live') {
-      modules = import.meta.glob('src/tests/browser-live/*.test.ts', { eager: true });
+      mods = import.meta.glob('src/tests/browser-live/*.test.ts');
     } else {
       console.error('[testMode] Unknown test suite:', suite);
     }
-    console.log('[testMode] imported module count =', Object.keys(modules).length);
-    console.log('[testMode] imported modules =', Object.keys(modules));
+    const files = Object.keys(mods);
+    console.log('[testMode] discovered test modules =', files);
+    let loaded = 0;
+    for (const f of files) {
+      try {
+        console.log('[testMode] loading module:', f);
+        await mods[f]!();
+        loaded++;
+        console.log('[testMode] loaded ok:', f);
+      } catch (err) {
+        console.error('[testMode] failed to load module:', f, (err as any)?.message || String(err), (err as any)?.stack || '');
+      }
+    }
+    console.log('[testMode] total loaded modules =', loaded, 'of', files.length);
   } catch (e) {
-    console.error('[testMode] Failed to import test modules', e);
+    console.error('[testMode] Failed in glob/import loop', e);
   }
 
   try {

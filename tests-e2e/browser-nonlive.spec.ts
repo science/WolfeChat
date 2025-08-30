@@ -12,6 +12,10 @@ test('browser-nonlive suite passes via in-page harness', async ({ page }) => {
     // eslint-disable-next-line no-console
     console.log('[pageerror]', err?.message || String(err));
   });
+  page.on('requestfailed', (req) => {
+    // eslint-disable-next-line no-console
+    console.log('[requestfailed]', req.url(), req.failure()?.errorText || '');
+  });
 
   // Navigate and wait for app root to ensure mount
   await page.goto('/?testMode=1&suite=browser-nonlive');
