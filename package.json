@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "vite preview", "test:browser": "playwright test",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "node run-tests.mjs",
     "pretest:live": "vite build",

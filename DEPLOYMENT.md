@@ -96,7 +96,40 @@ Upload the contents of `dist/` to your bucket or server. For SPAs, configure a f
   }
   ```
 
-## 5) CI/CD Notes
+## 5) Dependencies and Test Assets
+
+- Runtime (production):
+  - The built site in `dist/` is fully static. No Node runtime is required on the hosting platform.
+- Build/Dev (local and CI):
+  - Node.js 18+ (20 recommended)
+  - Package manager: npm
+  - Vite/Svelte/TypeScript and related tooling from `devDependencies`
+- Browser testing (development/CI only; not needed for production hosting):
+  - `@playwright/test` (devDependency)
+  - Playwright browser binaries installed via `npx playwright install --with-deps`
+
+Provisioning for CI when running browser tests:
+
+```bash
+npm ci
+npx playwright install --with-deps
+npm run test:browser
+```
+
+Notes:
+- Keep Playwright in `devDependencies`. Do not install browsers in deploy-only jobs.
+- Artifacts: Playwright HTML report and traces/screenshots can be uploaded from `playwright-report/` and `test-results/` on failures.
+
+Formal dependency listing and maintenance (similar to Bundler):
+- This project uses `package.json` + `package-lock.json` as the authoritative dependency manifest.
+- Use `npm ci` in CI/CD to ensure reproducible installs.
+- To review/update dependencies:
+  - `npm outdated`
+  - `npm update` (or targeted version bumps) and commit the updated `package-lock.json`
+  - Validate with `npm run check` and test suites.
+- For Playwright version bumps, re-run: `npx playwright install --with-deps`.
+
+## 6) CI/CD Notes
 
 - The GitHub Pages workflow focuses on deployment. If you want CI to also run smoke tests in a browser context, you can:
   - Use Playwright or Puppeteer to open the site and invoke `window.SmoothGPTTestHarness.runAll()` (ensure your API key is available in the environment/UI).
