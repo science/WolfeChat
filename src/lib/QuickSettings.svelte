@@ -115,6 +115,8 @@
         <select
           id="current-model-select"
           class="bg-primary text-white/80 p-1 rounded border border-gray-500"
+          data-testid="model-select"
+          aria-label="Model"
           bind:value={$selectedModel}
         >
           {#if $modelsStore && $modelsStore.length > 0}

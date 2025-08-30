@@ -130,7 +130,8 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
     ];
 
     const key = get(apiKey);
-    const resolvedModel = model || getDefaultResponsesModel();
+  const liveSelected = get(selectedModel);
+  const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
     const input = buildResponsesInputFromMessages(msg);
     const payload = buildResponsesPayload(resolvedModel, input, false);
 
@@ -292,7 +293,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   try {
     await streamResponseViaResponsesAPI(
       '',
-      ((): string => { const m = get(selectedModel); return m; })(),
+      undefined,
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -382,7 +383,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   try {
     await streamResponseViaResponsesAPI(
       '',
-      ((): string => { const m = get(selectedModel); return m; })(),
+      undefined,
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -503,7 +504,7 @@ function getDefaultResponsesModel() {
   const m = get(selectedModel);
   // If no model is set, or it's an old/incompatible model, use gpt-5-nano as default for tests
   // This includes o1-mini which is not compatible with Responses API
-  if (!m || /gpt-3\.5|gpt-4-turbo-preview|gpt-4-32k|gpt-4$|o1-mini/.test(m)) {
+  if (!m || /gpt-3\.5|gpt-4(\.|$)|o1-mini/.test(m)) {
     // Use gpt-5-nano as the default for better test compatibility
     return 'gpt-5-nano';
   }
@@ -600,7 +601,8 @@ export async function createResponseViaResponsesAPI(prompt: string, model?: stri
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
 
-  const resolvedModel = model || getDefaultResponsesModel();
+  const liveSelected = get(selectedModel);
+  const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
   const input = buildResponsesInputFromPrompt(prompt);
   const payload = buildResponsesPayload(resolvedModel, input, false);
 
@@ -748,7 +750,8 @@ export async function streamResponseViaResponsesAPI(
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
 
-  const resolvedModel = model || getDefaultResponsesModel();
+  const liveSelected = get(selectedModel);
+  const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
   const input = inputOverride || buildResponsesInputFromPrompt(prompt);
   const payload = buildResponsesPayload(resolvedModel, input, true);
 
