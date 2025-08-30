@@ -18,6 +18,7 @@ window.addEventListener('load', () => {
   if (!testMode) return;
 
   const suite = params.get('suite') || 'browser-nonlive';
+  console.log('[testMode] activating; suite=', suite);
 
   // Reduce motion to stabilize layout in tests
   const style = document.createElement('style');
@@ -26,33 +27,44 @@ window.addEventListener('load', () => {
 
   // Dynamically import test modules for the chosen suite
   try {
+    console.log('[testMode] importing test modules for suite:', suite);
+    let modules: Record<string, unknown> = {};
     if (suite === 'browser-nonlive') {
-      const modules = import.meta.glob('/src/tests/browser-nonlive/*.test.ts', { eager: true });
-      void modules; // side-effects register tests
+      modules = import.meta.glob('/src/tests/browser-nonlive/*.test.ts', { eager: true });
     } else if (suite === 'browser-live') {
-      const modules = import.meta.glob('/src/tests/browser-live/*.test.ts', { eager: true });
-      void modules;
+      modules = import.meta.glob('/src/tests/browser-live/*.test.ts', { eager: true });
     } else {
-      console.error('Unknown test suite:', suite);
+      console.error('[testMode] Unknown test suite:', suite);
     }
+    console.log('[testMode] imported module count =', Object.keys(modules).length);
+    console.log('[testMode] imported modules =', Object.keys(modules));
   } catch (e) {
-    console.error('Failed to import test modules', e);
+    console.error('[testMode] Failed to import test modules', e);
   }
 
   try {
+    console.log('[testMode] importing test harness...');
     const harness = await import('./tests/testHarness.js');
+    console.log('[testMode] harness loaded; exposing __wolfeRunTests');
     // Expose a stable API for Playwright
     // @ts-ignore
     (window as any).__wolfeRunTests = async () => {
-      const res = await harness.runAllTests();
-      // Normalize shape for Playwright check
-      return { passed: res.failed === 0, ...res };
+      try {
+        console.log('[testMode] __wolfeRunTests invoked');
+        const res = await harness.runAllTests();
+        console.log('[testMode] __wolfeRunTests finished; failed=', res.failed);
+        // Normalize shape for Playwright check
+        return { passed: res.failed === 0, ...res };
+      } catch (err) {
+        console.error('[testMode] __wolfeRunTests error', err);
+        throw err;
+      }
     };
     // Optional: list tests helper
     // @ts-ignore
-    ;(window as any).__wolfeListTests = () => harness.listTests().map(t => ({ id: t.id, name: t.name }));
+    ;(window as any).__wolfeListTests = () => harness.listTests().map((t: any) => ({ id: t.id, name: t.name }));
   } catch (e) {
-    console.error('Failed to initialize test harness', e);
+    console.error('[testMode] Failed to initialize test harness', e);
   }
 })();
 
