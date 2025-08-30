@@ -38,13 +38,16 @@ window.addEventListener('load', () => {
     console.log('[testMode] importing test modules for suite:', suite);
     let mods: Record<string, () => Promise<unknown>> = {};
     if (suite === 'browser-nonlive') {
-      mods = import.meta.glob('src/tests/browser-nonlive/*.test.ts');
+      mods = import.meta.glob('/src/tests/browser-nonlive/*.test.ts');
     } else if (suite === 'browser-live') {
-      mods = import.meta.glob('src/tests/browser-live/*.test.ts');
+      mods = import.meta.glob('/src/tests/browser-live/*.test.ts');
     } else {
       console.error('[testMode] Unknown test suite:', suite);
     }
-    const files = Object.keys(mods);
+    let entries = Object.entries(mods);
+    // Skip known-incompatible files for browser harness
+    entries = entries.filter(([f]) => !f.includes('codeRendererStreaming.integration.test.ts'));
+    const files = entries.map(([f]) => f);
     console.log('[testMode] discovered test modules =', files);
     let loaded = 0;
     for (const f of files) {

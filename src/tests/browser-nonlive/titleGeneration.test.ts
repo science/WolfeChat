@@ -1,4 +1,4 @@
-import { test, withCleanEnvironment } from "../testHarness.js";
+import { test, withCleanEnvironment } from "../testHarness";
 import { conversations, chosenConversationId, apiKey } from "../../stores/stores.js";
 import * as convoManager from "../../managers/conversationManager.js";
 import * as openaiSvc from "../../services/openaiService.js";
