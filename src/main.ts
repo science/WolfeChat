@@ -30,9 +30,9 @@ window.addEventListener('load', () => {
     console.log('[testMode] importing test modules for suite:', suite);
     let modules: Record<string, unknown> = {};
     if (suite === 'browser-nonlive') {
-      modules = import.meta.glob('/src/tests/browser-nonlive/*.test.ts', { eager: true });
+      modules = import.meta.glob('src/tests/browser-nonlive/*.test.ts', { eager: true });
     } else if (suite === 'browser-live') {
-      modules = import.meta.glob('/src/tests/browser-live/*.test.ts', { eager: true });
+      modules = import.meta.glob('src/tests/browser-live/*.test.ts', { eager: true });
     } else {
       console.error('[testMode] Unknown test suite:', suite);
     }
