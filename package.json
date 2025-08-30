@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:browser": "playwright test",
+    "test:browser-live": "playwright test tests-e2e/browser-live.spec.ts",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "node run-tests.mjs",
     "pretest:live": "vite build",

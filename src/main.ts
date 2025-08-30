@@ -86,6 +86,36 @@ window.addEventListener('load', () => {
     // Optional: list tests helper
     // @ts-ignore
     ;(window as any).__wolfeListTests = () => harness.listTests().map((t: any) => ({ id: t.id, name: t.name }));
+    // Live helpers
+    // @ts-ignore
+    (window as any).__wolfeSetApiKey = async (key: string) => {
+      try {
+        localStorage.setItem('api_key', key);
+        const stores = await import('./stores/stores.js');
+        if ((stores as any).apiKey) (stores as any).apiKey.set(key as any);
+        console.log('[testMode] api key set');
+        return true;
+      } catch (e) {
+        console.error('[testMode] failed to set api key', e);
+        return false;
+      }
+    };
+    // @ts-ignore
+    (window as any).__wolfePreloadModels = async () => {
+      try {
+        const modelStore = await import('./stores/modelStore.js');
+        if (typeof (modelStore as any).loadModels === 'function') {
+          await (modelStore as any).loadModels();
+          console.log('[testMode] models preloaded');
+          return true;
+        }
+        console.warn('[testMode] loadModels not available');
+        return false;
+      } catch (e) {
+        console.error('[testMode] preload models error', e);
+        return false;
+      }
+    };
   } catch (e) {
     console.error('[testMode] Failed to initialize test harness', e);
   }
