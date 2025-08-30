@@ -250,7 +250,7 @@ function startEditMessage(i: number) {
         
       <QuickSettings />
       </div>
-      <div class="flex bg-primary overflow-y-auto overflow-x-hidden justify-center grow" bind:this={chatContainer}>
+      <div class="flex bg-primary overflow-y-auto overflow-x-hidden justify-center grow" data-testid="chat-scroll-container" bind:this={chatContainer}>
       {#if $conversations.length > 0 && $conversations[$chosenConversationId]}
         <div class="flex flex-col max-w-3xl pt-5 grow">
           
@@ -259,7 +259,7 @@ function startEditMessage(i: number) {
 
         {#if message.role !=='system'}
 
-          <div class="message relative inline-block bg-primary px-2 pb-5 flex flex-col">
+          <div class="message relative inline-block bg-primary px-2 pb-5 flex flex-col" data-testid={message.role === 'assistant' ? 'assistant-message' : message.role === 'user' ? 'user-message' : undefined}>
             <div class="profile-picture flex">
               <div>
                 <img src={message.role === 'user' ? UserIcon : RobotIcon} alt="Profile" class="w-6 h-6 ml-10" />
@@ -380,7 +380,8 @@ function startEditMessage(i: number) {
 
       <textarea bind:this={textAreaElement}  
   class="w-full min-h-[96px] h-24 rounded-lg p-2 mx-1 mr-0 border-t-2 border-b-2 border-l-2 rounded-r-none bg-primary border-gray-500 resize-none focus:outline-none"   
-  placeholder="Type your message..."   
+  placeholder="Type your message..."  
+  aria-label="Chat input"
   bind:value={input}   
   on:input={autoExpand}
   style="height: 96px; overflow-y: auto; overflow:visible !important;"
@@ -398,7 +399,7 @@ function startEditMessage(i: number) {
     }
   }}
 ></textarea>  
-<button class="bg-chat rounded-lg py-2 px-4 mx-1 ml-0 border-t-2 border-b-2 border-r-2  border-gray-500 rounded-l-none cursor-pointer " on:click={() => { if ($isStreaming) { closeStream(); } else { processMessage(); } }} disabled={!$isStreaming && !input.trim().length}>    
+<button class="bg-chat rounded-lg py-2 px-4 mx-1 ml-0 border-t-2 border-b-2 border-r-2  border-gray-500 rounded-l-none cursor-pointer " aria-label="Send" on:click={() => { if ($isStreaming) { closeStream(); } else { processMessage(); } }} disabled={!$isStreaming && !input.trim().length}>    
   {#if $isStreaming}    
       <img class="icon-white min-w-[24px] w-[24px]" alt="Wait" src={WaitIcon} />    
   {:else}    

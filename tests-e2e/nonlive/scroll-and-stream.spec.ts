@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 test('app boots and chat UI renders', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('textarea[aria-label="Chat input"]')).toBeVisible();
-  await expect(page.getByRole('button', { name: /send/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /send/i })).toBeVisible(); // via aria-label on button
 });
 
 test('scroll container maintains position when streaming placeholder grows', async ({ page }) => {
