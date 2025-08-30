@@ -149,21 +149,22 @@ npx playwright install --with-deps  # for browser tests
     ```
 
 - Browser tests (non-live, no external API calls):
-  ```bash
-  npm run test:browser
-  ```
-  Notes:
-  - Starts a Vite dev server automatically (reuses an existing server on :5173 if running)
-  - Produces artifacts (HTML report, screenshots, traces) under `playwright-report/` and `test-results/`
+```bash
+npm run test:browser       # runs tests-e2e/nonlive
+```
+Notes:
+- Starts a Vite dev server automatically (reuses an existing server on :5173 if running)
+- Produces artifacts (HTML report, screenshots, traces) under `playwright-report/` and `test-results/`
 
 - Browser tests (live, calls external APIs):
-  ```bash
-  export OPENAI_API_KEY=sk-xxx   # or set in your shell/CI
-  npm run test:browser-live
-  ```
-  Notes:
-  - Live tests are skipped automatically if `OPENAI_API_KEY` is not set
-  - These tests use the in-app harness and the same Playwright runner
+```bash
+export OPENAI_API_KEY=sk-xxx   # or set in your shell/CI
+npm run test:browser-live  # runs tests-e2e/live
+```
+Notes:
+- Live tests are skipped or will fail fast if `OPENAI_API_KEY` is not set
+- Live and non-live are separated by folder under tests-e2e/
+
 
 Tips:
 - Filter Playwright runs to a specific spec or grep:
