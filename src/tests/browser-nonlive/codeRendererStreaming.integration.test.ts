@@ -3,7 +3,7 @@
 import SvelteMarkdown from './__mocks__/svelte-markdown.js';
 // In Node, import a simple shim instead of .svelte
 import Code from './svelte-code-shim.js';
-import { registerTest } from '../testHarness.js';
+import { registerTest } from '../testHarness';
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));

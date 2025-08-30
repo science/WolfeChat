@@ -1,5 +1,5 @@
-import { registerTest } from '../testHarness.js';
-import { conversations, chosenConversationId } from '../../stores/stores.js';
+import { registerTest } from '../testHarness';
+import { conversations, chosenConversationId } from '../../stores/stores';
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));

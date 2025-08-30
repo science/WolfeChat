@@ -9,8 +9,8 @@
  * 4) Non-reasoning chat sessions do not show RW; switching back to reasoning chats preserves RW.
  */
 
-import { registerTest } from '../testHarness.js';
-import { conversations, chosenConversationId, selectedModel } from '../../stores/stores.js';
+import { registerTest } from '../testHarness';
+import { conversations, chosenConversationId, selectedModel } from '../../stores/stores';
 import { reasoningWindows, reasoningPanels } from '../../stores/reasoningStore.js';
 
 // --- Helpers ---
