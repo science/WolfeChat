@@ -129,7 +129,53 @@ Formal dependency listing and maintenance (similar to Bundler):
   - Validate with `npm run check` and test suites.
 - For Playwright version bumps, re-run: `npx playwright install --with-deps`.
 
-## 6) CI/CD Notes
+## 6) Running Tests
+
+Install dependencies first (once per machine):
+
+```bash
+npm ci
+npx playwright install --with-deps  # for browser tests
+```
+
+- Unit / non-API tests (existing Node harness):
+  - Run core harness
+    ```bash
+    npm run test
+    ```
+  - Run all suites in the legacy harness
+    ```bash
+    npm run test:all
+    ```
+
+- Browser tests (non-live, no external API calls):
+  ```bash
+  npm run test:browser
+  ```
+  Notes:
+  - Starts a Vite dev server automatically (reuses an existing server on :5173 if running)
+  - Produces artifacts (HTML report, screenshots, traces) under `playwright-report/` and `test-results/`
+
+- Browser tests (live, calls external APIs):
+  ```bash
+  export OPENAI_API_KEY=sk-xxx   # or set in your shell/CI
+  npm run test:browser-live
+  ```
+  Notes:
+  - Live tests are skipped automatically if `OPENAI_API_KEY` is not set
+  - These tests use the in-app harness and the same Playwright runner
+
+Tips:
+- Filter Playwright runs to a specific spec or grep:
+  ```bash
+  # Single spec
+  npm run test:browser -- tests-e2e/browser-nonlive.spec.ts
+  # Grep
+  npm run test:browser -- --grep "scroll"
+  ```
+- If you have a dev server already running on :5173, tests will reuse it. For strict isolation consider using a preview server (update baseURL in `playwright.config.ts`).
+
+## 7) CI/CD Notes
 
 - The GitHub Pages workflow focuses on deployment. If you want CI to also run smoke tests in a browser context, you can:
   - Use Playwright or Puppeteer to open the site and invoke `window.SmoothGPTTestHarness.runAll()` (ensure your API key is available in the environment/UI).
