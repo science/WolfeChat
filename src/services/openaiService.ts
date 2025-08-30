@@ -624,7 +624,7 @@ export async function createResponseViaResponsesAPI(prompt: string, model?: stri
  * Extract plain text from a Responses API non-streaming response.
  * Supports several possible shapes: output_text or output[].content[].text
  */
-function extractOutputTextFromResponses(obj: any): string {
+export function extractOutputTextFromResponses(obj: any): string {
   if (!obj) return '';
   if (typeof obj.output_text === 'string') return obj.output_text.trim();
 
@@ -654,7 +654,7 @@ function extractOutputTextFromResponses(obj: any): string {
   return '';
 }
 
-function sanitizeTitle(title: string): string {
+export function sanitizeTitle(title: string): string {
   let t = (title || '').trim();
   t = t.replace(/^["'`]+|["'`]+$/g, '');     // strip wrapping quotes
   t = t.replace(/^title\s*:\s*/i, '');       // strip leading "Title:"

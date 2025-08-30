@@ -152,35 +152,25 @@ function setTitle(title: string) {
   }
 
 async function createTitle(currentInput: string) {
-    const titleModel = 'gpt-4o-mini';  // Use a modern model that works with Responses API
-
+    const titleModel = 'gpt-4o-mini';
     try {
-        let response = await sendRequest([
-            { role: "user", content: currentInput },
-            {
-                role: "user",
-                content: "Generate a title for this conversation, so I can easily reference it later. Maximum 6 words. Don't provide anything other than the title. Don't use quotes.",
-            },
-        ], titleModel); // Pass the titleModel as an argument
-
-        // Check if response has the expected structure
-        if (response && response.data && response.data.choices && response.data.choices.length > 0) {
-            let message = response.data.choices[0].message?.content;
-            if (message) {
-                setTitle(message.toString());
-            } else {
-                console.warn("Title generation: No content in response message");
-                // Set a fallback title based on the input
-                setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''));
-            }
-        } else {
-            console.warn("Title generation: Invalid response structure", response);
-            // Set a fallback title based on the input
-            setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''));
-        }
+        // Use Responses API pathway consistently
+        const msgs: any[] = [
+            { role: 'system', content: 'You generate a short, clear chat title. Respond with only the title, no quotes, max 8 words, Title Case.' },
+            { role: 'user', content: currentInput }
+        ];
+        // Reuse helpers from openaiService via sendRequest which now posts to /responses
+        const response = await sendRequest(msgs as any, titleModel);
+        // Extract text using the same utility used by maybeUpdateTitleAfterFirstMessage
+        const svc = await import('../services/openaiService.js');
+        const raw = svc.extractOutputTextFromResponses(response);
+        let title = raw?.trim() || '';
+        if (!title) throw new Error('Empty title text');
+        const clean = svc.sanitizeTitle(title);
+        if (!clean) throw new Error('Sanitized title empty');
+        setTitle(clean);
     } catch (error) {
-        console.error("Error generating title:", error);
-        // Set a fallback title based on the input
+        console.warn("Title generation: Invalid response structure", error);
         setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''));
     }
 }

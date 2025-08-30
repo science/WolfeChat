@@ -49,6 +49,8 @@ __export(stores_exports, {
   createNewConversation: () => createNewConversation,
   debugVisible: () => debugVisible,
   defaultAssistantRole: () => defaultAssistantRole,
+  deleteConversationByIndex: () => deleteConversationByIndex,
+  findConversationIndexById: () => findConversationIndexById,
   helpVisible: () => helpVisible,
   isStreaming: () => isStreaming,
   menuVisible: () => menuVisible,
@@ -63,6 +65,28 @@ __export(stores_exports, {
   userRequestedStreamClosure: () => userRequestedStreamClosure
 });
 import { writable } from "svelte/store";
+import { get } from "svelte/store";
+function deleteConversationByIndex(index) {
+  conversations.update((convs) => {
+    if (index < 0 || index >= convs.length) return convs;
+    const convId = convs[index].id;
+    const next = convs.filter((_, i) => i !== index);
+    let newIndex = 0;
+    if (next.length > 0) {
+      if (index <= get(chosenConversationId)) newIndex = Math.max(0, get(chosenConversationId) - 1);
+      else newIndex = Math.min(get(chosenConversationId), next.length - 1);
+    } else {
+      next.push(createNewConversation());
+      newIndex = 0;
+    }
+    chosenConversationId.set(newIndex);
+    return next;
+  });
+}
+function findConversationIndexById(id) {
+  const convs = get(conversations);
+  return convs.findIndex((c) => c.id === id);
+}
 function generateConversationId() {
   return `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
@@ -167,6 +191,786 @@ var init_stores = __esm({
     showTokens.subscribe((value) => {
       localStorage.setItem("show_tokens", JSON.stringify(value));
     });
+  }
+});
+
+// src/stores/reasoningSettings.ts
+import { writable as writable3 } from "svelte/store";
+function readLS(key, fallback) {
+  try {
+    const v = localStorage.getItem(key);
+    return v ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+var KEYS, reasoningEffort, verbosity, summary;
+var init_reasoningSettings = __esm({
+  "src/stores/reasoningSettings.ts"() {
+    KEYS = {
+      effort: "reasoning_effort",
+      verbosity: "reasoning_verbosity",
+      summary: "reasoning_summary"
+    };
+    reasoningEffort = writable3(readLS(KEYS.effort, "medium"));
+    verbosity = writable3(readLS(KEYS.verbosity, "medium"));
+    summary = writable3(readLS(KEYS.summary, "auto"));
+    reasoningEffort.subscribe((v) => {
+      try {
+        localStorage.setItem(KEYS.effort, v);
+      } catch {
+      }
+    });
+    verbosity.subscribe((v) => {
+      try {
+        localStorage.setItem(KEYS.verbosity, v);
+      } catch {
+      }
+    });
+    summary.subscribe((v) => {
+      try {
+        localStorage.setItem(KEYS.summary, v);
+      } catch {
+      }
+    });
+  }
+});
+
+// src/stores/reasoningStore.ts
+import { writable as writable4 } from "svelte/store";
+function loadFromStorage(key, defaultValue) {
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error(`Failed to load ${key} from localStorage:`, e);
+  }
+  return defaultValue;
+}
+function saveToStorage(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    console.error(`Failed to save ${key} to localStorage:`, e);
+  }
+}
+function genWindowId(convId) {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}-win-${convId ?? "na"}`;
+}
+function createReasoningWindow(convId, model, anchorIndex) {
+  const id = genWindowId(convId);
+  reasoningWindows.update((arr) => [
+    ...arr,
+    { id, convId, model, anchorIndex, open: true, createdAt: Date.now() }
+  ]);
+  return id;
+}
+function collapseReasoningWindow(id) {
+  reasoningWindows.update((arr) => arr.map((w) => w.id === id ? { ...w, open: false } : w));
+}
+function genId(kind, convId) {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}-${kind}-${convId ?? "na"}`;
+}
+function startReasoningPanel(kind, convId, responseId) {
+  const id = genId(kind, convId);
+  reasoningPanels.update((arr) => [
+    ...arr,
+    { id, convId, responseId, kind, text: "", open: true, startedAt: Date.now(), done: false }
+  ]);
+  return id;
+}
+function appendReasoningText(id, chunk) {
+  if (!chunk) return;
+  reasoningPanels.update(
+    (arr) => arr.map((p) => p.id === id ? { ...p, text: p.text + chunk } : p)
+  );
+}
+function setReasoningText(id, text) {
+  reasoningPanels.update(
+    (arr) => arr.map((p) => p.id === id ? { ...p, text: text ?? "" } : p)
+  );
+}
+function completeReasoningPanel(id) {
+  reasoningPanels.update(
+    (arr) => arr.map((p) => p.id === id ? { ...p, open: false, done: true } : p)
+  );
+}
+function genEventId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}-evt`;
+}
+function logSSEEvent(type, _data, convId) {
+  reasoningSSEEvents.update((arr) => {
+    const entry = { id: genEventId(), convId, type, ts: Date.now() };
+    const next = [...arr, entry];
+    return next.length > 500 ? next.slice(next.length - 500) : next;
+  });
+}
+var REASONING_PANELS_KEY, REASONING_WINDOWS_KEY, initialPanels, initialWindows, reasoningPanels, reasoningWindows, reasoningSSEEvents;
+var init_reasoningStore = __esm({
+  "src/stores/reasoningStore.ts"() {
+    REASONING_PANELS_KEY = "reasoning_panels";
+    REASONING_WINDOWS_KEY = "reasoning_windows";
+    initialPanels = loadFromStorage(REASONING_PANELS_KEY, []);
+    initialWindows = loadFromStorage(REASONING_WINDOWS_KEY, []);
+    reasoningPanels = writable4(initialPanels);
+    reasoningWindows = writable4(initialWindows);
+    reasoningPanels.subscribe((panels) => {
+      saveToStorage(REASONING_PANELS_KEY, panels);
+    });
+    reasoningWindows.subscribe((windows) => {
+      saveToStorage(REASONING_WINDOWS_KEY, windows);
+    });
+    reasoningSSEEvents = writable4([]);
+    if (typeof window !== "undefined") {
+      window.startReasoningPanel = startReasoningPanel;
+      window.appendReasoningText = appendReasoningText;
+      window.setReasoningText = setReasoningText;
+      window.completeReasoningPanel = completeReasoningPanel;
+    }
+  }
+});
+
+// src/managers/conversationManager.ts
+import { get as get4 } from "svelte/store";
+function setHistory(msg, convId = get4(chosenConversationId)) {
+  return new Promise((resolve, reject) => {
+    try {
+      let conv = get4(conversations);
+      conv[convId].history = msg;
+      conversations.set(conv);
+      resolve();
+    } catch (error) {
+      console.error("Failed to update history", error);
+      reject(error);
+    }
+  });
+}
+function cleanseMessage(msg) {
+  const allowedProps = ["role", "content"];
+  let cleansed = Object.keys(msg).filter((key) => allowedProps.includes(key)).reduce((obj, key) => {
+    obj[key] = msg[key];
+    return obj;
+  }, {});
+  if (!Array.isArray(cleansed.content)) {
+    cleansed.content = cleansed.content.toString();
+  }
+  return cleansed;
+}
+function displayAudioMessage(audioUrl) {
+  const audioMessage = {
+    role: "assistant",
+    content: "Audio file generated.",
+    audioUrl,
+    isAudio: true,
+    model: get4(selectedModel)
+  };
+  setHistory([...get4(conversations)[get4(chosenConversationId)].history, audioMessage]);
+}
+function estimateTokens(msg, convId) {
+  let chars = 0;
+  msg.map((m) => {
+    chars += m.content.length;
+  });
+  chars += streamText.length;
+  let tokens = chars / 4;
+  let conv = get4(conversations);
+  conv[convId].conversationTokens = conv[convId].conversationTokens + tokens;
+  conversations.set(conv);
+  combinedTokens.set(get4(combinedTokens) + tokens);
+}
+var streamText;
+var init_conversationManager = __esm({
+  "src/managers/conversationManager.ts"() {
+    init_stores();
+    init_stores();
+    init_stores();
+    init_reasoningStore();
+    init_openaiService();
+    streamText = "";
+  }
+});
+
+// src/managers/imageManager.ts
+function onSendVisionMessageComplete() {
+  base64Images.set([]);
+  clearFileInputSignal.set(true);
+}
+var init_imageManager = __esm({
+  "src/managers/imageManager.ts"() {
+    init_stores();
+    init_stores();
+  }
+});
+
+// src/utils/generalUtils.ts
+function countTicks(str) {
+  let out = str.split("").filter((char) => char === "`").length;
+  return out;
+}
+var init_generalUtils = __esm({
+  "src/utils/generalUtils.ts"() {
+  }
+});
+
+// src/idb.js
+var init_idb = __esm({
+  "src/idb.js"() {
+  }
+});
+
+// src/services/openaiService.ts
+import { get as get5, writable as writable6 } from "svelte/store";
+async function sendVisionMessage(msg, imagesBase64, convId) {
+  console.log("Sending vision message.");
+  userRequestedStreamClosure2.set(false);
+  let tickCounter = 0;
+  let ticks = false;
+  let currentHistory = get5(conversations)[convId].history;
+  const anchorIndex = currentHistory.length - 1;
+  const conversationUniqueId = get5(conversations)[convId]?.id;
+  const historyMessages = currentHistory.map((historyItem) => ({
+    role: historyItem.role,
+    content: convertChatContentToResponsesContent(historyItem.content, historyItem.role)
+  }));
+  const userTextMessage = [...msg].reverse().find((m) => m.role === "user")?.content || "";
+  const contentParts = [];
+  if (userTextMessage) contentParts.push({ type: "input_text", text: userTextMessage });
+  for (const imageBase64 of imagesBase64) {
+    contentParts.push({ type: "input_image", image_url: imageBase64 });
+  }
+  const currentMessage = { role: "user", content: contentParts };
+  const finalInput = [...historyMessages, currentMessage];
+  let streamText2 = "";
+  currentHistory = [...currentHistory];
+  isStreaming2.set(true);
+  try {
+    await streamResponseViaResponsesAPI(
+      "",
+      (() => {
+        const m = get5(selectedModel);
+        return m;
+      })(),
+      {
+        onTextDelta: (text) => {
+          const msgTicks = countTicks(text);
+          tickCounter += msgTicks;
+          if (msgTicks === 0) tickCounter = 0;
+          if (tickCounter === 3) {
+            ticks = !ticks;
+            tickCounter = 0;
+          }
+          streamText2 += text;
+          streamContext2.set({ streamText: streamText2, convId });
+          setHistory(
+            [
+              ...currentHistory,
+              {
+                role: "assistant",
+                content: streamText2 + "\u2588" + (ticks ? "\n```" : ""),
+                model: get5(selectedModel)
+              }
+            ],
+            convId
+          );
+        },
+        onCompleted: async () => {
+          if (get5(userRequestedStreamClosure2)) {
+            streamText2 = streamText2.replace(/█+$/, "");
+            userRequestedStreamClosure2.set(false);
+          }
+          await setHistory(
+            [
+              ...currentHistory,
+              { role: "assistant", content: streamText2, model: get5(selectedModel) }
+            ],
+            convId
+          );
+          estimateTokens(msg, convId);
+          streamText2 = "";
+          isStreaming2.set(false);
+          onSendVisionMessageComplete();
+        },
+        onError: (_err) => {
+          isStreaming2.set(false);
+          onSendVisionMessageComplete();
+        }
+      },
+      finalInput,
+      { convId: conversationUniqueId, anchorIndex }
+    );
+  } finally {
+    isStreaming2.set(false);
+  }
+}
+async function sendRegularMessage(msg, convId) {
+  userRequestedStreamClosure2.set(false);
+  let tickCounter = 0;
+  let ticks = false;
+  let currentHistory = get5(conversations)[convId].history;
+  const anchorIndex = currentHistory.length - 1;
+  const conversationUniqueId = get5(conversations)[convId]?.id;
+  let roleMsg = {
+    role: get5(defaultAssistantRole).type,
+    content: get5(conversations)[convId].assistantRole
+  };
+  msg = [roleMsg, ...msg];
+  const cleansedMessages = msg.map(cleanseMessage);
+  const input = buildResponsesInputFromMessages(cleansedMessages);
+  let lastUserPromptText = "";
+  const lastUserMessage = [...cleansedMessages].reverse().find((m) => m.role === "user");
+  if (lastUserMessage) {
+    const c = lastUserMessage.content;
+    if (typeof c === "string") {
+      lastUserPromptText = c;
+    } else if (Array.isArray(c)) {
+      lastUserPromptText = c.map((p) => typeof p === "string" ? p : p?.text ?? "").join(" ").trim();
+    } else if (c != null) {
+      lastUserPromptText = String(c);
+    }
+  }
+  let streamText2 = "";
+  currentHistory = [...currentHistory];
+  isStreaming2.set(true);
+  try {
+    await streamResponseViaResponsesAPI(
+      "",
+      (() => {
+        const m = get5(selectedModel);
+        return m;
+      })(),
+      {
+        onTextDelta: (text) => {
+          const msgTicks = countTicks(text);
+          tickCounter += msgTicks;
+          if (msgTicks === 0) tickCounter = 0;
+          if (tickCounter === 3) {
+            ticks = !ticks;
+            tickCounter = 0;
+          }
+          streamText2 += text;
+          streamContext2.set({ streamText: streamText2, convId });
+          setHistory(
+            [
+              ...currentHistory,
+              {
+                role: "assistant",
+                content: streamText2 + "\u2588" + (ticks ? "\n```" : ""),
+                model: get5(selectedModel)
+              }
+            ],
+            convId
+          );
+        },
+        onCompleted: async (_finalText) => {
+          if (get5(userRequestedStreamClosure2)) {
+            streamText2 = streamText2.replace(/█+$/, "");
+            userRequestedStreamClosure2.set(false);
+          }
+          await setHistory(
+            [
+              ...currentHistory,
+              {
+                role: "assistant",
+                content: streamText2,
+                model: get5(selectedModel)
+              }
+            ],
+            convId
+          );
+          estimateTokens(msg, convId);
+          await maybeUpdateTitleAfterFirstMessage(convId, lastUserPromptText, streamText2);
+          streamText2 = "";
+          isStreaming2.set(false);
+        },
+        onError: (_err) => {
+          isStreaming2.set(false);
+        }
+      },
+      input,
+      { convId: conversationUniqueId, anchorIndex }
+    );
+  } finally {
+    isStreaming2.set(false);
+  }
+}
+async function sendDalleMessage(msg, convId) {
+  isStreaming2.set(true);
+  let hasEncounteredError = false;
+  let currentHistory = get5(conversations)[convId].history;
+  let roleMsg = {
+    role: get5(defaultAssistantRole).type,
+    content: get5(conversations)[convId].assistantRole
+  };
+  msg = [roleMsg, ...msg];
+  const cleansedMessages = msg.map(cleanseMessage);
+  const prompt = cleansedMessages[cleansedMessages.length - 1].content;
+  try {
+    let response = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${get5(apiKey)}`
+      },
+      body: JSON.stringify({
+        model: get5(selectedModel),
+        prompt,
+        size: get5(selectedSize),
+        quality: get5(selectedQuality),
+        n: 1
+      })
+    });
+    if (!response.ok) throw new Error("HTTP error, status = " + response.status);
+    let data = await response.json();
+    let imageUrl = data.data[0].url;
+    setHistory([...currentHistory, {
+      role: "assistant",
+      content: imageUrl,
+      type: "image",
+      // Adding a type property to distinguish image messages
+      model: get5(selectedModel)
+    }], convId);
+  } catch (error) {
+    console.error("Error generating image:", error);
+    hasEncounteredError = true;
+  } finally {
+    isStreaming2.set(false);
+  }
+}
+function getDefaultResponsesModel() {
+  const m = get5(selectedModel);
+  if (!m || /gpt-3\.5|gpt-4-turbo-preview|gpt-4-32k|gpt-4$|o1-mini/.test(m)) {
+    return "gpt-5-nano";
+  }
+  return m;
+}
+function supportsReasoning(model) {
+  const m = (model || "").toLowerCase();
+  return m.includes("gpt-5") || m.includes("o3") || m.includes("o4") || m.includes("reason");
+}
+function buildResponsesPayload(model, input, stream) {
+  const payload = { model, input, store: false, stream };
+  if (supportsReasoning(model)) {
+    const eff = get5(reasoningEffort) || "medium";
+    const verb = get5(verbosity) || "medium";
+    const sum = get5(summary) || "auto";
+    payload.text = { verbosity: verb };
+    payload.reasoning = { effort: eff, summary: sum === "null" ? null : sum };
+  }
+  return payload;
+}
+function buildResponsesInputFromPrompt(prompt) {
+  return [
+    {
+      role: "user",
+      content: [{ type: "input_text", text: prompt }]
+    }
+  ];
+}
+function convertChatContentToResponsesContent(content, role) {
+  const isAssistant = (role || "").toLowerCase() === "assistant";
+  if (typeof content === "string") {
+    return [{ type: isAssistant ? "output_text" : "input_text", text: content }];
+  }
+  if (Array.isArray(content)) {
+    return content.map((part) => {
+      if (isAssistant) {
+        if (typeof part === "string") {
+          return { type: "output_text", text: part };
+        }
+        if (part?.type === "text" && typeof part?.text === "string") {
+          return { type: "output_text", text: part.text };
+        }
+        if (part?.type === "input_text" && typeof part?.text === "string") {
+          return { type: "output_text", text: part.text };
+        }
+        return { type: "output_text", text: typeof part === "string" ? part : JSON.stringify(part) };
+      }
+      if (part?.type === "text" && typeof part?.text === "string") {
+        return { type: "input_text", text: part.text };
+      }
+      if (part?.type === "image_url") {
+        const url = part?.image_url?.url ?? part?.image_url ?? part?.url ?? "";
+        return { type: "input_image", image_url: url };
+      }
+      if (part?.type === "input_text" || part?.type === "input_image") {
+        return part;
+      }
+      return { type: "input_text", text: typeof part === "string" ? part : JSON.stringify(part) };
+    });
+  }
+  return [{ type: isAssistant ? "output_text" : "input_text", text: String(content) }];
+}
+function buildResponsesInputFromMessages(messages) {
+  return messages.map((m) => ({
+    role: m.role,
+    content: convertChatContentToResponsesContent(m.content, m.role)
+  }));
+}
+function extractOutputTextFromResponses(obj) {
+  if (!obj) return "";
+  if (typeof obj.output_text === "string") return obj.output_text.trim();
+  const outputs = Array.isArray(obj.output) ? obj.output : Array.isArray(obj.outputs) ? obj.outputs : null;
+  if (outputs) {
+    let text = "";
+    for (const o of outputs) {
+      const content = Array.isArray(o?.content) ? o.content : [];
+      for (const p of content) {
+        if (typeof p?.text === "string") text += p.text;
+        else if (typeof p === "string") text += p;
+      }
+    }
+    if (text.trim()) return text.trim();
+  }
+  if (Array.isArray(obj?.content)) {
+    const t = obj.content.map((p) => p?.text || "").join("");
+    if (t.trim()) return t.trim();
+  }
+  try {
+    const s = JSON.stringify(obj);
+    const m = s.match(/"text"\s*:\s*"([^"]{1,200})/);
+    if (m) return m[1];
+  } catch {
+  }
+  return "";
+}
+function sanitizeTitle(title) {
+  let t = (title || "").trim();
+  t = t.replace(/^["'`]+|["'`]+$/g, "");
+  t = t.replace(/^title\s*:\s*/i, "");
+  t = t.replace(/\s+/g, " ").trim();
+  if (t.length > 80) t = t.slice(0, 80);
+  return t;
+}
+async function maybeUpdateTitleAfterFirstMessage(convId, lastUserPrompt, assistantReply) {
+  try {
+    const all = get5(conversations);
+    const conv = all?.[convId];
+    if (!conv) return;
+    const currentTitle = (conv.title ?? "").trim().toLowerCase();
+    if (currentTitle && currentTitle !== "new conversation") return;
+    const sys = {
+      role: "system",
+      content: "You generate a short, clear chat title. Respond with only the title, no quotes, max 8 words, Title Case."
+    };
+    const user = {
+      role: "user",
+      content: lastUserPrompt || "Create a short title for this conversation."
+    };
+    const asst = assistantReply ? { role: "assistant", content: assistantReply } : null;
+    const msgs = asst ? [sys, user, asst] : [sys, user];
+    const input = buildResponsesInputFromMessages(msgs);
+    const model = "gpt-4o-mini";
+    const payload = buildResponsesPayload(model, input, false);
+    const key = get5(apiKey);
+    const res = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Responses API error ${res.status}: ${text || res.statusText}`);
+    }
+    const data = await res.json();
+    const rawTitle = extractOutputTextFromResponses(data);
+    const title = sanitizeTitle(rawTitle);
+    if (!title) return;
+    conversations.update((allConvs) => {
+      const copy = [...allConvs];
+      const curr = { ...copy[convId] };
+      const currTitle = (curr.title ?? "").trim().toLowerCase();
+      if (!currTitle || currTitle === "new conversation") {
+        curr.title = title;
+        copy[convId] = curr;
+      }
+      return copy;
+    });
+  } catch (err) {
+    console.warn("Title generation failed:", err);
+  }
+}
+async function streamResponseViaResponsesAPI(prompt, model, callbacks, inputOverride, uiContext) {
+  const key = get5(apiKey);
+  if (!key) throw new Error("No API key configured");
+  const resolvedModel = model || getDefaultResponsesModel();
+  const input = inputOverride || buildResponsesInputFromPrompt(prompt);
+  const payload = buildResponsesPayload(resolvedModel, input, true);
+  const controller = new AbortController();
+  globalAbortController = controller;
+  const res = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload),
+    signal: controller.signal
+  });
+  if (!res.ok || !res.body) {
+    const text = await res.text().catch(() => "");
+    globalAbortController = null;
+    throw new Error(`Responses API stream error ${res.status}: ${text || res.statusText}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let finalText = "";
+  const panelTracker = /* @__PURE__ */ new Map();
+  const panelTextTracker = /* @__PURE__ */ new Map();
+  const convIdCtx = uiContext?.convId;
+  const anchorIndexCtx = uiContext?.anchorIndex;
+  const responseWindowId = supportsReasoning(resolvedModel) ? createReasoningWindow(convIdCtx, resolvedModel, anchorIndexCtx) : null;
+  function processSSEBlock(block) {
+    const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+    let eventType = "message";
+    const dataLines = [];
+    for (const line of lines) {
+      if (line.startsWith("event:")) {
+        eventType = line.slice("event:".length).trim();
+      } else if (line.startsWith("data:")) {
+        dataLines.push(line.slice("data:".length).trim());
+      }
+    }
+    if (dataLines.length === 0) return;
+    const dataStr = dataLines.join("\n");
+    if (dataStr === "[DONE]") {
+      for (const [kind, panelId] of panelTracker.entries()) {
+        completeReasoningPanel(panelId);
+        panelTextTracker.delete(panelId);
+      }
+      panelTracker.clear();
+      panelTextTracker.clear();
+      callbacks?.onCompleted?.(finalText);
+      if (responseWindowId) collapseReasoningWindow(responseWindowId);
+      return;
+    }
+    let obj = null;
+    try {
+      obj = JSON.parse(dataStr);
+    } catch (e) {
+      callbacks?.onError?.(new Error(`Failed to parse SSE data JSON: ${e}`));
+      return;
+    }
+    const resolvedType = eventType !== "message" ? eventType : obj?.type || "message";
+    callbacks?.onEvent?.({ type: resolvedType, data: obj });
+    logSSEEvent(resolvedType, obj, convIdCtx);
+    if (resolvedType === "response.reasoning_summary_part.added" || resolvedType === "response.reasoning_summary_text.delta" || resolvedType === "response.reasoning_summary.delta") {
+      const delta = obj?.delta ?? "";
+      if (!panelTracker.has("summary")) {
+        const panelId = startReasoningPanel("summary", convIdCtx, responseWindowId || void 0);
+        panelTracker.set("summary", panelId);
+        panelTextTracker.set(panelId, "");
+        callbacks?.onReasoningStart?.("summary", obj?.part);
+      }
+      if (typeof delta === "string" && delta) {
+        const panelId = panelTracker.get("summary");
+        const currentText = panelTextTracker.get(panelId) || "";
+        const newText = currentText + delta;
+        panelTextTracker.set(panelId, newText);
+        setReasoningText(panelId, newText);
+        callbacks?.onReasoningDelta?.("summary", delta);
+      }
+    } else if (resolvedType === "response.reasoning_summary_part.done" || resolvedType === "response.reasoning_summary_text.done" || resolvedType === "response.reasoning_summary.done") {
+      const text = obj?.part?.text ?? obj?.text ?? "";
+      const panelId = panelTracker.get("summary");
+      if (panelId) {
+        if (typeof text === "string" && text) {
+          setReasoningText(panelId, text);
+          panelTextTracker.set(panelId, text);
+        }
+        completeReasoningPanel(panelId);
+        callbacks?.onReasoningDone?.("summary", panelTextTracker.get(panelId) || "");
+        panelTracker.delete("summary");
+        panelTextTracker.delete(panelId);
+      }
+    } else if (resolvedType === "response.reasoning_text.delta" || resolvedType === "response.reasoning.delta") {
+      const delta = obj?.delta ?? "";
+      if (!panelTracker.has("text")) {
+        const panelId = startReasoningPanel("text", convIdCtx, responseWindowId || void 0);
+        panelTracker.set("text", panelId);
+        panelTextTracker.set(panelId, "");
+        callbacks?.onReasoningStart?.("text");
+      }
+      if (typeof delta === "string" && delta) {
+        const panelId = panelTracker.get("text");
+        const currentText = panelTextTracker.get(panelId) || "";
+        const newText = currentText + delta;
+        panelTextTracker.set(panelId, newText);
+        setReasoningText(panelId, newText);
+        callbacks?.onReasoningDelta?.("text", delta);
+      }
+    } else if (resolvedType === "response.reasoning_text.done" || resolvedType === "response.reasoning.done") {
+      const text = obj?.text ?? "";
+      let panelId = panelTracker.get("text");
+      if (!panelId && text) {
+        panelId = startReasoningPanel("text", convIdCtx, responseWindowId || void 0);
+        panelTracker.set("text", panelId);
+        panelTextTracker.set(panelId, "");
+        callbacks?.onReasoningStart?.("text");
+      }
+      if (panelId) {
+        if (typeof text === "string" && text) {
+          setReasoningText(panelId, text);
+          panelTextTracker.set(panelId, text);
+        }
+        completeReasoningPanel(panelId);
+        callbacks?.onReasoningDone?.("text", panelTextTracker.get(panelId) || "");
+        panelTracker.delete("text");
+        panelTextTracker.delete(panelId);
+      }
+    } else if (resolvedType === "response.output_text.delta") {
+      const deltaText = obj?.delta?.text ?? obj?.delta ?? obj?.output_text_delta ?? obj?.text ?? "";
+      if (deltaText) {
+        finalText += deltaText;
+        callbacks?.onTextDelta?.(deltaText);
+      }
+    } else if (resolvedType === "response.completed") {
+      for (const [kind, panelId] of panelTracker.entries()) {
+        completeReasoningPanel(panelId);
+        panelTextTracker.delete(panelId);
+      }
+      panelTracker.clear();
+      panelTextTracker.clear();
+      callbacks?.onCompleted?.(finalText, obj);
+      if (responseWindowId) collapseReasoningWindow(responseWindowId);
+    } else if (resolvedType === "error") {
+      callbacks?.onError?.(obj);
+    }
+  }
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    const decoded = decoder.decode(value, { stream: true });
+    buffer += decoded;
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() || "";
+    for (const p of parts) {
+      if (p.trim()) processSSEBlock(p);
+    }
+  }
+  if (buffer.trim()) processSSEBlock(buffer);
+  globalAbortController = null;
+  return finalText;
+}
+var globalAbortController, isStreaming2, userRequestedStreamClosure2, streamContext2;
+var init_openaiService = __esm({
+  "src/services/openaiService.ts"() {
+    init_stores();
+    init_reasoningSettings();
+    init_reasoningStore();
+    init_conversationManager();
+    init_imageManager();
+    init_generalUtils();
+    init_idb();
+    globalAbortController = null;
+    isStreaming2 = writable6(false);
+    userRequestedStreamClosure2 = writable6(false);
+    streamContext2 = writable6({ streamText: "", convId: null });
   }
 });
 
@@ -549,12 +1353,12 @@ enterBehavior.subscribe((v) => {
 });
 
 // src/tests/unit/keyboardSettings.test.ts
-import { get } from "svelte/store";
+import { get as get2 } from "svelte/store";
 registerTest({
   id: "enter-behavior-send",
   name: 'Enter sends when "Send message" is selected',
   fn: async (assert) => {
-    const prev = get(enterBehavior);
+    const prev = get2(enterBehavior);
     try {
       enterBehavior.set("send");
       const shouldSend = shouldSendOnEnter({
@@ -575,7 +1379,7 @@ registerTest({
   id: "enter-behavior-newline",
   name: 'Enter inserts newline when "Insert a new line" is selected',
   fn: async (assert) => {
-    const prev = get(enterBehavior);
+    const prev = get2(enterBehavior);
     try {
       enterBehavior.set("newline");
       const shouldSend = shouldSendOnEnter({
@@ -595,749 +1399,10 @@ registerTest({
 
 // src/tests/unit/messageModelLabeling.unit.test.ts
 init_stores();
-import { get as get5 } from "svelte/store";
-
-// src/services/openaiService.ts
-init_stores();
-import { get as get4, writable as writable6 } from "svelte/store";
-
-// src/stores/reasoningSettings.ts
-import { writable as writable3 } from "svelte/store";
-var KEYS = {
-  effort: "reasoning_effort",
-  verbosity: "reasoning_verbosity",
-  summary: "reasoning_summary"
-};
-function readLS(key, fallback) {
-  try {
-    const v = localStorage.getItem(key);
-    return v ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-var reasoningEffort = writable3(readLS(KEYS.effort, "medium"));
-var verbosity = writable3(readLS(KEYS.verbosity, "medium"));
-var summary = writable3(readLS(KEYS.summary, "auto"));
-reasoningEffort.subscribe((v) => {
-  try {
-    localStorage.setItem(KEYS.effort, v);
-  } catch {
-  }
-});
-verbosity.subscribe((v) => {
-  try {
-    localStorage.setItem(KEYS.verbosity, v);
-  } catch {
-  }
-});
-summary.subscribe((v) => {
-  try {
-    localStorage.setItem(KEYS.summary, v);
-  } catch {
-  }
-});
-
-// src/stores/reasoningStore.ts
-import { writable as writable4 } from "svelte/store";
-var REASONING_PANELS_KEY = "reasoning_panels";
-var REASONING_WINDOWS_KEY = "reasoning_windows";
-function loadFromStorage(key, defaultValue) {
-  try {
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (e) {
-    console.error(`Failed to load ${key} from localStorage:`, e);
-  }
-  return defaultValue;
-}
-function saveToStorage(key, data) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    console.error(`Failed to save ${key} to localStorage:`, e);
-  }
-}
-var initialPanels = loadFromStorage(REASONING_PANELS_KEY, []);
-var initialWindows = loadFromStorage(REASONING_WINDOWS_KEY, []);
-var reasoningPanels = writable4(initialPanels);
-var reasoningWindows = writable4(initialWindows);
-reasoningPanels.subscribe((panels) => {
-  saveToStorage(REASONING_PANELS_KEY, panels);
-});
-reasoningWindows.subscribe((windows) => {
-  saveToStorage(REASONING_WINDOWS_KEY, windows);
-});
-function genWindowId(convId) {
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}-win-${convId ?? "na"}`;
-}
-function createReasoningWindow(convId, model, anchorIndex) {
-  const id = genWindowId(convId);
-  reasoningWindows.update((arr) => [
-    ...arr,
-    { id, convId, model, anchorIndex, open: true, createdAt: Date.now() }
-  ]);
-  return id;
-}
-function collapseReasoningWindow(id) {
-  reasoningWindows.update((arr) => arr.map((w) => w.id === id ? { ...w, open: false } : w));
-}
-function genId(kind, convId) {
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}-${kind}-${convId ?? "na"}`;
-}
-function startReasoningPanel(kind, convId, responseId) {
-  const id = genId(kind, convId);
-  reasoningPanels.update((arr) => [
-    ...arr,
-    { id, convId, responseId, kind, text: "", open: true, startedAt: Date.now(), done: false }
-  ]);
-  return id;
-}
-function appendReasoningText(id, chunk) {
-  if (!chunk) return;
-  reasoningPanels.update(
-    (arr) => arr.map((p) => p.id === id ? { ...p, text: p.text + chunk } : p)
-  );
-}
-function setReasoningText(id, text) {
-  reasoningPanels.update(
-    (arr) => arr.map((p) => p.id === id ? { ...p, text: text ?? "" } : p)
-  );
-}
-function completeReasoningPanel(id) {
-  reasoningPanels.update(
-    (arr) => arr.map((p) => p.id === id ? { ...p, open: false, done: true } : p)
-  );
-}
-var reasoningSSEEvents = writable4([]);
-function genEventId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}-evt`;
-}
-function logSSEEvent(type, _data, convId) {
-  reasoningSSEEvents.update((arr) => {
-    const entry = { id: genEventId(), convId, type, ts: Date.now() };
-    const next = [...arr, entry];
-    return next.length > 500 ? next.slice(next.length - 500) : next;
-  });
-}
-if (typeof window !== "undefined") {
-  window.startReasoningPanel = startReasoningPanel;
-  window.appendReasoningText = appendReasoningText;
-  window.setReasoningText = setReasoningText;
-  window.completeReasoningPanel = completeReasoningPanel;
-}
-
-// src/managers/conversationManager.ts
-init_stores();
-init_stores();
-init_stores();
-import { get as get3 } from "svelte/store";
-var streamText = "";
-function setHistory(msg, convId = get3(chosenConversationId)) {
-  return new Promise((resolve, reject) => {
-    try {
-      let conv = get3(conversations);
-      conv[convId].history = msg;
-      conversations.set(conv);
-      resolve();
-    } catch (error) {
-      console.error("Failed to update history", error);
-      reject(error);
-    }
-  });
-}
-function cleanseMessage(msg) {
-  const allowedProps = ["role", "content"];
-  let cleansed = Object.keys(msg).filter((key) => allowedProps.includes(key)).reduce((obj, key) => {
-    obj[key] = msg[key];
-    return obj;
-  }, {});
-  if (!Array.isArray(cleansed.content)) {
-    cleansed.content = cleansed.content.toString();
-  }
-  return cleansed;
-}
-function displayAudioMessage(audioUrl) {
-  const audioMessage = {
-    role: "assistant",
-    content: "Audio file generated.",
-    audioUrl,
-    isAudio: true,
-    model: get3(selectedModel)
-  };
-  setHistory([...get3(conversations)[get3(chosenConversationId)].history, audioMessage]);
-}
-function estimateTokens(msg, convId) {
-  let chars = 0;
-  msg.map((m) => {
-    chars += m.content.length;
-  });
-  chars += streamText.length;
-  let tokens = chars / 4;
-  let conv = get3(conversations);
-  conv[convId].conversationTokens = conv[convId].conversationTokens + tokens;
-  conversations.set(conv);
-  combinedTokens.set(get3(combinedTokens) + tokens);
-}
-
-// src/managers/imageManager.ts
-init_stores();
-init_stores();
-function onSendVisionMessageComplete() {
-  base64Images.set([]);
-  clearFileInputSignal.set(true);
-}
-
-// src/utils/generalUtils.ts
-function countTicks(str) {
-  let out = str.split("").filter((char) => char === "`").length;
-  return out;
-}
-
-// src/services/openaiService.ts
-var globalAbortController = null;
-var isStreaming2 = writable6(false);
-var userRequestedStreamClosure2 = writable6(false);
-var streamContext2 = writable6({ streamText: "", convId: null });
-async function sendVisionMessage(msg, imagesBase64, convId) {
-  console.log("Sending vision message.");
-  userRequestedStreamClosure2.set(false);
-  let tickCounter = 0;
-  let ticks = false;
-  let currentHistory = get4(conversations)[convId].history;
-  const anchorIndex = currentHistory.length - 1;
-  const conversationUniqueId = get4(conversations)[convId]?.id;
-  const historyMessages = currentHistory.map((historyItem) => ({
-    role: historyItem.role,
-    content: convertChatContentToResponsesContent(historyItem.content, historyItem.role)
-  }));
-  const userTextMessage = [...msg].reverse().find((m) => m.role === "user")?.content || "";
-  const contentParts = [];
-  if (userTextMessage) contentParts.push({ type: "input_text", text: userTextMessage });
-  for (const imageBase64 of imagesBase64) {
-    contentParts.push({ type: "input_image", image_url: imageBase64 });
-  }
-  const currentMessage = { role: "user", content: contentParts };
-  const finalInput = [...historyMessages, currentMessage];
-  let streamText2 = "";
-  currentHistory = [...currentHistory];
-  isStreaming2.set(true);
-  try {
-    await streamResponseViaResponsesAPI(
-      "",
-      (() => {
-        const m = get4(selectedModel);
-        return m;
-      })(),
-      {
-        onTextDelta: (text) => {
-          const msgTicks = countTicks(text);
-          tickCounter += msgTicks;
-          if (msgTicks === 0) tickCounter = 0;
-          if (tickCounter === 3) {
-            ticks = !ticks;
-            tickCounter = 0;
-          }
-          streamText2 += text;
-          streamContext2.set({ streamText: streamText2, convId });
-          setHistory(
-            [
-              ...currentHistory,
-              {
-                role: "assistant",
-                content: streamText2 + "\u2588" + (ticks ? "\n```" : ""),
-                model: get4(selectedModel)
-              }
-            ],
-            convId
-          );
-        },
-        onCompleted: async () => {
-          if (get4(userRequestedStreamClosure2)) {
-            streamText2 = streamText2.replace(/█+$/, "");
-            userRequestedStreamClosure2.set(false);
-          }
-          await setHistory(
-            [
-              ...currentHistory,
-              { role: "assistant", content: streamText2, model: get4(selectedModel) }
-            ],
-            convId
-          );
-          estimateTokens(msg, convId);
-          streamText2 = "";
-          isStreaming2.set(false);
-          onSendVisionMessageComplete();
-        },
-        onError: (_err) => {
-          isStreaming2.set(false);
-          onSendVisionMessageComplete();
-        }
-      },
-      finalInput,
-      { convId: conversationUniqueId, anchorIndex }
-    );
-  } finally {
-    isStreaming2.set(false);
-  }
-}
-async function sendRegularMessage(msg, convId) {
-  userRequestedStreamClosure2.set(false);
-  let tickCounter = 0;
-  let ticks = false;
-  let currentHistory = get4(conversations)[convId].history;
-  const anchorIndex = currentHistory.length - 1;
-  const conversationUniqueId = get4(conversations)[convId]?.id;
-  let roleMsg = {
-    role: get4(defaultAssistantRole).type,
-    content: get4(conversations)[convId].assistantRole
-  };
-  msg = [roleMsg, ...msg];
-  const cleansedMessages = msg.map(cleanseMessage);
-  const input = buildResponsesInputFromMessages(cleansedMessages);
-  let lastUserPromptText = "";
-  const lastUserMessage = [...cleansedMessages].reverse().find((m) => m.role === "user");
-  if (lastUserMessage) {
-    const c = lastUserMessage.content;
-    if (typeof c === "string") {
-      lastUserPromptText = c;
-    } else if (Array.isArray(c)) {
-      lastUserPromptText = c.map((p) => typeof p === "string" ? p : p?.text ?? "").join(" ").trim();
-    } else if (c != null) {
-      lastUserPromptText = String(c);
-    }
-  }
-  let streamText2 = "";
-  currentHistory = [...currentHistory];
-  isStreaming2.set(true);
-  try {
-    await streamResponseViaResponsesAPI(
-      "",
-      (() => {
-        const m = get4(selectedModel);
-        return m;
-      })(),
-      {
-        onTextDelta: (text) => {
-          const msgTicks = countTicks(text);
-          tickCounter += msgTicks;
-          if (msgTicks === 0) tickCounter = 0;
-          if (tickCounter === 3) {
-            ticks = !ticks;
-            tickCounter = 0;
-          }
-          streamText2 += text;
-          streamContext2.set({ streamText: streamText2, convId });
-          setHistory(
-            [
-              ...currentHistory,
-              {
-                role: "assistant",
-                content: streamText2 + "\u2588" + (ticks ? "\n```" : ""),
-                model: get4(selectedModel)
-              }
-            ],
-            convId
-          );
-        },
-        onCompleted: async (_finalText) => {
-          if (get4(userRequestedStreamClosure2)) {
-            streamText2 = streamText2.replace(/█+$/, "");
-            userRequestedStreamClosure2.set(false);
-          }
-          await setHistory(
-            [
-              ...currentHistory,
-              {
-                role: "assistant",
-                content: streamText2,
-                model: get4(selectedModel)
-              }
-            ],
-            convId
-          );
-          estimateTokens(msg, convId);
-          await maybeUpdateTitleAfterFirstMessage(convId, lastUserPromptText, streamText2);
-          streamText2 = "";
-          isStreaming2.set(false);
-        },
-        onError: (_err) => {
-          isStreaming2.set(false);
-        }
-      },
-      input,
-      { convId: conversationUniqueId, anchorIndex }
-    );
-  } finally {
-    isStreaming2.set(false);
-  }
-}
-async function sendDalleMessage(msg, convId) {
-  isStreaming2.set(true);
-  let hasEncounteredError = false;
-  let currentHistory = get4(conversations)[convId].history;
-  let roleMsg = {
-    role: get4(defaultAssistantRole).type,
-    content: get4(conversations)[convId].assistantRole
-  };
-  msg = [roleMsg, ...msg];
-  const cleansedMessages = msg.map(cleanseMessage);
-  const prompt = cleansedMessages[cleansedMessages.length - 1].content;
-  try {
-    let response = await fetch("https://api.openai.com/v1/images/generations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${get4(apiKey)}`
-      },
-      body: JSON.stringify({
-        model: get4(selectedModel),
-        prompt,
-        size: get4(selectedSize),
-        quality: get4(selectedQuality),
-        n: 1
-      })
-    });
-    if (!response.ok) throw new Error("HTTP error, status = " + response.status);
-    let data = await response.json();
-    let imageUrl = data.data[0].url;
-    setHistory([...currentHistory, {
-      role: "assistant",
-      content: imageUrl,
-      type: "image",
-      // Adding a type property to distinguish image messages
-      model: get4(selectedModel)
-    }], convId);
-  } catch (error) {
-    console.error("Error generating image:", error);
-    hasEncounteredError = true;
-  } finally {
-    isStreaming2.set(false);
-  }
-}
-function getDefaultResponsesModel() {
-  const m = get4(selectedModel);
-  if (!m || /gpt-3\.5|gpt-4-turbo-preview|gpt-4-32k|gpt-4$|o1-mini/.test(m)) {
-    return "gpt-5-nano";
-  }
-  return m;
-}
-function supportsReasoning(model) {
-  const m = (model || "").toLowerCase();
-  return m.includes("gpt-5") || m.includes("o3") || m.includes("o4") || m.includes("reason");
-}
-function buildResponsesPayload(model, input, stream) {
-  const payload = { model, input, store: false, stream };
-  if (supportsReasoning(model)) {
-    const eff = get4(reasoningEffort) || "medium";
-    const verb = get4(verbosity) || "medium";
-    const sum = get4(summary) || "auto";
-    payload.text = { verbosity: verb };
-    payload.reasoning = { effort: eff, summary: sum === "null" ? null : sum };
-  }
-  return payload;
-}
-function buildResponsesInputFromPrompt(prompt) {
-  return [
-    {
-      role: "user",
-      content: [{ type: "input_text", text: prompt }]
-    }
-  ];
-}
-function convertChatContentToResponsesContent(content, role) {
-  const isAssistant = (role || "").toLowerCase() === "assistant";
-  if (typeof content === "string") {
-    return [{ type: isAssistant ? "output_text" : "input_text", text: content }];
-  }
-  if (Array.isArray(content)) {
-    return content.map((part) => {
-      if (isAssistant) {
-        if (typeof part === "string") {
-          return { type: "output_text", text: part };
-        }
-        if (part?.type === "text" && typeof part?.text === "string") {
-          return { type: "output_text", text: part.text };
-        }
-        if (part?.type === "input_text" && typeof part?.text === "string") {
-          return { type: "output_text", text: part.text };
-        }
-        return { type: "output_text", text: typeof part === "string" ? part : JSON.stringify(part) };
-      }
-      if (part?.type === "text" && typeof part?.text === "string") {
-        return { type: "input_text", text: part.text };
-      }
-      if (part?.type === "image_url") {
-        const url = part?.image_url?.url ?? part?.image_url ?? part?.url ?? "";
-        return { type: "input_image", image_url: url };
-      }
-      if (part?.type === "input_text" || part?.type === "input_image") {
-        return part;
-      }
-      return { type: "input_text", text: typeof part === "string" ? part : JSON.stringify(part) };
-    });
-  }
-  return [{ type: isAssistant ? "output_text" : "input_text", text: String(content) }];
-}
-function buildResponsesInputFromMessages(messages) {
-  return messages.map((m) => ({
-    role: m.role,
-    content: convertChatContentToResponsesContent(m.content, m.role)
-  }));
-}
-function extractOutputTextFromResponses(obj) {
-  if (!obj) return "";
-  if (typeof obj.output_text === "string") return obj.output_text.trim();
-  const outputs = Array.isArray(obj.output) ? obj.output : Array.isArray(obj.outputs) ? obj.outputs : null;
-  if (outputs) {
-    let text = "";
-    for (const o of outputs) {
-      const content = Array.isArray(o?.content) ? o.content : [];
-      for (const p of content) {
-        if (typeof p?.text === "string") text += p.text;
-        else if (typeof p === "string") text += p;
-      }
-    }
-    if (text.trim()) return text.trim();
-  }
-  if (Array.isArray(obj?.content)) {
-    const t = obj.content.map((p) => p?.text || "").join("");
-    if (t.trim()) return t.trim();
-  }
-  try {
-    const s = JSON.stringify(obj);
-    const m = s.match(/"text"\s*:\s*"([^"]{1,200})/);
-    if (m) return m[1];
-  } catch {
-  }
-  return "";
-}
-function sanitizeTitle(title) {
-  let t = (title || "").trim();
-  t = t.replace(/^["'`]+|["'`]+$/g, "");
-  t = t.replace(/^title\s*:\s*/i, "");
-  t = t.replace(/\s+/g, " ").trim();
-  if (t.length > 80) t = t.slice(0, 80);
-  return t;
-}
-async function maybeUpdateTitleAfterFirstMessage(convId, lastUserPrompt, assistantReply) {
-  try {
-    const all = get4(conversations);
-    const conv = all?.[convId];
-    if (!conv) return;
-    const currentTitle = (conv.title ?? "").trim().toLowerCase();
-    if (currentTitle && currentTitle !== "new conversation") return;
-    const sys = {
-      role: "system",
-      content: "You generate a short, clear chat title. Respond with only the title, no quotes, max 8 words, Title Case."
-    };
-    const user = {
-      role: "user",
-      content: lastUserPrompt || "Create a short title for this conversation."
-    };
-    const asst = assistantReply ? { role: "assistant", content: assistantReply } : null;
-    const msgs = asst ? [sys, user, asst] : [sys, user];
-    const input = buildResponsesInputFromMessages(msgs);
-    const model = "gpt-4o-mini";
-    const payload = buildResponsesPayload(model, input, false);
-    const key = get4(apiKey);
-    const res = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`Responses API error ${res.status}: ${text || res.statusText}`);
-    }
-    const data = await res.json();
-    const rawTitle = extractOutputTextFromResponses(data);
-    const title = sanitizeTitle(rawTitle);
-    if (!title) return;
-    conversations.update((allConvs) => {
-      const copy = [...allConvs];
-      const curr = { ...copy[convId] };
-      const currTitle = (curr.title ?? "").trim().toLowerCase();
-      if (!currTitle || currTitle === "new conversation") {
-        curr.title = title;
-        copy[convId] = curr;
-      }
-      return copy;
-    });
-  } catch (err) {
-    console.warn("Title generation failed:", err);
-  }
-}
-async function streamResponseViaResponsesAPI(prompt, model, callbacks, inputOverride, uiContext) {
-  const key = get4(apiKey);
-  if (!key) throw new Error("No API key configured");
-  const resolvedModel = model || getDefaultResponsesModel();
-  const input = inputOverride || buildResponsesInputFromPrompt(prompt);
-  const payload = buildResponsesPayload(resolvedModel, input, true);
-  const controller = new AbortController();
-  globalAbortController = controller;
-  const res = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload),
-    signal: controller.signal
-  });
-  if (!res.ok || !res.body) {
-    const text = await res.text().catch(() => "");
-    globalAbortController = null;
-    throw new Error(`Responses API stream error ${res.status}: ${text || res.statusText}`);
-  }
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let finalText = "";
-  const panelTracker = /* @__PURE__ */ new Map();
-  const panelTextTracker = /* @__PURE__ */ new Map();
-  const convIdCtx = uiContext?.convId;
-  const anchorIndexCtx = uiContext?.anchorIndex;
-  const responseWindowId = supportsReasoning(resolvedModel) ? createReasoningWindow(convIdCtx, resolvedModel, anchorIndexCtx) : null;
-  function processSSEBlock(block) {
-    const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
-    let eventType = "message";
-    const dataLines = [];
-    for (const line of lines) {
-      if (line.startsWith("event:")) {
-        eventType = line.slice("event:".length).trim();
-      } else if (line.startsWith("data:")) {
-        dataLines.push(line.slice("data:".length).trim());
-      }
-    }
-    if (dataLines.length === 0) return;
-    const dataStr = dataLines.join("\n");
-    if (dataStr === "[DONE]") {
-      for (const [kind, panelId] of panelTracker.entries()) {
-        completeReasoningPanel(panelId);
-        panelTextTracker.delete(panelId);
-      }
-      panelTracker.clear();
-      panelTextTracker.clear();
-      callbacks?.onCompleted?.(finalText);
-      if (responseWindowId) collapseReasoningWindow(responseWindowId);
-      return;
-    }
-    let obj = null;
-    try {
-      obj = JSON.parse(dataStr);
-    } catch (e) {
-      callbacks?.onError?.(new Error(`Failed to parse SSE data JSON: ${e}`));
-      return;
-    }
-    const resolvedType = eventType !== "message" ? eventType : obj?.type || "message";
-    callbacks?.onEvent?.({ type: resolvedType, data: obj });
-    logSSEEvent(resolvedType, obj, convIdCtx);
-    if (resolvedType === "response.reasoning_summary_part.added" || resolvedType === "response.reasoning_summary_text.delta" || resolvedType === "response.reasoning_summary.delta") {
-      const delta = obj?.delta ?? "";
-      if (!panelTracker.has("summary")) {
-        const panelId = startReasoningPanel("summary", convIdCtx, responseWindowId || void 0);
-        panelTracker.set("summary", panelId);
-        panelTextTracker.set(panelId, "");
-        callbacks?.onReasoningStart?.("summary", obj?.part);
-      }
-      if (typeof delta === "string" && delta) {
-        const panelId = panelTracker.get("summary");
-        const currentText = panelTextTracker.get(panelId) || "";
-        const newText = currentText + delta;
-        panelTextTracker.set(panelId, newText);
-        setReasoningText(panelId, newText);
-        callbacks?.onReasoningDelta?.("summary", delta);
-      }
-    } else if (resolvedType === "response.reasoning_summary_part.done" || resolvedType === "response.reasoning_summary_text.done" || resolvedType === "response.reasoning_summary.done") {
-      const text = obj?.part?.text ?? obj?.text ?? "";
-      const panelId = panelTracker.get("summary");
-      if (panelId) {
-        if (typeof text === "string" && text) {
-          setReasoningText(panelId, text);
-          panelTextTracker.set(panelId, text);
-        }
-        completeReasoningPanel(panelId);
-        callbacks?.onReasoningDone?.("summary", panelTextTracker.get(panelId) || "");
-        panelTracker.delete("summary");
-        panelTextTracker.delete(panelId);
-      }
-    } else if (resolvedType === "response.reasoning_text.delta" || resolvedType === "response.reasoning.delta") {
-      const delta = obj?.delta ?? "";
-      if (!panelTracker.has("text")) {
-        const panelId = startReasoningPanel("text", convIdCtx, responseWindowId || void 0);
-        panelTracker.set("text", panelId);
-        panelTextTracker.set(panelId, "");
-        callbacks?.onReasoningStart?.("text");
-      }
-      if (typeof delta === "string" && delta) {
-        const panelId = panelTracker.get("text");
-        const currentText = panelTextTracker.get(panelId) || "";
-        const newText = currentText + delta;
-        panelTextTracker.set(panelId, newText);
-        setReasoningText(panelId, newText);
-        callbacks?.onReasoningDelta?.("text", delta);
-      }
-    } else if (resolvedType === "response.reasoning_text.done" || resolvedType === "response.reasoning.done") {
-      const text = obj?.text ?? "";
-      let panelId = panelTracker.get("text");
-      if (!panelId && text) {
-        panelId = startReasoningPanel("text", convIdCtx, responseWindowId || void 0);
-        panelTracker.set("text", panelId);
-        panelTextTracker.set(panelId, "");
-        callbacks?.onReasoningStart?.("text");
-      }
-      if (panelId) {
-        if (typeof text === "string" && text) {
-          setReasoningText(panelId, text);
-          panelTextTracker.set(panelId, text);
-        }
-        completeReasoningPanel(panelId);
-        callbacks?.onReasoningDone?.("text", panelTextTracker.get(panelId) || "");
-        panelTracker.delete("text");
-        panelTextTracker.delete(panelId);
-      }
-    } else if (resolvedType === "response.output_text.delta") {
-      const deltaText = obj?.delta?.text ?? obj?.delta ?? obj?.output_text_delta ?? obj?.text ?? "";
-      if (deltaText) {
-        finalText += deltaText;
-        callbacks?.onTextDelta?.(deltaText);
-      }
-    } else if (resolvedType === "response.completed") {
-      for (const [kind, panelId] of panelTracker.entries()) {
-        completeReasoningPanel(panelId);
-        panelTextTracker.delete(panelId);
-      }
-      panelTracker.clear();
-      panelTextTracker.clear();
-      callbacks?.onCompleted?.(finalText, obj);
-      if (responseWindowId) collapseReasoningWindow(responseWindowId);
-    } else if (resolvedType === "error") {
-      callbacks?.onError?.(obj);
-    }
-  }
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    const decoded = decoder.decode(value, { stream: true });
-    buffer += decoded;
-    const parts = buffer.split("\n\n");
-    buffer = parts.pop() || "";
-    for (const p of parts) {
-      if (p.trim()) processSSEBlock(p);
-    }
-  }
-  if (buffer.trim()) processSSEBlock(buffer);
-  globalAbortController = null;
-  return finalText;
-}
-
-// src/tests/unit/messageModelLabeling.unit.test.ts
+init_openaiService();
+init_conversationManager();
+init_openaiService();
+import { get as get6 } from "svelte/store";
 function resetConversations() {
   conversations.set([
     {
@@ -1389,7 +1454,7 @@ function setModel(id) {
   selectedModel.set(id);
 }
 function getLastAssistant() {
-  const conv = get5(conversations)[0];
+  const conv = get6(conversations)[0];
   const hist = conv.history;
   for (let i = hist.length - 1; i >= 0; i--) {
     if (hist[i].role === "assistant") return hist[i];
@@ -1406,7 +1471,7 @@ registerTest(
       await withMockedStreamResponse(async () => {
         await sendRegularMessage([{ role: "user", content: "Hi" }], 0);
       });
-      const conv = get5(conversations)[0];
+      const conv = get6(conversations)[0];
       t.that(conv.history.length >= 1, "history has assistant messages");
       const last = getLastAssistant();
       t.that(last?.model === "gpt-4o", "assistant message stores selected model");
@@ -1460,7 +1525,12 @@ registerTest({
   }
 });
 
+// src/tests/unit/reasoningPayload.test.ts
+init_openaiService();
+init_reasoningSettings();
+
 // src/tests/unit/responsesConversionAndPayload.test.ts
+init_openaiService();
 function makeMsg(role, content) {
   return { role, content };
 }
