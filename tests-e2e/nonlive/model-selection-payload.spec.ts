@@ -98,34 +98,33 @@ test.describe('Model selection drives request payload.model', () => {
 
     // Change the selected model via UI if possible; otherwise set localStorage then reload
     // First try a combobox/labeled select
-    const maybeModelCombo = page.getByRole('combobox', { name: /model/i });
-    if (await maybeModelCombo.isVisible().catch(() => false)) {
-      await maybeModelCombo.selectOption({ label: 'gpt-5' }).catch(async () => {
-        // Some custom selects require clicking and choosing option
-        await maybeModelCombo.click();
-        await page.getByRole('option', { name: /^gpt-5$/ }).click();
-      });
-    } else {
-      // Try quick-settings toggle then a select inside
-      const qsToggle = page.locator('[data-testid="quick-settings-toggle"]');
-      if (await qsToggle.isVisible().catch(() => false)) {
-        await qsToggle.click();
-        const modelSelect = page.locator('[data-testid="model-select"]');
-        if (await modelSelect.isVisible().catch(() => false)) {
-          await modelSelect.selectOption({ label: 'gpt-5' }).catch(async () => {
-            await modelSelect.click();
+    // Open Quick Settings via semantic aria-controls and select model
+    const qsToggleByAria = page.locator('button[aria-controls="quick-settings-body"]');
+    if (await qsToggleByAria.isVisible().catch(() => false)) {
+      await qsToggleByAria.click();
+      const prodSelect = page.locator('#current-model-select');
+      if (await prodSelect.isVisible().catch(() => false)) {
+        await prodSelect.selectOption({ label: 'gpt-5' }).catch(async () => {
+          await prodSelect.click();
+          await page.getByRole('option', { name: /^gpt-5$/ }).click();
+        });
+      } else {
+        // Fallback: try role-based select inside the opened panel
+        const combo = page.getByRole('combobox', { name: /api model/i });
+        if (await combo.isVisible().catch(() => false)) {
+          await combo.selectOption({ label: 'gpt-5' }).catch(async () => {
+            await combo.click();
             await page.getByRole('option', { name: /^gpt-5$/ }).click();
           });
         } else {
-          // Fallback to localStorage and reload
           await page.evaluate(() => localStorage.setItem('selectedModel', 'gpt-5'));
           await page.reload();
         }
-      } else {
-        // Final fallback: localStorage + reload
-        await page.evaluate(() => localStorage.setItem('selectedModel', 'gpt-5'));
-        await page.reload();
       }
+    } else {
+      // As a last resort, use localStorage and reload
+      await page.evaluate(() => localStorage.setItem('selectedModel', 'gpt-5'));
+      await page.reload();
     }
 
     // Send again and assert second phase

@@ -24,3 +24,32 @@
 - **State Management**: Prefer stores over props drilling. Update conversation via `conversationManager.ts`
 - **Security**: Never commit API keys. Keys stored client-side only via Settings UI
 - **Tests**: There are two types of tests "live" and "nonapi" -- there are two corresponding folders under the ./src/tests folder. Put new test files into the appropriate subfolder. Live tests use external APIs, and so running them should be limited to major integration regression testing (like during deployment pipelines). Nonapi tests are everything else and can be run freely at any time without requiring costs or much time. Where possible add tests to existing test files rather than creating small test files for obscure features that already have a major test suite file. When creating a test file, try to create names for the files that reflect the larger feature, so other future tests can also be added to this file over time.
+
+## UI Test Guidance (Playwright)
+
+Use semantic, production-stable locators first. Avoid brittle selectors. Preferred strategies:
+
+- Open panels via their controlling buttons, not content containers:
+  - Use the ARIA relationship already in the DOM, e.g., `button[aria-controls="quick-settings-body"]` to open Quick Settings.
+  - Do not try to click the body container to open it.
+
+- Operate real, production IDs for inputs once visible:
+  - Model select: `#current-model-select` (combobox) inside Quick Settings.
+  - Prefer role-based queries when labels are stable: `getByRole('combobox', { name: /api model/i })`.
+
+- Fallbacks only when necessary (in order):
+  1) Role + accessible name
+  2) ARIA relationships (e.g., `aria-controls`)
+  3) Stable production IDs
+  4) Last resort: localStorage setup + page reload
+
+- Interaction recipe example for model change:
+  1) Click `button[aria-controls="quick-settings-body"]`
+  2) `await page.locator('#current-model-select').selectOption({ label: 'gpt-5' })`
+  3) Send the message and assert the outgoing request payload
+
+- Avoid hidden element interactions: ensure the control is visible before operating it (`await locator.isVisible()`).
+
+- Prefer intercepting network requests to assert payloads instead of inspecting internal state.
+
+- Keep tests resilient to copy and minor markup changes by leaning on ARIA roles/labels and semantic attributes already in production UI.
