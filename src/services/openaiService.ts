@@ -62,7 +62,7 @@ export function closeStream() {
 // Streaming state management
 export const isStreaming = writable(false);
 export const userRequestedStreamClosure = writable(false);
-export const streamContext = writable<{ streamText: string; convId: any }>({ streamText: '', convId: null });
+export const streamContext = writable<{ streamText: string; convId: number | null }>({ streamText: '', convId: null });
 
 // ChatCompletions SDK removed; using fetch-based Responses API only
 const errorMessage: ChatMessage[] = [

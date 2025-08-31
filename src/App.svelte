@@ -341,7 +341,7 @@ function startEditMessage(i: number) {
             {/if}
 
             {#if message.role === 'user'}
-              <ReasoningInline convId={$chosenConversationId} anchorIndex={i} />
+              <ReasoningInline convId={$conversations[$chosenConversationId]?.id} anchorIndex={i} />
             {/if}
 
           </div>

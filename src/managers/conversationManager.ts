@@ -110,7 +110,7 @@ export function cleanseMessage(msg: ChatCompletionRequestMessage | { role: strin
 
 
 
-export async function routeMessage(input: string, convId) {
+export async function routeMessage(input: string, convId: number) {
 
     let currentHistory = get(conversations)[convId].history;
     let messageHistory = currentHistory;
@@ -187,7 +187,7 @@ export function displayAudioMessage(audioUrl) {
 setHistory([...get(conversations)[get(chosenConversationId)].history, audioMessage]);
 }
 
-export function countTokens(usage) {
+export function countTokens(usage: { total_tokens: number }) {
     let conv = get(conversations);
     conv[get(chosenConversationId)].conversationTokens =
       conv[get(chosenConversationId)].conversationTokens + usage.total_tokens;
@@ -197,7 +197,7 @@ export function countTokens(usage) {
   }
 
  
-  export function estimateTokens(msg: ChatCompletionRequestMessage[], convId) {
+  export function estimateTokens(msg: ChatCompletionRequestMessage[], convId: number) {
     let chars = 0;
     msg.map((m) => {
       chars += m.content.length;

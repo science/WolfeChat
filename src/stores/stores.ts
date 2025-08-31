@@ -92,14 +92,9 @@ function generateConversationId(): string {
 
 // Migration function to add IDs to existing conversations
 function migrateConversations(convs: any[]): Conversation[] {
-  return convs.map((conv, index) => {
-    if (!conv.id) {
-      return {
-        ...conv,
-        id: generateConversationId()
-      };
-    }
-    return conv;
+  return convs.map((conv) => {
+    const id = conv.id != null ? String(conv.id) : generateConversationId();
+    return { ...conv, id } as Conversation;
   });
 }
 
