@@ -658,10 +658,19 @@ export function extractOutputTextFromResponses(obj: any): string {
 
 export function sanitizeTitle(title: string): string {
   let t = (title || '').trim();
-  t = t.replace(/^["'`]+|["'`]+$/g, '');     // strip wrapping quotes
-  t = t.replace(/^title\s*:\s*/i, '');       // strip leading "Title:"
+  // Remove any leading Title: (case-insensitive), allowing surrounding quotes
+  t = t.replace(/^(?:["“”']*\s*)?(?:(?:title)\s*:\s*)/i, '');
+  // Iteratively strip leading/trailing quote characters (ASCII and smart)
+  const quoteRE = /^(?:["“”']+)|(?:["“”']+)$/g;
+  let prev;
+  do {
+    prev = t;
+    t = t.replace(/^["“”']+|["“”']+$/g, '');
+    t = t.trim();
+  } while (t !== prev);
+  // Collapse whitespace
   t = t.replace(/\s+/g, ' ').trim();
-  if (t.length > 80) t = t.slice(0, 80);     // safety cap
+  if (t.length > 80) t = t.slice(0, 80);
   return t;
 }
 
