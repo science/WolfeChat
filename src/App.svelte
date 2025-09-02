@@ -252,14 +252,14 @@ function startEditMessage(i: number) {
       </div>
       <div class="flex bg-primary overflow-y-auto overflow-x-hidden justify-center grow" data-testid="chat-scroll-container" bind:this={chatContainer}>
       {#if $conversations.length > 0 && $conversations[$chosenConversationId]}
-        <div class="flex flex-col max-w-3xl pt-5 grow">
+        <div class="flex flex-col max-w-3xl pt-5 grow" role="list" aria-label="Conversation messages" data-history-total={$conversations[$chosenConversationId].history.length} data-non-system-count={$conversations[$chosenConversationId].history.filter(m => m.role !== 'system').length}>
           
           <div>
         {#each $conversations[$chosenConversationId].history as message, i}
 
         {#if message.role !=='system'}
 
-          <div class="message relative inline-block bg-primary px-2 pb-5 flex flex-col" data-testid={message.role === 'assistant' ? 'assistant-message' : message.role === 'user' ? 'user-message' : undefined}>
+          <div class="message relative inline-block bg-primary px-2 pb-5 flex flex-col" role="listitem" aria-label={message.role === 'assistant' ? 'Assistant message' : message.role === 'user' ? 'User message' : undefined} data-message-index={i} data-message-role={message.role} data-testid={message.role === 'assistant' ? 'assistant-message' : message.role === 'user' ? 'user-message' : undefined}>
             <div class="profile-picture flex">
               <div>
                 <img src={message.role === 'user' ? UserIcon : RobotIcon} alt="Profile" class="w-6 h-6 ml-10" />

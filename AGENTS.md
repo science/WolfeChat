@@ -26,6 +26,18 @@
 - **Security**: Never commit API keys. Keys stored client-side only via Settings UI
 - **Tests**: There are two types of tests "live" and "nonapi" -- there are two corresponding folders under the ./src/tests folder. Put new test files into the appropriate subfolder. Live tests use external APIs, and so running them should be limited to major integration regression testing (like during deployment pipelines). Nonapi tests are everything else and can be run freely at any time without requiring costs or much time. Where possible add tests to existing test files rather than creating small test files for obscure features that already have a major test suite file. When creating a test file, try to create names for the files that reflect the larger feature, so other future tests can also be added to this file over time.
 
+### Test utilities and live setup
+
+- Prefer using helpers in `tests-e2e/live/helpers.ts` for stable, production-like flows:
+  - `bootstrapLiveAPI(page)`: opens Settings, fills `#api-key`, clicks “Check API”, waits for models to populate, then saves and closes.
+  - `selectReasoningModelInQuickSettings(page)`: opens Quick Settings via `button[aria-controls="quick-settings-body"]` and selects a reasoning-capable model (prefers `gpt-5-nano`).
+- For SSE validation in-browser, use the wrapper in `src/tests/helpers/TestSSEEvents.ts` with `streamResponseViaResponsesAPI`:
+  - Inject once per test page:
+    - define `window.__runBoundStream(prompt)` that binds callbacks, awaits `sse.output.completed` and `sse.stream.done`, and returns `{ finalText }`.
+- Avoid ad-hoc localStorage hacks for API keys; always use the Settings flow to ensure `modelsStore` is populated before selecting a model.
+- Keep per-test timeouts reasonable; live SSE tests use `test.setTimeout(45_000)` instead of `test.slow()`.
+
+
 ## Source code management
 
 - Don't check in or stage new/changed/deleted files or folders unless explicitly asked to do so.
