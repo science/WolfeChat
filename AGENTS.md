@@ -34,6 +34,10 @@
 - For SSE validation in-browser, use the wrapper in `src/tests/helpers/TestSSEEvents.ts` with `streamResponseViaResponsesAPI`:
   - Inject once per test page:
     - define `window.__runBoundStream(prompt)` that binds callbacks, awaits `sse.output.completed` and `sse.stream.done`, and returns `{ finalText }`.
+- Prefer semantic wait hooks over manual timing:
+  - Use `createStreamSession({...})` from `src/utils/streamSession.ts` when you need deterministic waits.
+  - Treat “all reasoning complete” as the first main output token (simplifies cross-model behavior).
+  - Primary waits: `awaitMainResponseCompleted()`, `awaitAllReasoningDone()`, `awaitCurrentReasoningDone(kind)`, `awaitStreamDone()`.
 - Avoid ad-hoc localStorage hacks for API keys; always use the Settings flow to ensure `modelsStore` is populated before selecting a model.
 - Keep per-test timeouts reasonable; live SSE tests use `test.setTimeout(45_000)` instead of `test.slow()`.
 
