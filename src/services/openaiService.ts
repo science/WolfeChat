@@ -798,6 +798,8 @@ export async function streamResponseViaResponsesAPI(
     ? createReasoningWindow(convIdCtx, resolvedModel, anchorIndexCtx)
     : null;
 
+  let completedEmitted = false;
+
   function processSSEBlock(block: string) {
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
     let eventType = 'message';
@@ -822,6 +824,7 @@ export async function streamResponseViaResponsesAPI(
       panelTracker.clear();
       panelTextTracker.clear();
       callbacks?.onCompleted?.(finalText);
+      completedEmitted = true;
       if (responseWindowId) collapseReasoningWindow(responseWindowId);
       return;
     }
@@ -830,7 +833,20 @@ export async function streamResponseViaResponsesAPI(
     try {
       obj = JSON.parse(dataStr);
     } catch (e) {
+      console.warn('[SSE] Failed to parse SSE JSON block', { blockSnippet: (dataStr || '').slice(0, 200), error: String(e) });
       callbacks?.onError?.(new Error(`Failed to parse SSE data JSON: ${e}`));
+      // Also emit synthetic completion to avoid hangs
+      if (!completedEmitted) {
+        for (const [kind, panelId] of panelTracker.entries()) {
+          completeReasoningPanel(panelId);
+          panelTextTracker.delete(panelId);
+        }
+        panelTracker.clear();
+        panelTextTracker.clear();
+        callbacks?.onCompleted?.(finalText, { type: 'parse_error', synthetic: true });
+        completedEmitted = true;
+        if (responseWindowId) collapseReasoningWindow(responseWindowId);
+      }
       return;
     }
 
@@ -941,9 +957,25 @@ export async function streamResponseViaResponsesAPI(
       panelTracker.clear();
       panelTextTracker.clear();
       callbacks?.onCompleted?.(finalText, obj);
+      completedEmitted = true;
       if (responseWindowId) collapseReasoningWindow(responseWindowId);
     } else if (resolvedType === 'error') {
+      console.warn('[SSE] error event received from stream', obj);
       callbacks?.onError?.(obj);
+      if (!completedEmitted) {
+        // Emit synthetic completion to unblock waits
+        console.warn('[SSE] emitting synthetic completion after error');
+        // Finalize panels
+        for (const [k, panelId] of panelTracker.entries()) {
+          completeReasoningPanel(panelId);
+          panelTextTracker.delete(panelId);
+        }
+        panelTracker.clear();
+        panelTextTracker.clear();
+        callbacks?.onCompleted?.(finalText, { type: 'error', synthetic: true, error: obj });
+        completedEmitted = true;
+        if (responseWindowId) collapseReasoningWindow(responseWindowId);
+      }
     }
   }
 
@@ -960,6 +992,25 @@ export async function streamResponseViaResponsesAPI(
     }
   }
   if (buffer.trim()) processSSEBlock(buffer);
+
+  // If the stream ended without explicit completion, emit a synthetic completion
+  if (!completedEmitted) {
+    console.warn('[SSE] Stream ended without response.completed or [DONE]. Emitting synthetic completion.', {
+      model: resolvedModel,
+      payloadShape: Object.keys(payload || {}),
+      partialFinalTextLen: finalText.length
+    });
+    // finalize any panels and collapse window
+    for (const [kind, panelId] of panelTracker.entries()) {
+      completeReasoningPanel(panelId);
+      panelTextTracker.delete(panelId);
+    }
+    panelTracker.clear();
+    panelTextTracker.clear();
+    callbacks?.onCompleted?.(finalText, { type: 'response.completed', synthetic: true, reason: 'eof_without_terminal_event' });
+    completedEmitted = true;
+    if (responseWindowId) collapseReasoningWindow(responseWindowId);
+  }
 
   globalAbortController = null;
   return finalText;

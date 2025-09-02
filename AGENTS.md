@@ -26,6 +26,51 @@
 - **Security**: Never commit API keys. Keys stored client-side only via Settings UI
 - **Tests**: There are two types of tests "live" and "nonapi" -- there are two corresponding folders under the ./src/tests folder. Put new test files into the appropriate subfolder. Live tests use external APIs, and so running them should be limited to major integration regression testing (like during deployment pipelines). Nonapi tests are everything else and can be run freely at any time without requiring costs or much time. Where possible add tests to existing test files rather than creating small test files for obscure features that already have a major test suite file. When creating a test file, try to create names for the files that reflect the larger feature, so other future tests can also be added to this file over time.
 
+### E2E debug chattiness toggle
+
+To keep CI logs quiet but allow deep diagnostics locally, e2e tests can gate verbose browser and SSE logs behind an env-controlled debug level.
+
+- Set DEBUG_E2E to control verbosity:
+  - 0 (default): silent
+  - 2: show browser console errors, pre-flight diagnostics, and OpenAI request/response summaries
+  - 3: include high-volume SSE event names (debug spam)
+
+Pattern to use in tests (example):
+
+````ts
+// Inside a test
+const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0');
+if (DEBUG_LVL >= 2) {
+  page.on('console', msg => {
+    const text = msg.text();
+    if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(text) || msg.type() === 'error') {
+      console.log(`[BROWSER-${msg.type()}] ${text}`);
+    }
+  });
+  page.on('pageerror', err => console.log('[BROWSER-PAGEERROR]', err.message));
+  page.on('request', req => { if (req.url().includes('api.openai.com')) console.log('[NET-REQ]', req.method(), req.url()); });
+  page.on('response', res => { if (res.url().includes('api.openai.com')) console.log('[NET-RES]', res.status(), res.url()); });
+}
+
+// Propagate level into the page if needed by injected code
+if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL);
+
+// When injecting page scripts, gate verbose logs:
+await page.addScriptTag({ type: 'module', content: `
+  window.__runSomething = async function() {
+    // ...
+    const verbose = (window as any).__DEBUG_E2E >= 3;
+    if (verbose) console.debug('[TEST] SSE event xyz');
+  };
+`});
+````
+
+Usage examples:
+- Run one test with network/console logs:
+  - `DEBUG_E2E=2 npx playwright test tests-e2e/live/sse-events-live.spec.ts -g "hook-based"`
+- Include SSE event spam:
+  - `DEBUG_E2E=3 npx playwright test tests-e2e/live/sse-events-live.spec.ts -g "hook-based"`
+
 ### Test utilities and live setup
 
 - Prefer using helpers in `tests-e2e/live/helpers.ts` for stable, production-like flows:
@@ -48,9 +93,9 @@
 
 ## UI Test Guidance (Playwright)
 
-### Don't run tests unless you are explicitly asked to do so.
+### **Don't run ANY tests unless you are explicitly asked to do so. Do not run playwright tests, unit tests, or any other tests without explicit direction from the user.**
 
-### Use semantic, production-stable locators first. Avoid brittle selectors. Preferred strategies:
+### Use semantic, production-stable locators first. Avoid brittle or test-only selectors. Preferred strategies:
 
 - Open panels via their controlling buttons, not content containers:
   - Use the ARIA relationship already in the DOM, e.g., `button[aria-controls="quick-settings-body"]` to open Quick Settings.
@@ -80,4 +125,4 @@
 
 ### LLM Model selection
 
-- When using live LLM models, prefer 'gpt-5-nano' as the reasoning model, and use gpt-3.5-turbo as the non-reasoning model. These models are very inexpensive and so don't cause budget problems when running in test environments.
+- When using live LLM models, prefer 'gpt-5-nano' as the reasoning model, and use gpt-3.5-turbo as the non-reasoning model. 
