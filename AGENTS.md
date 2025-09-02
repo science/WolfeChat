@@ -76,6 +76,12 @@ Usage examples:
 - Prefer using helpers in `tests-e2e/live/helpers.ts` for stable, production-like flows:
   - `bootstrapLiveAPI(page)`: opens Settings, fills `#api-key`, clicks “Check API”, waits for models to populate, then saves and closes.
   - `selectReasoningModelInQuickSettings(page)`: opens Quick Settings via `button[aria-controls="quick-settings-body"]` and selects a reasoning-capable model (prefers `gpt-5-nano`).
+  - `operateQuickSettings(page, opts)`: generalized, idempotent Quick Settings operator. Ensures the panel is open/closed as requested, selects the target model (by label/value or regex), and can set reasoning controls (effort/verbosity/summary). Use this instead of ad-hoc toggling.
+
+Note for e2e authors:
+- Always consult and reuse helpers from `tests-e2e/live/helpers.ts` for Quick Settings, Settings/API bootstrapping, and common UI flows. Avoid duplicating selectors or opening panels manually in each spec.
+- For SSE/event-driven waits injected into the page, prefer the utilities in `src/tests/helpers/TestSSEEvents.ts` to bind callbacks and await semantic completion events.
+- When driving the chat composer, follow existing patterns in e2e specs (e.g., resolving the chat input via role+name `getByRole('textbox', { name: /chat input/i })`, with fallbacks) rather than broad `getByRole('textbox')`.
 - For SSE validation in-browser, use the wrapper in `src/tests/helpers/TestSSEEvents.ts` with `streamResponseViaResponsesAPI`:
   - Inject once per test page:
     - define `window.__runBoundStream(prompt)` that binds callbacks, awaits `sse.output.completed` and `sse.stream.done`, and returns `{ finalText }`.

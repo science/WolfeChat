@@ -147,11 +147,112 @@ export async function bootstrapLiveAPI(page: Page) {
   await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
 }
 
+export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-open' | 'ensure-closed' | 'open' | 'close', model?: string | RegExp, reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high', verbosity?: 'low' | 'medium' | 'high', summary?: 'auto' | 'detailed' | 'null', closeAfter?: boolean } = {}) {
+  const { mode = 'ensure-open', model, reasoningEffort, verbosity, summary, closeAfter = false } = opts;
+
+  const toggle = page.locator('button[aria-controls="quick-settings-body"]');
+  await expect(toggle).toBeVisible();
+  const body = page.locator('#quick-settings-body');
+
+  const isOpen = async () => (await toggle.getAttribute('aria-expanded')) === 'true' || (await body.isVisible().catch(() => false));
+
+  // Open/ensure-open
+  if (mode === 'open' || mode === 'ensure-open') {
+    if (!(await isOpen())) {
+      await toggle.click();
+      await expect(body).toBeVisible();
+    }
+  } else if (mode === 'ensure-closed' || mode === 'close') {
+    if (await isOpen()) {
+      await toggle.click();
+      await expect(body).toBeHidden();
+    }
+    if (mode !== 'ensure-closed') return; // close only
+  }
+
+  // If we reach here, panel is open
+  const within = body;
+  // Locate model select within body
+  let modelSelect = within.locator('#current-model-select');
+  if (!(await modelSelect.isVisible().catch(() => false))) {
+    modelSelect = within.getByRole('combobox', { name: /api model|current model|model/i });
+  }
+
+  // If a model is requested or we need to ensure population, wait for options
+  const needModel = !!model;
+  if (needModel) {
+    await expect(modelSelect).toBeVisible();
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline) {
+      const options = modelSelect.locator('option:not([disabled])');
+      const count = await options.count();
+      if (count > 0) {
+        const texts = await Promise.all(Array.from({ length: count }, (_, i) => options.nth(i).textContent()));
+        if (texts.some(t => (t || '').trim() && !/no models loaded|no models/i.test(t || ''))) break;
+      }
+      await page.waitForTimeout(200);
+    }
+    await expect(modelSelect).toBeVisible();
+
+    // Select model by label/value
+    const options = modelSelect.locator('option');
+    const count = await options.count();
+    let selectedValue: string | null = null;
+    const prefer = model instanceof RegExp ? model : new RegExp(String(model), 'i');
+    for (let i = 0; i < count; i++) {
+      const opt = options.nth(i);
+      const label = ((await opt.textContent()) || '').trim();
+      const value = (await opt.getAttribute('value')) || '';
+      if (prefer.test(label) || prefer.test(value)) { selectedValue = value || label; break; }
+    }
+    if (!selectedValue) {
+      // fallback to gpt-5-nano, then gpt-5*
+      for (let i = 0; i < count && !selectedValue; i++) {
+        const opt = options.nth(i);
+        const label = ((await opt.textContent()) || '').trim();
+        const value = (await opt.getAttribute('value')) || '';
+        if (/gpt-5-nano/i.test(label) || /gpt-5-nano/i.test(value)) { selectedValue = value || label; break; }
+      }
+      for (let i = 0; i < count && !selectedValue; i++) {
+        const opt = options.nth(i);
+        const label = ((await opt.textContent()) || '').trim();
+        const value = (await opt.getAttribute('value')) || '';
+        if (/gpt-5/i.test(label) || /gpt-5/i.test(value)) { selectedValue = value || label; break; }
+      }
+    }
+    if (!selectedValue) {
+      const labels = await Promise.all(Array.from({ length: count }, (_, i) => options.nth(i).textContent()));
+      throw new Error(`Could not find a suitable model. Available: ${labels.map(t => (t||'').trim()).join(' | ')}`);
+    }
+    await modelSelect.selectOption(selectedValue);
+  }
+
+  // Reasoning controls (best-effort)
+  const setIf = async (sel: string, val: string | undefined) => {
+    if (!val) return;
+    const el = within.locator(sel);
+    if (await el.isVisible().catch(() => false)) {
+      await el.selectOption(val);
+    }
+  };
+  await setIf('#reasoning-effort', reasoningEffort as any);
+  await setIf('#verbosity', verbosity as any);
+  await setIf('#summary', summary as any);
+
+  if (closeAfter) {
+    if (await isOpen()) {
+      await toggle.click();
+      await expect(body).toBeHidden();
+    }
+  }
+}
+
 export async function selectReasoningModelInQuickSettings(page: Page) {
   // Open Quick Settings panel
-  const qBtn = page.locator('button[aria-controls="quick-settings-body"]');
-  await expect(qBtn).toBeVisible();
-  await qBtn.click();
+  // Delegate to generalized helper to avoid double-toggling
+  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, closeAfter: false });
+
+  // After ensuring open, continue legacy selection flow (no-op if already selected)
 
   // Prefer role-based combobox, fallback to id
   let modelSelect = page.getByRole('combobox', { name: /api model|current model/i });
