@@ -33,6 +33,13 @@ class EventBus {
   }
 }
 
+// Optionally: create a session for higher-level waits (not yet used by existing tests)
+export async function createHookedSession(prompt: string) {
+  const mod = await import('../../utils/streamSession');
+  const { session } = mod.createStreamSession({ prompt });
+  return session;
+}
+
 export function bindToCallbacks(user?: ResponsesStreamCallbacks) {
   const bus = new EventBus();
 
