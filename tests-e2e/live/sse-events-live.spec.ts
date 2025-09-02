@@ -22,9 +22,28 @@ async function bindWrapper(page: Page) {
       return out;
     };
   `});
-}
-
-async function sendViaUI(page: Page, text: string) {
+ }
+ 
+ // Expose richer hook-based runner for TDD on event utilities
+ async function bindHookedRunner(page: Page) {
+   await page.addScriptTag({ type: 'module', content: `
+     import { bindToCallbacks } from '/src/tests/helpers/TestSSEEvents.ts';
+     import { streamResponseViaResponsesAPI } from '/src/services/openaiService.ts';
+     window.__runHookedStream = async function(prompt) {
+       const { callbacks, bus } = bindToCallbacks();
+       const summaryP = bus.waitForReasoningSummaryDone(60000).catch(() => null);
+       const textP = bus.waitForReasoningTextDone(60000).catch(() => null);
+       const completedP = bus.waitForOutputCompleted(60000);
+       const allDoneP = bus.waitForAllDone(60000);
+       streamResponseViaResponsesAPI(prompt, undefined, callbacks).catch(console.error);
+       const [summary, text, completed] = await Promise.all([summaryP, textP, completedP]);
+       await allDoneP;
+       return { summary, reasoning: text, completed };
+     };
+   `});
+ }
+ 
+ async function sendViaUI(page: Page, text: string) {
   // Locate chat input textarea using stable, semantic selectors
   let input = page.getByRole('textbox', { name: /chat input/i });
   if (!(await input.isVisible().catch(() => false))) {
@@ -81,23 +100,26 @@ test('Live SSE: output completion for a very short answer', async ({ page }) => 
   const { finalText } = await page.evaluate(async () => {
     return await (window as any).__runBoundStream('Reply with the single word: Done');
   });
-
   expect(finalText.trim().length).toBeGreaterThan(0);
 });
 
-// Live test 3: tolerant to reasoning behavior
-// We do not assert reasoning events explicitly, only that completion occurs
-
-test('Live SSE: completion without depending on reasoning events', async ({ page }) => {
+// Live test 4 (TDD): hook utilities observe reasoning and completion semantics
+// Uses __runHookedStream which resolves summary/text reasoning and main completion
+test('Live SSE: hook-based waits for reasoning and completion', async ({ page }) => {
   test.setTimeout(45_000);
   await page.goto(APP_URL);
   await bootstrapLiveAPI(page);
   await selectReasoningModelInQuickSettings(page);
-  await bindWrapper(page); // after API bootstrap and model select
+  await bindHookedRunner(page);
 
-  const { finalText } = await page.evaluate(async () => {
-    return await (window as any).__runBoundStream('Answer in one sentence. Do not include chain-of-thought.');
+  const result = await page.evaluate(async () => {
+    return await (window as any).__runHookedStream('Briefly explain what an API is.');
   });
 
-  expect(finalText.trim().length).toBeGreaterThan(0);
+  // completed must be present
+  expect(result?.completed?.finalText?.length || 0).toBeGreaterThan(0);
+  // reasoning fields may or may not exist depending on model/response; tolerate null
+  if (result.summary != null) expect(String(result.summary).length).toBeGreaterThan(0);
+  if (result.reasoning != null) expect(String(result.reasoning).length).toBeGreaterThan(0);
 });
+
