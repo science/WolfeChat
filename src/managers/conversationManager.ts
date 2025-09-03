@@ -76,13 +76,7 @@ export function deleteAllMessagesBelow(messageIndex: number) {
 
 
 export function newChat() {
-    const currentConversations = get(conversations);
-    // Check if conversations is not empty before accessing its last element
-    if (currentConversations.length > 0 && currentConversations[currentConversations.length - 1].history.length === 0) {
-      console.log("Jumping to recent conversation.");
-        chosenConversationId.set(currentConversations.length - 1);
-        return;
-    }
+    // Always create a new empty conversation and select it
     const newConversation = createNewConversation();
     conversations.update(conv => [...conv, newConversation]);
     chosenConversationId.set(get(conversations).length - 1);
