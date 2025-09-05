@@ -46,9 +46,8 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   // rows: 0->conv3, 1->conv2, 2->conv1
 
   // Set per-conversation models/reasoning using helper to ensure panel open and model availability
-  // conv3: prefer a non-nano gpt-5 model if available; otherwise use gpt-5-nano and tweak reasoning
-  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5(?!.*nano)/i, reasoningEffort: 'minimal', verbosity: 'low' });
-  // If a non-nano gpt-5 model wasn't available, we still set reasoning controls under the selected model.
+  // conv3: use gpt-5-nano (approved test model)
+  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'minimal', verbosity: 'low' });
   // Set summary last (helper doesn't include it by default in earlier calls)
   await operateQuickSettings(page, { mode: 'ensure-open', summary: 'detailed', closeAfter: true });
 
@@ -69,7 +68,7 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   const reasoningEffortSel = page.locator('#reasoning-effort');
   const verbositySel = page.locator('#verbosity');
   const summarySel = page.locator('#summary');
-  // We cannot deterministically assert non-nano model selection across environments, but we can assert reasoning control values
+  // We use gpt-5-nano as the standard test model, and we can assert reasoning control values
   await expect(reasoningEffortSel).toHaveValue('minimal');
   await expect(verbositySel).toHaveValue('low');
   await expect(summarySel).toHaveValue('detailed');
