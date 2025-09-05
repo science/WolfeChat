@@ -202,7 +202,6 @@ function autoExpand(event) {
 
   function processMessage() {
     let convId = $chosenConversationId;
-    addRecentModel($selectedModel);
     routeMessage(input, convId);
     input = ""; 
     // Clear the draft since message was sent
@@ -267,7 +266,6 @@ function startEditMessage(i: number) {
     }
     // Process the edited message as new input
     let convId = $chosenConversationId;
-    addRecentModel($selectedModel);
     routeMessage(editedContent, convId);
     cancelEdit(); // Reset editing state
   }

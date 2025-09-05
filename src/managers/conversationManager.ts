@@ -3,6 +3,8 @@ import { get, writable } from "svelte/store";
 import { conversations, chosenConversationId, combinedTokens, createNewConversation } from "../stores/stores.js";
 import { type Conversation, defaultAssistantRole } from "../stores/stores.js";
 import { selectedModel, selectedVoice, audioUrls, base64Images } from '../stores/stores.js';
+import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore.js';
+import { addRecentModel } from '../stores/recentModelsStore.js';
 import { reasoningWindows, clearReasoningForConversation } from '../stores/reasoningStore.js';
 
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService.js";
@@ -113,8 +115,13 @@ export async function routeMessage(input: string, convId: number) {
 
     const defaultModel = 'gpt-3.5-turbo'; 
     const defaultVoice = 'alloy'; 
-    const model = get(selectedModel) || defaultModel;
+    const convUniqueId = get(conversations)[convId]?.id;
+    const perConv = conversationQuickSettings.getSettings(convUniqueId);
+    const model = perConv.model || get(selectedModel) || defaultModel;
     const voice = get(selectedVoice) || defaultVoice;
+    
+    // Add the effective model to recent models
+    addRecentModel(model);
 
     let outgoingMessage: ChatCompletionRequestMessage[];
     outgoingMessage = [
@@ -127,12 +134,14 @@ export async function routeMessage(input: string, convId: number) {
         await sendTTSMessage(input, model, voice, convId);
       } else if (model.includes('vision')) {
         const imagesBase64 = get(base64Images); // Retrieve the current array of base64 encoded images
-        await sendVisionMessage(outgoingMessage, imagesBase64, convId);
+        const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };
+        await sendVisionMessage(outgoingMessage, imagesBase64, convId, config);
       } else if (model.includes('dall-e')) {
         await sendDalleMessage(outgoingMessage, convId);
       } else {
         // Default case for regular messages if no specific keywords are found in the model string
-        await sendRegularMessage(outgoingMessage, convId);
+        const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };
+        await sendRegularMessage(outgoingMessage, convId, config);
       }
     if (get(conversations)[convId].history.length === 1 || get(conversations)[convId].title === '') {
         await createTitle(input);
