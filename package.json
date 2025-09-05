@@ -7,8 +7,12 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node run-tests.mjs",
     "test:browser": "npx playwright test tests-e2e/nonlive",
     "test:browser-live": "npx playwright test tests-e2e/live",
+    "pretest:live": "vite build",
+    "test:live": "node run-tests.mjs --live",
+    "test:all": "node run-tests.mjs --suite all",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {

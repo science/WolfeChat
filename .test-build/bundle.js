@@ -69,7 +69,6 @@ import { get } from "svelte/store";
 function deleteConversationByIndex(index) {
   conversations.update((convs) => {
     if (index < 0 || index >= convs.length) return convs;
-    const convId = convs[index].id;
     const next = convs.filter((_, i) => i !== index);
     let newIndex = 0;
     if (next.length > 0) {
@@ -88,7 +87,7 @@ function findConversationIndexById(id) {
   return convs.findIndex((c) => c.id === id);
 }
 function generateConversationId() {
-  return `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `conv-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 function migrateConversations(convs) {
   return convs.map((conv) => {
@@ -401,6 +400,55 @@ var init_conversationQuickSettingsStore = __esm({
   }
 });
 
+// src/stores/modelStore.ts
+import { writable as writable7 } from "svelte/store";
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(MODELS_LS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+var MODELS_LS_KEY, modelsStore;
+var init_modelStore = __esm({
+  "src/stores/modelStore.ts"() {
+    MODELS_LS_KEY = "models";
+    modelsStore = writable7(loadFromLocalStorage());
+    modelsStore.subscribe((val) => {
+      try {
+        localStorage.setItem(MODELS_LS_KEY, JSON.stringify(val || []));
+      } catch {
+      }
+    });
+  }
+});
+
+// src/stores/recentModelsStore.ts
+import { writable as writable8, get as get4 } from "svelte/store";
+function loadFromLocalStorage2() {
+  try {
+    const raw = localStorage.getItem(RECENT_MODELS_LS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+var RECENT_MODELS_LS_KEY, recentModelsStore;
+var init_recentModelsStore = __esm({
+  "src/stores/recentModelsStore.ts"() {
+    init_modelStore();
+    RECENT_MODELS_LS_KEY = "recent_models";
+    recentModelsStore = writable8(loadFromLocalStorage2());
+    recentModelsStore.subscribe((val) => {
+      try {
+        localStorage.setItem(RECENT_MODELS_LS_KEY, JSON.stringify(val || []));
+      } catch {
+      }
+    });
+  }
+});
+
 // src/managers/conversationManager.ts
 import { get as get5 } from "svelte/store";
 function setHistory(msg, convId = get5(chosenConversationId)) {
@@ -456,6 +504,7 @@ var init_conversationManager = __esm({
     init_stores();
     init_stores();
     init_conversationQuickSettingsStore();
+    init_recentModelsStore();
     init_reasoningStore();
     init_openaiService();
     streamText = "";
@@ -491,7 +540,7 @@ var init_idb = __esm({
 });
 
 // src/services/openaiService.ts
-import { get as get6, writable as writable8 } from "svelte/store";
+import { get as get6, writable as writable9 } from "svelte/store";
 async function sendVisionMessage(msg, imagesBase64, convId, config) {
   console.log("Sending vision message.");
   userRequestedStreamClosure2.set(false);
@@ -1087,9 +1136,9 @@ var init_openaiService = __esm({
     init_generalUtils();
     init_idb();
     globalAbortController = null;
-    isStreaming2 = writable8(false);
-    userRequestedStreamClosure2 = writable8(false);
-    streamContext2 = writable8({ streamText: "", convId: null });
+    isStreaming2 = writable9(false);
+    userRequestedStreamClosure2 = writable9(false);
+    streamContext2 = writable9({ streamText: "", convId: null });
   }
 });
 

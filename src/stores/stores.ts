@@ -64,7 +64,6 @@ import { get } from 'svelte/store';
 export function deleteConversationByIndex(index: number) {
   conversations.update((convs) => {
     if (index < 0 || index >= convs.length) return convs;
-    const convId = convs[index].id;
     const next = convs.filter((_, i) => i !== index);
     // Adjust chosen index
     let newIndex = 0;
@@ -87,7 +86,7 @@ export function findConversationIndexById(id: string): number {
 
 // Helper to generate unique conversation IDs
 function generateConversationId(): string {
-  return `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `conv-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 // Migration function to add IDs to existing conversations
