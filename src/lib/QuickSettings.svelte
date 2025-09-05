@@ -1,13 +1,21 @@
 <script lang="ts">
-  import { selectedModel } from '../stores/stores.js';
+  import { selectedModel, conversations, chosenConversationId } from '../stores/stores.js';
   import { modelsStore } from '../stores/modelStore.js';
   import { recentModelsStore } from '../stores/recentModelsStore.js';
   import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
+  import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore';
   import { supportsReasoning } from '../services/openaiService.js';
 
   let open = false;
   function toggle() { open = !open; }
-  $: isReasoningModel = supportsReasoning($selectedModel || '');
+  const currentCQ = conversationQuickSettings.currentSettingsWritable(chosenConversationId, (id) => {
+    const idx = id as number | null | undefined;
+    if (idx == null) return null;
+    const conv = $conversations?.[idx];
+    return conv?.id ?? null;
+  });
+  $: effectiveModel = $currentCQ.model || $selectedModel || '';
+  $: isReasoningModel = supportsReasoning(effectiveModel);
 
    async function clearConversation() {
      try {
@@ -41,7 +49,6 @@
   }
 
   import ClearChat from '../assets/ClearChat.svg';
-  import { conversations, chosenConversationId } from '../stores/stores.js';
   import { get } from 'svelte/store';
 
   function navigateAnchors(direction: 'up' | 'down') {
@@ -103,7 +110,7 @@
     aria-controls="quick-settings-body"
     type="button"
   >
-    <span class="font-bold">Quick Settings M: {$selectedModel || '—'}, V: {isReasoningModel ? $verbosity : '—'} | R: {isReasoningModel ? $reasoningEffort : '—'} | S: {isReasoningModel ? $summary : '—'}</span>
+     <span class="font-bold">Quick Settings M: {effectiveModel || '—'}, V: {isReasoningModel ? ($currentCQ.verbosity || 'low') : '—'} | R: {isReasoningModel ? ($currentCQ.reasoningEffort || 'minimal') : '—'} | S: {isReasoningModel ? ($currentCQ.summary || 'auto') : '—'}</span>
     <span class="ml-2 text-sm">{open ? '▲' : '▼'}</span>
   </button>
 
@@ -113,10 +120,12 @@
       <div class="font-bold text-l mb-2">
         <label for="current-model-select" class="mr-2">API Model</label>
         <select
-          id="current-model-select"
-          class="bg-primary text-white/80 p-1 rounded border border-gray-500"
-          bind:value={$selectedModel}
-        >
+           id="current-model-select"
+           class="bg-primary text-white/80 p-1 rounded border border-gray-500"
+           data-testid="model-select"
+           aria-label="Model"
+           bind:value={$currentCQ.model}
+         >
           {#if $modelsStore && $modelsStore.length > 0}
             {#if $recentModelsStore && $recentModelsStore.length > 0}
               <optgroup label="Recently used">
@@ -142,7 +151,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
         <div>
           <label for="reasoning-effort" class="mr-2">Reasoning:</label>
-          <select id="reasoning-effort" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$reasoningEffort}>
+           <select id="reasoning-effort" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$currentCQ.reasoningEffort}>
             <option value="minimal">minimal</option>
             <option value="low">low</option>
             <option value="medium">medium</option>
@@ -151,7 +160,7 @@
         </div>
         <div>
           <label for="verbosity" class="mr-2">Verbosity:</label>
-          <select id="verbosity" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$verbosity}>
+           <select id="verbosity" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$currentCQ.verbosity}>
             <option value="low">low</option>
             <option value="medium">medium</option>
             <option value="high">high</option>
@@ -159,7 +168,7 @@
         </div>
         <div>
           <label for="summary" class="mr-2">Summary:</label>
-          <select id="summary" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$summary}>
+           <select id="summary" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$currentCQ.summary}>
             <option value="auto">auto</option>
             <option value="detailed">detailed</option>
             <option value="null">null</option>

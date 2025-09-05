@@ -96,7 +96,91 @@ Upload the contents of `dist/` to your bucket or server. For SPAs, configure a f
   }
   ```
 
-## 5) CI/CD Notes
+## 5) Dependencies and Test Assets
+
+- Runtime (production):
+  - The built site in `dist/` is fully static. No Node runtime is required on the hosting platform.
+- Build/Dev (local and CI):
+  - Node.js 18+ (20 recommended)
+  - Package manager: npm
+  - Vite/Svelte/TypeScript and related tooling from `devDependencies`
+- Browser testing (development/CI only; not needed for production hosting):
+  - `@playwright/test` (devDependency)
+  - Playwright browser binaries installed via `npx playwright install --with-deps`
+
+Provisioning for CI when running browser tests:
+
+```bash
+npm ci
+npx playwright install --with-deps
+npx playwright test tests-e2e          # all E2E tests
+```
+
+Notes:
+- Keep Playwright in `devDependencies`. Do not install browsers in deploy-only jobs.
+- Artifacts: Playwright HTML report and traces/screenshots can be uploaded from `playwright-report/` and `test-results/` on failures.
+
+Formal dependency listing and maintenance (similar to Bundler):
+- This project uses `package.json` + `package-lock.json` as the authoritative dependency manifest.
+- Use `npm ci` in CI/CD to ensure reproducible installs.
+- To review/update dependencies:
+  - `npm outdated`
+  - `npm update` (or targeted version bumps) and commit the updated `package-lock.json`
+  - Validate with `npm run check` and test suites.
+- For Playwright version bumps, re-run: `npx playwright install --with-deps`.
+
+## 6) Running Tests
+
+Install dependencies first (once per machine):
+
+```bash
+npm ci
+npx playwright install --with-deps  # for browser tests
+```
+
+- Unit / non-API tests (existing Node harness):
+  - Run core harness
+    ```bash
+    npm run test
+    ```
+  - Run all suites in the legacy harness
+    ```bash
+    npm run test:all
+    ```
+
+- Browser E2E tests (non-live, no external API calls):
+```bash
+npx playwright test tests-e2e/nonlive  # direct Playwright (recommended)
+npm run test:browser                   # equivalent npm wrapper
+```
+Notes:
+- Starts a Vite dev server automatically (reuses an existing server on :5173 if running)
+- Produces artifacts (HTML report, screenshots, traces) under `playwright-report/` and `test-results/`
+
+- Browser E2E tests (live, calls external APIs):
+```bash
+export OPENAI_API_KEY=sk-xxx           # or set in your shell/CI
+npx playwright test tests-e2e/live     # direct Playwright (recommended)
+npm run test:browser-live              # equivalent npm wrapper
+```
+Notes:
+- Live tests are skipped or will fail fast if `OPENAI_API_KEY` is not set
+- Live and non-live are separated by folder under tests-e2e/
+
+
+Tips:
+- Filter Playwright runs to a specific spec or grep:
+  ```bash
+  # Single spec
+  npx playwright test tests-e2e/nonlive/some-specific.spec.ts
+  # Grep pattern
+  npx playwright test tests-e2e --grep "scroll"
+  # All E2E tests
+  npx playwright test tests-e2e
+  ```
+- If you have a dev server already running on :5173, tests will reuse it. For strict isolation consider using a preview server (update baseURL in `playwright.config.ts`).
+
+## 7) CI/CD Notes
 
 - The GitHub Pages workflow focuses on deployment. If you want CI to also run smoke tests in a browser context, you can:
   - Use Playwright or Puppeteer to open the site and invoke `window.SmoothGPTTestHarness.runAll()` (ensure your API key is available in the environment/UI).

@@ -3,6 +3,8 @@ import { get, writable } from "svelte/store";
 import { conversations, chosenConversationId, combinedTokens, createNewConversation } from "../stores/stores.js";
 import { type Conversation, defaultAssistantRole } from "../stores/stores.js";
 import { selectedModel, selectedVoice, audioUrls, base64Images } from '../stores/stores.js';
+import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore.js';
+import { addRecentModel } from '../stores/recentModelsStore.js';
 import { reasoningWindows, clearReasoningForConversation } from '../stores/reasoningStore.js';
 
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService.js";
@@ -76,13 +78,7 @@ export function deleteAllMessagesBelow(messageIndex: number) {
 
 
 export function newChat() {
-    const currentConversations = get(conversations);
-    // Check if conversations is not empty before accessing its last element
-    if (currentConversations.length > 0 && currentConversations[currentConversations.length - 1].history.length === 0) {
-      console.log("Jumping to recent conversation.");
-        chosenConversationId.set(currentConversations.length - 1);
-        return;
-    }
+    // Always create a new empty conversation and select it
     const newConversation = createNewConversation();
     conversations.update(conv => [...conv, newConversation]);
     chosenConversationId.set(get(conversations).length - 1);
@@ -110,7 +106,7 @@ export function cleanseMessage(msg: ChatCompletionRequestMessage | { role: strin
 
 
 
-export async function routeMessage(input: string, convId) {
+export async function routeMessage(input: string, convId: number) {
 
     let currentHistory = get(conversations)[convId].history;
     let messageHistory = currentHistory;
@@ -119,8 +115,13 @@ export async function routeMessage(input: string, convId) {
 
     const defaultModel = 'gpt-3.5-turbo'; 
     const defaultVoice = 'alloy'; 
-    const model = get(selectedModel) || defaultModel;
+    const convUniqueId = get(conversations)[convId]?.id;
+    const perConv = conversationQuickSettings.getSettings(convUniqueId);
+    const model = perConv.model || get(selectedModel) || defaultModel;
     const voice = get(selectedVoice) || defaultVoice;
+    
+    // Add the effective model to recent models
+    addRecentModel(model);
 
     let outgoingMessage: ChatCompletionRequestMessage[];
     outgoingMessage = [
@@ -133,12 +134,14 @@ export async function routeMessage(input: string, convId) {
         await sendTTSMessage(input, model, voice, convId);
       } else if (model.includes('vision')) {
         const imagesBase64 = get(base64Images); // Retrieve the current array of base64 encoded images
-        await sendVisionMessage(outgoingMessage, imagesBase64, convId);
+        const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };
+        await sendVisionMessage(outgoingMessage, imagesBase64, convId, config);
       } else if (model.includes('dall-e')) {
         await sendDalleMessage(outgoingMessage, convId);
       } else {
         // Default case for regular messages if no specific keywords are found in the model string
-        await sendRegularMessage(outgoingMessage, convId);
+        const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };
+        await sendRegularMessage(outgoingMessage, convId, config);
       }
     if (get(conversations)[convId].history.length === 1 || get(conversations)[convId].title === '') {
         await createTitle(input);
@@ -152,35 +155,25 @@ function setTitle(title: string) {
   }
 
 async function createTitle(currentInput: string) {
-    const titleModel = 'gpt-4o-mini';  // Use a modern model that works with Responses API
-
+    const titleModel = 'gpt-4o-mini';
     try {
-        let response = await sendRequest([
-            { role: "user", content: currentInput },
-            {
-                role: "user",
-                content: "Generate a title for this conversation, so I can easily reference it later. Maximum 6 words. Don't provide anything other than the title. Don't use quotes.",
-            },
-        ], titleModel); // Pass the titleModel as an argument
-
-        // Check if response has the expected structure
-        if (response && response.data && response.data.choices && response.data.choices.length > 0) {
-            let message = response.data.choices[0].message?.content;
-            if (message) {
-                setTitle(message.toString());
-            } else {
-                console.warn("Title generation: No content in response message");
-                // Set a fallback title based on the input
-                setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''));
-            }
-        } else {
-            console.warn("Title generation: Invalid response structure", response);
-            // Set a fallback title based on the input
-            setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''));
-        }
+        // Use Responses API pathway consistently
+        const msgs: any[] = [
+            { role: 'system', content: 'You generate a short, clear chat title. Respond with only the title, no quotes, max 8 words, Title Case.' },
+            { role: 'user', content: currentInput }
+        ];
+        // Reuse helpers from openaiService via sendRequest which now posts to /responses
+        const response = await sendRequest(msgs as any, titleModel);
+        // Extract text using the same utility used by maybeUpdateTitleAfterFirstMessage
+        const svc = await import('../services/openaiService.js');
+        const raw = svc.extractOutputTextFromResponses(response);
+        let title = raw?.trim() || '';
+        if (!title) throw new Error('Empty title text');
+        const clean = svc.sanitizeTitle(title);
+        if (!clean) throw new Error('Sanitized title empty');
+        setTitle(clean);
     } catch (error) {
-        console.error("Error generating title:", error);
-        // Set a fallback title based on the input
+        console.warn("Title generation: Invalid response structure", error);
         setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''));
     }
 }
@@ -197,7 +190,7 @@ export function displayAudioMessage(audioUrl) {
 setHistory([...get(conversations)[get(chosenConversationId)].history, audioMessage]);
 }
 
-export function countTokens(usage) {
+export function countTokens(usage: { total_tokens: number }) {
     let conv = get(conversations);
     conv[get(chosenConversationId)].conversationTokens =
       conv[get(chosenConversationId)].conversationTokens + usage.total_tokens;
@@ -207,7 +200,7 @@ export function countTokens(usage) {
   }
 
  
-  export function estimateTokens(msg: ChatCompletionRequestMessage[], convId) {
+  export function estimateTokens(msg: ChatCompletionRequestMessage[], convId: number) {
     let chars = 0;
     msg.map((m) => {
       chars += m.content.length;

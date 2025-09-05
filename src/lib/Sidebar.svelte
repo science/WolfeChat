@@ -14,6 +14,7 @@
     selectedModel,
     showTokens,
   } from "../stores/stores.js";
+  import { draftsStore } from "../stores/draftsStore.js";
   import CloseIcon from "../assets/close.svg";
   import NewChat from "../assets/NewChat.svg";
   import EditIcon from "../assets/edit.svg";
@@ -53,10 +54,15 @@
     return; // Abort deletion if it's the last conversation
   }
 
-  let conv = $conversations.filter((value, index) => index !== i);
-  console.log("Updated conversations list after deletion attempt:", conv);
-
-  // Adjust the selected conversation index if necessary
+  const deleted = $conversations[i];
+   let conv = $conversations.filter((value, index) => index !== i);
+   console.log("Updated conversations list after deletion attempt:", conv);
+   if (deleted?.id) {
+     drafts.deleteDraft(deleted.id);
+     try { (window as any).conversationQuickSettings?.deleteSettings?.(deleted.id); } catch {}
+   }
+ 
+   // Adjust the selected conversation index if necessary now doesn't gate on there already existing a new chat window. Free the new chats.)
   if (i === $chosenConversationId) {
     // If deleting the current conversation, switch to another conversation (preceding one if possible)
     chosenConversationId.set(i > 0 ? i - 1 : 0);

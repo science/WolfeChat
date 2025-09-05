@@ -1,0 +1,709 @@
+import { expect, Page, Locator } from '@playwright/test';
+
+export async function openSettings(page: Page) {
+  // Semantic-first cascade to open Settings without test-only hooks
+  const tryOpen = async (): Promise<boolean> => {
+    const cascades = [
+      // 1) Accessible role/name (Sidebar button says "Settings" and may include extra text)
+      page.getByRole('button', { name: /settings(\s*\(.*\))?$/i }),
+      page.getByRole('button', { name: /settings|preferences|api/i }),
+      // 2) ARIA relationship commonly used in this app
+      page.locator('button[aria-controls="settings-body"]'),
+      page.locator('[aria-controls="settings-dialog"]'),
+      // 3) Stable production id if present
+      page.locator('#open-settings'),
+      // 4) Fallbacks that are still production attributes (not test-only)
+      page.locator('button[title="Settings"]'),
+      page.locator('button[aria-label="Settings"]'),
+    ];
+    for (const c of cascades) {
+      if (await c.isVisible().catch(() => false)) {
+        await c.click();
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // First attempt directly
+  if (!(await tryOpen())) {
+    // If not visible, it may be behind a menu/hamburger. Try opening a main menu, then retry.
+    const menuCandidates = [
+      page.getByRole('button', { name: /menu|more|open menu|toggle menu|wolfechat/i }),
+      page.locator('button[aria-controls="topbar-menu"]'),
+      page.locator('#open-menu'),
+    ];
+    for (const m of menuCandidates) {
+      if (await m.isVisible().catch(() => false)) {
+        await m.click();
+        break;
+      }
+    }
+    // Retry after opening menu
+    if (!(await tryOpen())) {
+      // As a last semantic fallback, search within the banner/topbar region
+      const banner = page.getByRole('banner');
+      const withinBanner = [
+        banner.getByRole('button', { name: /settings|preferences|api/i }),
+        banner.locator('button[aria-controls="settings-body"]'),
+      ];
+      for (const b of withinBanner) {
+        if (await b.isVisible().catch(() => false)) {
+          await b.click();
+          break;
+        }
+      }
+    }
+  }
+
+  // Verify dialog/panel is open via accessible UI
+  const dialogOrPanel = page.getByRole('dialog', { name: /settings/i });
+  const heading = page.getByRole('heading', { name: /settings/i });
+  await Promise.race([
+    dialogOrPanel.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {}),
+    heading.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {}),
+  ]);
+
+  // If still not visible, dump some helpful diagnostics and fail
+  const visible = (await dialogOrPanel.isVisible().catch(() => false)) || (await heading.isVisible().catch(() => false));
+  if (!visible) {
+    const topbarHtml = await page.locator('header, [role="banner"]').first().evaluateAll(
+      nodes => nodes.map(n => (n as HTMLElement).outerHTML).join('\n')
+    ).catch(() => '');
+    throw new Error(
+      'Could not find or open Settings using semantic selectors.\n' +
+      'Checked role/name, aria-controls, and banner scope.\n' +
+      'Topbar snippet for debugging:\n' + topbarHtml
+    );
+  }
+}
+
+export async function bootstrapLiveAPI(page: Page) {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) throw new Error('OPENAI_API_KEY env not set for live tests.');
+
+  await openSettings(page);
+
+  const apiInput = page.locator('#api-key');
+  await expect(apiInput).toBeVisible();
+  await apiInput.fill(key);
+
+  const checkBtn = page.getByRole('button', { name: /check api/i });
+  await expect(checkBtn).toBeVisible();
+  await checkBtn.click();
+
+  // Wait for success or for models to populate in Settings select
+  // Prefer semantic combobox by label, fallback to id
+  let modelSelect = page.getByRole('combobox', { name: /model selection/i });
+  if (!(await modelSelect.isVisible().catch(() => false))) {
+    modelSelect = page.locator('#model-selection');
+  }
+
+  // Wait up to 15s for real options to appear after clicking Check API
+  const deadline = Date.now() + 15000;
+  let lastTexts: string[] = [];
+  while (Date.now() < deadline) {
+    if (await modelSelect.isVisible().catch(() => false)) {
+      const options = modelSelect.locator('option:not([disabled])');
+      const count = await options.count();
+      if (count > 0) {
+        const texts = await Promise.all(
+          Array.from({ length: count }, (_, i) => options.nth(i).textContent())
+        );
+        lastTexts = texts.map(t => (t || '').trim());
+        // Accept if at least one is not the placeholder
+        if (lastTexts.some(t => t && !/no models available/i.test(t))) break;
+      }
+    }
+    await page.waitForTimeout(200);
+  }
+
+  // Assert we have usable options
+  await expect(modelSelect).toBeVisible();
+  const usableOptions = modelSelect.locator('option:not([disabled])');
+  const count = await usableOptions.count();
+  if (count === 0 || !lastTexts.some(t => t && !/no models available/i.test(t))) {
+    // Gather diagnostics
+    const msg = await page.locator('p:has-text("API connection")').innerText().catch(() => '');
+    throw new Error(`Models did not populate within timeout. Options seen: [${lastTexts.join(' | ')}]. Message: ${msg}`);
+  }
+
+  // Save and close
+  const saveBtn = page.getByRole('button', { name: /^save$/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+  await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
+}
+
+export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-open' | 'ensure-closed' | 'open' | 'close', model?: string | RegExp, reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high', verbosity?: 'low' | 'medium' | 'high', summary?: 'auto' | 'detailed' | 'null', closeAfter?: boolean } = {}) {
+  const { mode = 'ensure-open', model, reasoningEffort, verbosity, summary, closeAfter = false } = opts;
+
+  const toggle = page.locator('button[aria-controls="quick-settings-body"]');
+  await expect(toggle).toBeVisible();
+  const body = page.locator('#quick-settings-body');
+
+  const isOpen = async () => (await toggle.getAttribute('aria-expanded')) === 'true' || (await body.isVisible().catch(() => false));
+
+  // Open/ensure-open
+  if (mode === 'open' || mode === 'ensure-open') {
+    if (!(await isOpen())) {
+      await toggle.click();
+      await expect(body).toBeVisible();
+    }
+  } else if (mode === 'ensure-closed' || mode === 'close') {
+    if (await isOpen()) {
+      await toggle.click();
+      await expect(body).toBeHidden();
+    }
+    if (mode !== 'ensure-closed') return; // close only
+  }
+
+  // If we reach here, panel is open
+  const within = body;
+  // Locate model select within body
+  let modelSelect = within.locator('#current-model-select');
+  if (!(await modelSelect.isVisible().catch(() => false))) {
+    modelSelect = within.getByRole('combobox', { name: /api model|current model|model/i });
+  }
+
+  // If a model is requested or we need to ensure population, wait for options
+  const needModel = !!model;
+  if (needModel) {
+    await expect(modelSelect).toBeVisible();
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline) {
+      const options = modelSelect.locator('option:not([disabled])');
+      const count = await options.count();
+      if (count > 0) {
+        const texts = await Promise.all(Array.from({ length: count }, (_, i) => options.nth(i).textContent()));
+        if (texts.some(t => (t || '').trim() && !/no models loaded|no models/i.test(t || ''))) break;
+      }
+      await page.waitForTimeout(200);
+    }
+    await expect(modelSelect).toBeVisible();
+
+    // Select model by label/value
+    const options = modelSelect.locator('option');
+    const count = await options.count();
+    let selectedValue: string | null = null;
+    const prefer = model instanceof RegExp ? model : new RegExp(String(model), 'i');
+    for (let i = 0; i < count; i++) {
+      const opt = options.nth(i);
+      const label = ((await opt.textContent()) || '').trim();
+      const value = (await opt.getAttribute('value')) || '';
+      if (prefer.test(label) || prefer.test(value)) { selectedValue = value || label; break; }
+    }
+    if (!selectedValue) {
+      // fallback to gpt-5-nano, then gpt-5*
+      for (let i = 0; i < count && !selectedValue; i++) {
+        const opt = options.nth(i);
+        const label = ((await opt.textContent()) || '').trim();
+        const value = (await opt.getAttribute('value')) || '';
+        if (/gpt-5-nano/i.test(label) || /gpt-5-nano/i.test(value)) { selectedValue = value || label; break; }
+      }
+      for (let i = 0; i < count && !selectedValue; i++) {
+        const opt = options.nth(i);
+        const label = ((await opt.textContent()) || '').trim();
+        const value = (await opt.getAttribute('value')) || '';
+        if (/gpt-5/i.test(label) || /gpt-5/i.test(value)) { selectedValue = value || label; break; }
+      }
+    }
+    if (!selectedValue) {
+      const labels = await Promise.all(Array.from({ length: count }, (_, i) => options.nth(i).textContent()));
+      throw new Error(`Could not find a suitable model. Available: ${labels.map(t => (t||'').trim()).join(' | ')}`);
+    }
+    await modelSelect.selectOption(selectedValue);
+  }
+
+  // Reasoning controls (best-effort)
+  const setIf = async (sel: string, val: string | undefined) => {
+    if (!val) return;
+    const el = within.locator(sel);
+    if (await el.isVisible().catch(() => false)) {
+      await el.selectOption(val);
+    }
+  };
+  await setIf('#reasoning-effort', reasoningEffort as any);
+  await setIf('#verbosity', verbosity as any);
+  await setIf('#summary', summary as any);
+
+  if (closeAfter) {
+    if (await isOpen()) {
+      await toggle.click();
+      await expect(body).toBeHidden();
+    }
+  }
+}
+
+export async function selectReasoningModelInQuickSettings(page: Page) {
+  // Open Quick Settings panel
+  // Delegate to generalized helper to avoid double-toggling
+  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, closeAfter: false });
+
+  // After ensuring open, continue legacy selection flow (no-op if already selected)
+
+  // Prefer role-based combobox, fallback to id
+  let modelSelect = page.getByRole('combobox', { name: /api model|current model/i });
+  if (!(await modelSelect.isVisible().catch(() => false))) {
+    modelSelect = page.locator('#current-model-select');
+  }
+  await expect(modelSelect).toBeVisible();
+
+  // Wait for options to be populated
+  const deadline = Date.now() + 8000;
+  while (Date.now() < deadline) {
+    const options = modelSelect.locator('option:not([disabled])');
+    const count = await options.count();
+    if (count > 0) {
+      const texts = await Promise.all(Array.from({ length: count }, (_, i) => options.nth(i).textContent()));
+      if (texts.some(t => (t || '').trim() && !/no models/i.test(t || ''))) break;
+    }
+    await page.waitForTimeout(200);
+  }
+
+  const options = modelSelect.locator('option');
+  const count = await options.count();
+  let selectedValue: string | null = null;
+  for (let i = 0; i < count; i++) {
+    const opt = options.nth(i);
+    const label = ((await opt.textContent()) || '').trim();
+    const value = await opt.getAttribute('value');
+    if (/gpt-5-nano/i.test(label) || /gpt-5-nano/i.test(value || '')) {
+      selectedValue = value || label;
+      break;
+    }
+  }
+  if (!selectedValue) {
+    for (let i = 0; i < count; i++) {
+      const opt = options.nth(i);
+      const label = ((await opt.textContent()) || '').trim();
+      const value = await opt.getAttribute('value');
+      if (/gpt-5/i.test(label) || /gpt-5/i.test(value || '')) {
+        selectedValue = value || label;
+        break;
+      }
+    }
+  }
+  if (!selectedValue) {
+    const labels = await Promise.all(Array.from({ length: count }, (_, i) => options.nth(i).textContent()));
+    throw new Error(`Could not find a reasoning model in Quick Settings. Available: ${labels.map(t => (t||'').trim()).join(' | ')}`);
+  }
+  await modelSelect.selectOption(selectedValue);
+}
+
+// =========================
+// New robust E2E helpers
+// =========================
+
+export interface WaitForAssistantOptions {
+  timeout?: number;
+  stabilizationTime?: number;
+  pollInterval?: number;
+}
+
+export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOptions = {}) {
+  const {
+    timeout = 60_000,  // Increased default but still leaves buffer before test timeout
+    stabilizationTime = 500,  // Reduced since we're not relying on text stability
+    pollInterval = 100  // Faster polling since we're checking efficient signals
+  } = opts;
+
+  const startTime = Date.now();
+  const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
+
+  // Phase 1: Inject stream monitoring helper into page context
+  // This gives us direct access to SSE events
+  await page.evaluate(() => {
+    const win = window as any;
+    if (!win.__streamMonitor) {
+      win.__streamMonitor = {
+        currentStream: null,
+        isStreaming: false,
+        lastCompletedAt: 0,
+        
+        startMonitoring() {
+          // Hook into the global streamResponseViaResponsesAPI if available
+          const originalStream = win.streamResponseViaResponsesAPI;
+          if (originalStream && typeof originalStream === 'function') {
+            win.streamResponseViaResponsesAPI = function(...args: any[]) {
+              win.__streamMonitor.isStreaming = true;
+              const callbacks = args[2];
+              const wrappedCallbacks = {
+                ...callbacks,
+                onCompleted: (text: any, raw: any) => {
+                  win.__streamMonitor.isStreaming = false;
+                  win.__streamMonitor.lastCompletedAt = Date.now();
+                  if (callbacks?.onCompleted) callbacks.onCompleted(text, raw);
+                },
+                onError: (err: any) => {
+                  win.__streamMonitor.isStreaming = false;
+                  if (callbacks?.onError) callbacks.onError(err);
+                }
+              };
+              args[2] = wrappedCallbacks;
+              return originalStream.apply(this, args);
+            };
+          }
+        }
+      };
+      win.__streamMonitor.startMonitoring();
+    }
+  });
+
+  // Phase 2: Set up network monitoring for SSE streams (updated for Responses API)
+  const ssePromise = page.waitForResponse(
+    response => {
+      const url = response.url();
+      return url.includes('api.openai.com') && 
+             (url.includes('/chat/completions') || url.includes('/responses')) &&
+             response.status() === 200;
+    },
+    { timeout: Math.min(20000, timeout) }
+  ).catch(() => null);  // Don't fail if no network request
+
+  // Phase 3: Wait for assistant message to appear using efficient DOM check
+  const assistantAppearPromise = page.waitForFunction(
+    () => {
+      // Check for new assistant message efficiently
+      const assistants = document.querySelectorAll('[role="listitem"][data-message-role="assistant"]');
+      if (assistants.length === 0) return false;
+      
+      const lastAssistant = assistants[assistants.length - 1];
+      // Check if it has meaningful content (not just loading state)
+      const text = lastAssistant.textContent || '';
+      return text.length > 0 && !text.includes('█');  // No cursor
+    },
+    { timeout: Math.min(30000, timeout), polling: pollInterval }
+  );
+
+  // Phase 4: Wait for stream completion signal from injected monitor
+  const streamCompletePromise = page.waitForFunction(
+    () => {
+      const win = window as any;
+      if (!win.__streamMonitor) return true;  // Fallback if injection failed
+      
+      // Stream is complete if not streaming and we had a completion recently
+      const monitor = win.__streamMonitor;
+      if (!monitor.isStreaming) {
+        // If we completed in the last 10 seconds, consider it done
+        if (monitor.lastCompletedAt && Date.now() - monitor.lastCompletedAt < 10000) {
+          return true;
+        }
+        // Or if we never started streaming (maybe non-streaming response)
+        return true;
+      }
+      return false;
+    },
+    { timeout, polling: pollInterval }
+  );
+
+  // Phase 5: Wait for UI to reflect completion state
+  // More robust than checking button state - look for streaming indicators
+  const uiCompletePromise = page.waitForFunction(
+    () => {
+      // Check multiple completion indicators
+      const indicators: boolean[] = [];
+      let foundSendBtn = false;
+      
+      // 1. Send button should be enabled
+      const sendBtn = document.querySelector('button[aria-label="Send"]') as HTMLButtonElement;
+      if (sendBtn) {
+        foundSendBtn = true;
+        indicators.push(!sendBtn.disabled);
+      }
+      
+      // 2. No wait/loading indicators visible
+      const waitIcon = document.querySelector('img[alt="Wait"]') as HTMLImageElement;
+      indicators.push(!waitIcon || waitIcon.style.display === 'none' || !waitIcon.offsetParent);
+      
+      // 3. Check for data-streaming attribute if app uses it
+      const streamingElements = document.querySelectorAll('[data-streaming="true"]');
+      indicators.push(streamingElements.length === 0);
+      
+      // 4. No typing/cursor indicators in assistant messages
+      const assistants = document.querySelectorAll('[role="listitem"][data-message-role="assistant"]');
+      if (assistants.length > 0) {
+        const lastAssistant = assistants[assistants.length - 1];
+        const hasTypingIndicator = (lastAssistant.textContent || '').includes('█');
+        indicators.push(!hasTypingIndicator);
+      }
+      
+      // 5. Additional check: Look for submit button in various forms
+      if (!foundSendBtn) {
+        const submitBtns = document.querySelectorAll('button[type="submit"], input[type="submit"], button:has(img[alt*="send"])');
+        for (const btn of submitBtns) {
+          if (btn && (btn as HTMLButtonElement).offsetParent) {
+            foundSendBtn = true;
+            indicators.push(!(btn as HTMLButtonElement).disabled);
+            break;
+          }
+        }
+      }
+      
+      // 6. Check if stream monitor indicates completion  
+      const win = window as any;
+      const monitor = win.__streamMonitor;
+      if (monitor) {
+        // Stream completion from our injected monitor
+        indicators.push(!monitor.isStreaming);
+      }
+      
+      // Need at least some indicators and all must be true for completion
+      // Be more lenient - require at least 2 indicators to agree
+      const completionCount = indicators.filter(Boolean).length;
+      const totalCount = indicators.length;
+      return totalCount >= 2 && completionCount >= Math.max(2, totalCount - 1);
+    },
+    { timeout, polling: pollInterval }
+  );
+
+  try {
+    // Wait for all signals in parallel, complete when all are done
+    const results = await Promise.allSettled([
+      assistantAppearPromise,
+      streamCompletePromise,
+      uiCompletePromise,
+      ssePromise
+    ]);
+
+    // Log results if debugging
+    if (DEBUG_LVL >= 2) {
+      console.log('[WAIT-ASSISTANT] Completion signals:', {
+        assistantAppeared: results[0].status === 'fulfilled',
+        streamComplete: results[1].status === 'fulfilled',
+        uiComplete: results[2].status === 'fulfilled',
+        sseReceived: results[3].status === 'fulfilled'
+      });
+    }
+
+    // At minimum, we need assistant message and UI completion
+    if (results[0].status !== 'fulfilled' || results[2].status !== 'fulfilled') {
+      throw new Error('Assistant message did not complete properly');
+    }
+
+    // Additional stabilization if needed
+    if (stabilizationTime > 0) {
+      await page.waitForTimeout(stabilizationTime);
+    }
+
+    if (DEBUG_LVL >= 2) {
+      console.log(`[WAIT-ASSISTANT] Stream complete after ${Date.now() - startTime}ms`);
+    }
+
+  } catch (error) {
+    // Enhanced error diagnostics
+    if (DEBUG_LVL >= 1) {
+      try {
+        // Check if page is still accessible before attempting evaluation
+        if (!page.isClosed()) {
+          const diagnostics = await page.evaluate(() => {
+            const win = window as any;
+            const monitor = win.__streamMonitor || {};
+            const assistants = document.querySelectorAll('[role="listitem"][data-message-role="assistant"]');
+            const sendBtn = document.querySelector('button[aria-label="Send"]') as HTMLButtonElement;
+            
+            return {
+              streamMonitor: {
+                isStreaming: monitor.isStreaming,
+                lastCompletedAt: monitor.lastCompletedAt,
+                timeSinceComplete: monitor.lastCompletedAt ? Date.now() - monitor.lastCompletedAt : null
+              },
+              assistantCount: assistants.length,
+              lastAssistantLength: assistants.length > 0 ? assistants[assistants.length - 1].textContent?.length : 0,
+              sendButtonDisabled: sendBtn?.disabled,
+              hasWaitIcon: !!document.querySelector('img[alt="Wait"]:not([style*="display: none"])')
+            };
+          });
+          
+          console.error('[WAIT-ASSISTANT] Timeout diagnostics:', diagnostics);
+        } else {
+          console.error('[WAIT-ASSISTANT] Page closed - cannot collect diagnostics. Error:', error?.message || error);
+        }
+      } catch (diagError) {
+        console.error('[WAIT-ASSISTANT] Failed to collect diagnostics:', diagError?.message || diagError);
+        console.error('[WAIT-ASSISTANT] Original error:', error?.message || error);
+      }
+    }
+    
+    throw error;
+  }
+}
+
+export interface SendMessageOptions {
+  submitMethod?: 'ctrl-enter' | 'enter' | 'click-button';
+  clearFirst?: boolean;
+  waitForEmpty?: boolean;
+  inputTimeout?: number;
+}
+
+export async function sendMessage(page: Page, text: string, opts: SendMessageOptions = {}) {
+  const {
+    submitMethod = 'ctrl-enter',
+    clearFirst = true,
+    waitForEmpty = true,
+    inputTimeout = 10_000,
+  } = opts;
+
+  const startTime = Date.now();
+  let input: Locator | null = null;
+
+  const selectors: Array<() => Promise<Locator | null> | Locator | null> = [
+    () => page.getByRole('textbox', { name: /chat input/i }),
+    () => page.locator('textarea[aria-label="Chat input"]').first(),
+    async () => {
+      const candidates = page.getByRole('textbox');
+      const count = await candidates.count();
+      for (let i = 0; i < count; i++) {
+        const c = candidates.nth(i);
+        const ph = (await c.getAttribute('placeholder')) || '';
+        if (/type your message|enter.*message|chat/i.test(ph)) return c;
+      }
+      return null;
+    },
+    () => page.locator('form textarea, [role="form"] textarea').first(),
+    () => page.locator('textarea:visible').first(),
+  ];
+
+  for (const get of selectors) {
+    if (Date.now() - startTime > inputTimeout) break;
+    const cand = await get();
+    if (cand && await (cand as Locator).isVisible().catch(() => false)) { input = cand as Locator; break; }
+  }
+  if (!input) throw new Error('Could not find chat input element');
+
+  await expect(input).toBeVisible({ timeout: 5000 });
+  await input.click();
+
+  if (clearFirst) {
+    await input.click({ clickCount: 3 });
+    await page.keyboard.press('Backspace');
+    const cur = await input.inputValue();
+    if (cur) await input.clear();
+  }
+
+  await input.fill(text);
+  const entered = await input.inputValue();
+  if (entered !== text) throw new Error(`Failed to enter text. Expected: "${text}", Got: "${entered}"`);
+
+  switch (submitMethod) {
+    case 'ctrl-enter':
+      await page.keyboard.down('Control');
+      await page.keyboard.press('Enter');
+      await page.keyboard.up('Control');
+      break;
+    case 'enter':
+      await page.keyboard.press('Enter');
+      break;
+    case 'click-button':
+      const sendBtn = page.getByRole('button', { name: /send/i });
+      await expect(sendBtn).toBeVisible({ timeout: 3000 });
+      await sendBtn.click();
+      break;
+  }
+
+  if (waitForEmpty) {
+    await expect(input).toHaveValue('', { timeout: 5000 });
+  }
+}
+
+export interface StreamCompleteOptions {
+  timeout?: number;
+  waitForNetwork?: boolean;
+  waitForStreamState?: boolean;
+  waitForAssistant?: boolean;
+}
+
+export async function waitForStreamComplete(page: Page, opts: StreamCompleteOptions = {}) {
+  const {
+    timeout = 60_000,
+    waitForNetwork = true,
+    waitForStreamState = true,
+    waitForAssistant = true,
+  } = opts;
+
+  const start = Date.now();
+  const left = () => Math.max(1000, timeout - (Date.now() - start));
+
+  // Phase 1: network quiet
+  if (waitForNetwork) {
+    await page.waitForLoadState('networkidle', { timeout: left() });
+  }
+
+  // Phase 2: streaming indicators cleared or send button re-enabled
+  if (waitForStreamState) {
+    await Promise.race([
+      page.waitForSelector('[data-streaming="false"]', { timeout: left() }),
+      page.waitForSelector('button[aria-label="Send"]:not([disabled])', { timeout: left() }),
+      page.waitForSelector('img[alt="Wait"]', { state: 'hidden', timeout: left() }),
+    ]);
+  }
+
+  // Phase 3: assistant message present and stabilized
+  if (waitForAssistant) {
+    await waitForAssistantDone(page, { timeout: left() });
+  }
+}
+
+
+export interface Message {
+  role: 'user' | 'assistant' | 'system';
+  text: string;
+  model?: string;
+  index: number;
+  element: Locator;
+}
+
+export interface GetMessagesOptions {
+  includeSystem?: boolean;
+  waitForList?: boolean;
+  timeout?: number;
+}
+
+export async function getVisibleMessages(page: Page, opts: GetMessagesOptions = {}): Promise<Message[]> {
+  const { includeSystem = false, waitForList = true, timeout = 10_000 } = opts;
+
+  if (waitForList) {
+    const listItems = page.locator('[role="listitem"]');
+    await expect(listItems.first()).toBeVisible({ timeout });
+  }
+
+  const items = page.locator('[role="listitem"]');
+  const n = await items.count();
+  const out: Message[] = [];
+
+  for (let i = 0; i < n; i++) {
+    const el = items.nth(i);
+
+    let role: Message['role'] = 'user';
+    const dataRole = await el.getAttribute('data-message-role');
+    const aria = await el.getAttribute('aria-label');
+    if (dataRole) role = dataRole as any;
+    else if (aria) {
+      if (/assistant/i.test(aria)) role = 'assistant';
+      else if (/system/i.test(aria)) role = 'system';
+      else if (/user|you/i.test(aria)) role = 'user';
+    }
+    if (role === 'system' && !includeSystem) continue;
+
+    let text = '';
+    const display = el.locator('.message-display, [class*="message-content"]').first();
+    if (await display.count() > 0) text = await display.innerText();
+    else text = await el.innerText();
+
+    text = text.replace(/Copy Chat Content|Edit Chat|Delete.*message|Delete all below/g, '').replace(/\s+/g, ' ').trim();
+
+    let model: string | undefined;
+    if (role === 'assistant') {
+      const header = el.locator('.profile-picture .font-bold, [class*="header"]').first();
+      if (await header.count() > 0) {
+        const h = await header.innerText();
+        const m = h.match(/\(([^)]+)\)/);
+        if (m) model = m[1];
+      }
+    }
+
+    out.push({ role, text, model, index: i, element: el });
+  }
+
+  return out;
+}

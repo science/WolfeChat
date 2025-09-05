@@ -42,11 +42,13 @@
   import { ScrollMemory } from './utils/scrollState.js';
   import { enterBehavior } from './stores/keyboardSettings.js';
   import { shouldSendOnEnter } from './utils/keyboard.js';
+  import { draftsStore } from './stores/draftsStore.js';
 
   let fileInputElement; 
   let input: string = "";
   let textAreaElement; 
-  let editTextArea; 
+  let editTextArea;
+  let updatingInputFromDraft = false; 
 
 
   let chatContainer: HTMLElement;
@@ -66,6 +68,24 @@
   }
 
 
+  // Handle conversation switching without circular reactive updates
+  function handleConversationSwitch(newConvId: number | null, oldConvId: number | null) {
+    const currentConversations = $conversations;
+    
+    // Save draft for previous conversation before switching
+    if (oldConvId !== null && oldConvId !== newConvId && currentConversations[oldConvId]) {
+      draftsStore.setDraft(currentConversations[oldConvId].id, input);
+    }
+
+    if (newConvId !== undefined && newConvId !== null && currentConversations[newConvId]) {
+      // Load draft for new conversation
+      const conversationDraft = draftsStore.getDraft(currentConversations[newConvId].id);
+      updatingInputFromDraft = true;
+      input = conversationDraft;
+      updatingInputFromDraft = false;
+    }
+  }
+
   $: {
     const currentConversationId = $chosenConversationId;
     const currentConversations = $conversations;
@@ -74,14 +94,35 @@
     if (currentConversationId !== undefined && currentConversations[currentConversationId]) {
       conversationTitle = currentConversations[currentConversationId].title || "New Conversation";
     }
+    
     if (currentConversationId === undefined || currentConversationId === null || currentConversationId < 0 || currentConversationId >= totalConversations) {
       console.log("changing conversation from ID", $chosenConversationId);
       chosenConversationId.set(totalConversations > 0 ? totalConversations - 1 : null);
       console.log("to ID", $chosenConversationId);
-
+    }
+    
+    // Handle conversation switching only when the conversation actually changes
+    if (lastConvId !== currentConversationId) {
+      handleConversationSwitch(currentConversationId, lastConvId);
+      lastConvId = currentConversationId;
     }
   }
 
+  // Save draft when input changes (but not when we're loading from draft)
+  let draftSaveTimer: number | null = null;
+  $: {
+    if (!updatingInputFromDraft && $chosenConversationId !== undefined && $conversations[$chosenConversationId] && input !== undefined) {
+      // Cancel previous timer
+      if (draftSaveTimer) {
+        clearTimeout(draftSaveTimer);
+      }
+      // Save draft after a short delay to avoid interfering with rapid typing
+      draftSaveTimer = setTimeout(() => {
+        draftsStore.setDraft($conversations[$chosenConversationId].id, input);
+        draftSaveTimer = null;
+      }, 300);
+    }
+  }
 
 function clearFiles() {  
     base64Images.set([]); // Assuming this is a writable store tracking uploaded images  
@@ -117,7 +158,10 @@ function clearFiles() {
     }
     
     // Setup MutationObserver after app initialization and component mounting  
-    setupMutationObserver();  
+    setupMutationObserver();
+    
+    // Make drafts available globally for e2e tests
+    (window as any).drafts = draftsStore;
   });  
   
   onDestroy(() => {  
@@ -158,9 +202,12 @@ function autoExpand(event) {
 
   function processMessage() {
     let convId = $chosenConversationId;
-    addRecentModel($selectedModel);
     routeMessage(input, convId);
     input = ""; 
+    // Clear the draft since message was sent
+    if ($conversations[convId]) {
+      draftsStore.setDraft($conversations[convId].id, "");
+    }
     clearFiles ();
     textAreaElement.style.height = '96px'; // Reset the height after sending
   }
@@ -219,7 +266,6 @@ function startEditMessage(i: number) {
     }
     // Process the edited message as new input
     let convId = $chosenConversationId;
-    addRecentModel($selectedModel);
     routeMessage(editedContent, convId);
     cancelEdit(); // Reset editing state
   }
@@ -250,16 +296,16 @@ function startEditMessage(i: number) {
         
       <QuickSettings />
       </div>
-      <div class="flex bg-primary overflow-y-auto overflow-x-hidden justify-center grow" bind:this={chatContainer}>
+      <div class="flex bg-primary overflow-y-auto overflow-x-hidden justify-center grow" data-testid="chat-scroll-container" bind:this={chatContainer}>
       {#if $conversations.length > 0 && $conversations[$chosenConversationId]}
-        <div class="flex flex-col max-w-3xl pt-5 grow">
+        <div class="flex flex-col max-w-3xl pt-5 grow" role="list" aria-label="Conversation messages" data-history-total={$conversations[$chosenConversationId].history.length} data-non-system-count={$conversations[$chosenConversationId].history.filter(m => m.role !== 'system').length}>
           
           <div>
         {#each $conversations[$chosenConversationId].history as message, i}
 
         {#if message.role !=='system'}
 
-          <div class="message relative inline-block bg-primary px-2 pb-5 flex flex-col">
+          <div class="message relative inline-block bg-primary px-2 pb-5 flex flex-col" role="listitem" aria-label={message.role === 'assistant' ? 'Assistant message' : message.role === 'user' ? 'User message' : undefined} data-message-index={i} data-message-role={message.role} data-testid={message.role === 'assistant' ? 'assistant-message' : message.role === 'user' ? 'user-message' : undefined}>
             <div class="profile-picture flex">
               <div>
                 <img src={message.role === 'user' ? UserIcon : RobotIcon} alt="Profile" class="w-6 h-6 ml-10" />
@@ -341,7 +387,7 @@ function startEditMessage(i: number) {
             {/if}
 
             {#if message.role === 'user'}
-              <ReasoningInline convId={$chosenConversationId} anchorIndex={i} />
+              <ReasoningInline convId={$conversations[$chosenConversationId]?.id} anchorIndex={i} />
             {/if}
 
           </div>
@@ -380,7 +426,8 @@ function startEditMessage(i: number) {
 
       <textarea bind:this={textAreaElement}  
   class="w-full min-h-[96px] h-24 rounded-lg p-2 mx-1 mr-0 border-t-2 border-b-2 border-l-2 rounded-r-none bg-primary border-gray-500 resize-none focus:outline-none"   
-  placeholder="Type your message..."   
+  placeholder="Type your message..."  
+  aria-label="Chat input"
   bind:value={input}   
   on:input={autoExpand}
   style="height: 96px; overflow-y: auto; overflow:visible !important;"
@@ -398,7 +445,7 @@ function startEditMessage(i: number) {
     }
   }}
 ></textarea>  
-<button class="bg-chat rounded-lg py-2 px-4 mx-1 ml-0 border-t-2 border-b-2 border-r-2  border-gray-500 rounded-l-none cursor-pointer " on:click={() => { if ($isStreaming) { closeStream(); } else { processMessage(); } }} disabled={!$isStreaming && !input.trim().length}>    
+<button class="bg-chat rounded-lg py-2 px-4 mx-1 ml-0 border-t-2 border-b-2 border-r-2  border-gray-500 rounded-l-none cursor-pointer " aria-label="Send" on:click={() => { if ($isStreaming) { closeStream(); } else { processMessage(); } }} disabled={!$isStreaming && !input.trim().length}>    
   {#if $isStreaming}    
       <img class="icon-white min-w-[24px] w-[24px]" alt="Wait" src={WaitIcon} />    
   {:else}    

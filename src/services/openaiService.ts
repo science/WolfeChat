@@ -62,7 +62,7 @@ export function closeStream() {
 // Streaming state management
 export const isStreaming = writable(false);
 export const userRequestedStreamClosure = writable(false);
-export const streamContext = writable<{ streamText: string; convId: any }>({ streamText: '', convId: null });
+export const streamContext = writable<{ streamText: string; convId: number | null }>({ streamText: '', convId: null });
 
 // ChatCompletions SDK removed; using fetch-based Responses API only
 const errorMessage: ChatMessage[] = [
@@ -119,7 +119,7 @@ export function reloadConfig(): void {
   console.log("Configuration reloaded.");
 }
 
-export async function sendRequest(msg: ChatCompletionRequestMessage[], model: string = get(selectedModel)): Promise<any> {
+export async function sendRequest(msg: ChatCompletionRequestMessage[], model: string = get(selectedModel), opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }): Promise<any> {
   try {
     msg = [
       {
@@ -130,9 +130,10 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
     ];
 
     const key = get(apiKey);
-    const resolvedModel = model || getDefaultResponsesModel();
+  const liveSelected = get(selectedModel);
+  const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
     const input = buildResponsesInputFromMessages(msg);
-    const payload = buildResponsesPayload(resolvedModel, input, false);
+    const payload = buildResponsesPayload(resolvedModel, input, false, opts);
 
     const res = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -259,7 +260,12 @@ console.error('Blob is null or undefined');
 
 }
 
-export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], imagesBase64, convId) {
+export async function sendVisionMessage(
+  msg: ChatCompletionRequestMessage[],
+  imagesBase64: string[],
+  convId: number,
+  config: { model: string; reasoningEffort?: string; verbosity?: string; summary?: string }
+) {
   console.log("Sending vision message.");
   userRequestedStreamClosure.set(false);
 
@@ -290,9 +296,10 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   isStreaming.set(true);
 
   try {
+    const resolvedModel = (config.model || get(selectedModel));
     await streamResponseViaResponsesAPI(
       '',
-      ((): string => { const m = get(selectedModel); return m; })(),
+      resolvedModel,
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -307,7 +314,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText + "█" + (ticks ? "\n```" : ""),
-                model: get(selectedModel),
+                model: resolvedModel,
               },
             ],
             convId
@@ -321,7 +328,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
           await setHistory(
             [
               ...currentHistory,
-              { role: "assistant", content: streamText, model: get(selectedModel) },
+              { role: "assistant", content: streamText, model: resolvedModel },
             ],
             convId
           );
@@ -336,14 +343,19 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       finalInput,
-      { convId: conversationUniqueId, anchorIndex }
+      { convId: conversationUniqueId, anchorIndex },
+      { reasoningEffort: config.reasoningEffort, verbosity: config.verbosity, summary: config.summary }
     );
   } finally {
     isStreaming.set(false);
   }
 }
 
-  export async function sendRegularMessage(msg: ChatCompletionRequestMessage[], convId) {
+  export async function sendRegularMessage(
+  msg: ChatCompletionRequestMessage[],
+  convId: any,
+  config: { model: string; reasoningEffort?: string; verbosity?: string; summary?: string }
+) {
   userRequestedStreamClosure.set(false);
   let tickCounter = 0;
   let ticks = false;
@@ -380,9 +392,10 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   isStreaming.set(true);
 
   try {
+    const resolvedModel = (config.model || get(selectedModel));
     await streamResponseViaResponsesAPI(
       '',
-      ((): string => { const m = get(selectedModel); return m; })(),
+      resolvedModel,
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -400,7 +413,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText + "█" + (ticks ? "\n```" : ""),
-                model: get(selectedModel),
+                model: resolvedModel,
               },
             ],
             convId
@@ -417,7 +430,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText,
-                model: get(selectedModel),
+                model: resolvedModel,
               },
             ],
             convId
@@ -435,7 +448,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       input,
-      { convId: conversationUniqueId, anchorIndex }
+      { convId: conversationUniqueId, anchorIndex },
+      { reasoningEffort: config.reasoningEffort, verbosity: config.verbosity, summary: config.summary }
     );
   } finally {
     isStreaming.set(false);
@@ -503,7 +517,7 @@ function getDefaultResponsesModel() {
   const m = get(selectedModel);
   // If no model is set, or it's an old/incompatible model, use gpt-5-nano as default for tests
   // This includes o1-mini which is not compatible with Responses API
-  if (!m || /gpt-3\.5|gpt-4-turbo-preview|gpt-4-32k|gpt-4$|o1-mini/.test(m)) {
+  if (!m || /gpt-3\.5|gpt-4(\.|$)|o1-mini/.test(m)) {
     // Use gpt-5-nano as the default for better test compatibility
     return 'gpt-5-nano';
   }
@@ -520,13 +534,13 @@ export function supportsReasoning(model: string): boolean {
  * Build a consistent Responses payload used by all call sites.
  * Includes reasoning and verbosity fields only for reasoning-capable models.
  */
-export function buildResponsesPayload(model: string, input: any[], stream: boolean) {
+export function buildResponsesPayload(model: string, input: any[], stream: boolean, opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }) {
   const payload: any = { model, input, store: false, stream };
 
   if (supportsReasoning(model)) {
-    const eff = get(reasoningEffort) || 'medium';
-    const verb = get(verbosity) || 'medium';
-    const sum = get(summary) || 'auto';
+    const eff = (opts?.reasoningEffort ?? get(reasoningEffort)) || 'medium';
+    const verb = (opts?.verbosity ?? get(verbosity)) || 'medium';
+    const sum = (opts?.summary ?? get(summary)) || 'auto';
 
     // text.verbosity only for reasoning-capable models per requirements
     payload.text = { verbosity: verb };
@@ -596,13 +610,14 @@ export function buildResponsesInputFromMessages(messages: ChatCompletionRequestM
   }));
 }
 
-export async function createResponseViaResponsesAPI(prompt: string, model?: string) {
+export async function createResponseViaResponsesAPI(prompt: string, model?: string, opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }) {
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
 
-  const resolvedModel = model || getDefaultResponsesModel();
+  const liveSelected = get(selectedModel);
+  const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
   const input = buildResponsesInputFromPrompt(prompt);
-  const payload = buildResponsesPayload(resolvedModel, input, false);
+  const payload = buildResponsesPayload(resolvedModel, input, false, opts);
 
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -624,7 +639,7 @@ export async function createResponseViaResponsesAPI(prompt: string, model?: stri
  * Extract plain text from a Responses API non-streaming response.
  * Supports several possible shapes: output_text or output[].content[].text
  */
-function extractOutputTextFromResponses(obj: any): string {
+export function extractOutputTextFromResponses(obj: any): string {
   if (!obj) return '';
   if (typeof obj.output_text === 'string') return obj.output_text.trim();
 
@@ -654,12 +669,21 @@ function extractOutputTextFromResponses(obj: any): string {
   return '';
 }
 
-function sanitizeTitle(title: string): string {
+export function sanitizeTitle(title: string): string {
   let t = (title || '').trim();
-  t = t.replace(/^["'`]+|["'`]+$/g, '');     // strip wrapping quotes
-  t = t.replace(/^title\s*:\s*/i, '');       // strip leading "Title:"
+  // Remove any leading Title: (case-insensitive), allowing surrounding quotes
+  t = t.replace(/^(?:["“”']*\s*)?(?:(?:title)\s*:\s*)/i, '');
+  // Iteratively strip leading/trailing quote characters (ASCII and smart)
+  const quoteRE = /^(?:["“”']+)|(?:["“”']+)$/g;
+  let prev;
+  do {
+    prev = t;
+    t = t.replace(/^["“”']+|["“”']+$/g, '');
+    t = t.trim();
+  } while (t !== prev);
+  // Collapse whitespace
   t = t.replace(/\s+/g, ' ').trim();
-  if (t.length > 80) t = t.slice(0, 80);     // safety cap
+  if (t.length > 80) t = t.slice(0, 80);
   return t;
 }
 
@@ -743,14 +767,16 @@ export async function streamResponseViaResponsesAPI(
   model?: string,
   callbacks?: ResponsesStreamCallbacks,
   inputOverride?: any[],
-  uiContext?: { convId?: string; anchorIndex?: number }
+  uiContext?: { convId?: string; anchorIndex?: number },
+  opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }
 ): Promise<string> {
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
 
-  const resolvedModel = model || getDefaultResponsesModel();
+  const liveSelected = get(selectedModel);
+  const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
   const input = inputOverride || buildResponsesInputFromPrompt(prompt);
-  const payload = buildResponsesPayload(resolvedModel, input, true);
+  const payload = buildResponsesPayload(resolvedModel, input, true, opts);
 
   const controller = new AbortController();
   globalAbortController = controller;
@@ -786,6 +812,8 @@ export async function streamResponseViaResponsesAPI(
     ? createReasoningWindow(convIdCtx, resolvedModel, anchorIndexCtx)
     : null;
 
+  let completedEmitted = false;
+
   function processSSEBlock(block: string) {
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
     let eventType = 'message';
@@ -810,6 +838,7 @@ export async function streamResponseViaResponsesAPI(
       panelTracker.clear();
       panelTextTracker.clear();
       callbacks?.onCompleted?.(finalText);
+      completedEmitted = true;
       if (responseWindowId) collapseReasoningWindow(responseWindowId);
       return;
     }
@@ -818,7 +847,20 @@ export async function streamResponseViaResponsesAPI(
     try {
       obj = JSON.parse(dataStr);
     } catch (e) {
+      console.warn('[SSE] Failed to parse SSE JSON block', { blockSnippet: (dataStr || '').slice(0, 200), error: String(e) });
       callbacks?.onError?.(new Error(`Failed to parse SSE data JSON: ${e}`));
+      // Also emit synthetic completion to avoid hangs
+      if (!completedEmitted) {
+        for (const [kind, panelId] of panelTracker.entries()) {
+          completeReasoningPanel(panelId);
+          panelTextTracker.delete(panelId);
+        }
+        panelTracker.clear();
+        panelTextTracker.clear();
+        callbacks?.onCompleted?.(finalText, { type: 'parse_error', synthetic: true });
+        completedEmitted = true;
+        if (responseWindowId) collapseReasoningWindow(responseWindowId);
+      }
       return;
     }
 
@@ -929,9 +971,25 @@ export async function streamResponseViaResponsesAPI(
       panelTracker.clear();
       panelTextTracker.clear();
       callbacks?.onCompleted?.(finalText, obj);
+      completedEmitted = true;
       if (responseWindowId) collapseReasoningWindow(responseWindowId);
     } else if (resolvedType === 'error') {
+      console.warn('[SSE] error event received from stream', obj);
       callbacks?.onError?.(obj);
+      if (!completedEmitted) {
+        // Emit synthetic completion to unblock waits
+        console.warn('[SSE] emitting synthetic completion after error');
+        // Finalize panels
+        for (const [k, panelId] of panelTracker.entries()) {
+          completeReasoningPanel(panelId);
+          panelTextTracker.delete(panelId);
+        }
+        panelTracker.clear();
+        panelTextTracker.clear();
+        callbacks?.onCompleted?.(finalText, { type: 'error', synthetic: true, error: obj });
+        completedEmitted = true;
+        if (responseWindowId) collapseReasoningWindow(responseWindowId);
+      }
     }
   }
 
@@ -948,6 +1006,25 @@ export async function streamResponseViaResponsesAPI(
     }
   }
   if (buffer.trim()) processSSEBlock(buffer);
+
+  // If the stream ended without explicit completion, emit a synthetic completion
+  if (!completedEmitted) {
+    console.warn('[SSE] Stream ended without response.completed or [DONE]. Emitting synthetic completion.', {
+      model: resolvedModel,
+      payloadShape: Object.keys(payload || {}),
+      partialFinalTextLen: finalText.length
+    });
+    // finalize any panels and collapse window
+    for (const [kind, panelId] of panelTracker.entries()) {
+      completeReasoningPanel(panelId);
+      panelTextTracker.delete(panelId);
+    }
+    panelTracker.clear();
+    panelTextTracker.clear();
+    callbacks?.onCompleted?.(finalText, { type: 'response.completed', synthetic: true, reason: 'eof_without_terminal_event' });
+    completedEmitted = true;
+    if (responseWindowId) collapseReasoningWindow(responseWindowId);
+  }
 
   globalAbortController = null;
   return finalText;

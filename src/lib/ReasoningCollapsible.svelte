@@ -1,13 +1,15 @@
 <script lang="ts">
   import { derived } from 'svelte/store';
   import { reasoningPanels, reasoningWindows, type ReasoningPanel } from '../stores/reasoningStore.js';
-  import { chosenConversationId } from '../stores/stores.js';
+  import { chosenConversationId, conversations } from '../stores/stores.js';
 
   // Reasoning windows scoped to the current conversation
   const windowsForCurrent = derived(
-    [reasoningWindows, chosenConversationId],
-    ([$reasoningWindows, $chosenConversationId]) =>
-      $reasoningWindows.filter((w) => w.convId === $chosenConversationId || w.convId === undefined)
+    [reasoningWindows, chosenConversationId, conversations],
+    ([$reasoningWindows, $chosenConversationId, $conversations]) => {
+      const selectedId = $conversations?.[$chosenConversationId]?.id;
+      return $reasoningWindows.filter((w) => w.convId === selectedId || w.convId === undefined);
+    }
   );
 
   // Group panels by responseId for quick lookup per window
@@ -25,7 +27,7 @@
 
 {#if $windowsForCurrent.length > 0}
   {#each $windowsForCurrent as w (w.id)}
-    <details class="my-3 rounded border border-gray-500 bg-primary shadow-sm open:shadow-md" open={w.open}>
+    <details class="my-3 rounded border border-gray-500 bg-primary shadow-sm open:shadow-md" open={w.open} role="region" aria-label="Reasoning">
       <summary class="cursor-pointer select-none px-3 py-2 bg-secondary hover:bg-hover2 text-white/80 font-medium rounded-t">
         Reasoning
         {#if w.model}<span class="ml-2 text-xs text-white/60">({w.model})</span>{/if}
