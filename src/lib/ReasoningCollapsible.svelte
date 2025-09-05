@@ -1,7 +1,7 @@
 <script lang="ts">
   import { derived } from 'svelte/store';
   import { reasoningPanels, reasoningWindows, type ReasoningPanel } from '../stores/reasoningStore.js';
-  import { chosenConversationId } from '../stores/stores.js';
+  import { chosenConversationId, conversations } from '../stores/stores.js';
 
   // Reasoning windows scoped to the current conversation
   const windowsForCurrent = derived(

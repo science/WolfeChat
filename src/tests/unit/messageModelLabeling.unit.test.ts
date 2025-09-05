@@ -90,7 +90,7 @@ registerTest({
   setModel('gpt-4o');
 
   await withMockedStreamResponse(async () => {
-    await sendRegularMessage([{ role: 'user', content: 'Hi' }], 0);
+    await sendRegularMessage([{ role: 'user', content: 'Hi' }], 0, { model: get(selectedModel) });
   });
 
   const conv = get(conversations)[0];
@@ -108,7 +108,7 @@ registerTest({
   setModel('gpt-4o-mini');
 
   await withMockedStreamResponse(async () => {
-    await sendVisionMessage([{ role: 'user', content: 'See this' }], ['data:image/png;base64,AAA'], 0);
+    await sendVisionMessage([{ role: 'user', content: 'See this' }], ['data:image/png;base64,AAA'], 0, { model: get(selectedModel) });
   });
 
   const last = getLastAssistant();

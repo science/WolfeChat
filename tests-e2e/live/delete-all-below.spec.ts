@@ -4,7 +4,7 @@
 //   DEBUG_E2E=3 adds verbose SSE/browser logs via helpers
 
 import { test, expect } from '@playwright/test';
-import { bootstrapLiveAPI, selectReasoningModelInQuickSettings } from './helpers';
+import { bootstrapLiveAPI, selectReasoningModelInQuickSettings, waitForAssistantDone } from './helpers';
 
 // Semantic locators used throughout
 // (quick settings selectors centralized in helpers)
@@ -36,33 +36,7 @@ async function sendMessage(page: import('@playwright/test').Page, text: string) 
   await page.keyboard.up('Control');
 }
 
-// Helper: wait for assistant streaming completion
-// Strategy: observe last assistant message: wait for a spinner/typing indicator to disappear,
-// otherwise wait for text stabilization with small polling.
-async function waitForAssistantDone(page: import('@playwright/test').Page, opts: { timeout?: number } = {}) {
-  const timeout = opts.timeout ?? 45_000;
-
-  // Ensure the list exists
-  const messages = page.locator('[role="listitem"]');
-  await expect(messages.first()).toBeVisible({ timeout });
-
-  // Track assistant message count and wait for a new one to appear
-  const assistants = page.locator('[role="listitem"][data-message-role="assistant"]');
-  const initialCount = await assistants.count().catch(() => 0);
-  // Wait up to half the timeout for a new assistant message
-  await expect(assistants).toHaveCount(initialCount + 1, { timeout: Math.max(2000, Math.floor(timeout / 2)) });
-
-  // Stabilize the newest assistant message's text
-  const target = assistants.last();
-  let prev = '';
-  const started = Date.now();
-  while (Date.now() - started < Math.max(2000, Math.floor(timeout / 2))) {
-    const text = await target.innerText();
-    if (text === prev && text.length > 0) return;
-    prev = text;
-    await page.waitForTimeout(600);
-  }
-}
+// Helper: wait for assistant streaming completion now imported from helpers.ts
 
 // Returns ordered texts of chat messages visible
 async function getVisibleMessages(page: import('@playwright/test').Page) {

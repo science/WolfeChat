@@ -14,9 +14,11 @@ This directory contains tests that require a real browser environment but do not
 
 Once implemented, tests will be run using:
 ```bash
-# Run browser tests (future)
+# Run browser tests (future) - prefer direct Playwright:
+npx playwright test tests-e2e/nonlive
+# or equivalent npm wrapper:
 npm run test:browser
-# or
+# or via Node.js test runner:
 node run-tests.mjs --suite browser-nonlive
 ```
 

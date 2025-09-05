@@ -119,7 +119,7 @@ export function reloadConfig(): void {
   console.log("Configuration reloaded.");
 }
 
-export async function sendRequest(msg: ChatCompletionRequestMessage[], model: string = get(selectedModel)): Promise<any> {
+export async function sendRequest(msg: ChatCompletionRequestMessage[], model: string = get(selectedModel), opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }): Promise<any> {
   try {
     msg = [
       {
@@ -133,7 +133,7 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
   const liveSelected = get(selectedModel);
   const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
     const input = buildResponsesInputFromMessages(msg);
-    const payload = buildResponsesPayload(resolvedModel, input, false);
+    const payload = buildResponsesPayload(resolvedModel, input, false, opts);
 
     const res = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -260,7 +260,12 @@ console.error('Blob is null or undefined');
 
 }
 
-export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], imagesBase64, convId) {
+export async function sendVisionMessage(
+  msg: ChatCompletionRequestMessage[],
+  imagesBase64: string[],
+  convId: number,
+  config: { model: string; reasoningEffort?: string; verbosity?: string; summary?: string }
+) {
   console.log("Sending vision message.");
   userRequestedStreamClosure.set(false);
 
@@ -291,9 +296,10 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   isStreaming.set(true);
 
   try {
+    const resolvedModel = (config.model || get(selectedModel));
     await streamResponseViaResponsesAPI(
       '',
-      undefined,
+      resolvedModel,
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -308,7 +314,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText + "█" + (ticks ? "\n```" : ""),
-                model: get(selectedModel),
+                model: resolvedModel,
               },
             ],
             convId
@@ -322,7 +328,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
           await setHistory(
             [
               ...currentHistory,
-              { role: "assistant", content: streamText, model: get(selectedModel) },
+              { role: "assistant", content: streamText, model: resolvedModel },
             ],
             convId
           );
@@ -337,14 +343,19 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       finalInput,
-      { convId: conversationUniqueId, anchorIndex }
+      { convId: conversationUniqueId, anchorIndex },
+      { reasoningEffort: config.reasoningEffort, verbosity: config.verbosity, summary: config.summary }
     );
   } finally {
     isStreaming.set(false);
   }
 }
 
-  export async function sendRegularMessage(msg: ChatCompletionRequestMessage[], convId) {
+  export async function sendRegularMessage(
+  msg: ChatCompletionRequestMessage[],
+  convId: any,
+  config: { model: string; reasoningEffort?: string; verbosity?: string; summary?: string }
+) {
   userRequestedStreamClosure.set(false);
   let tickCounter = 0;
   let ticks = false;
@@ -381,9 +392,10 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
   isStreaming.set(true);
 
   try {
+    const resolvedModel = (config.model || get(selectedModel));
     await streamResponseViaResponsesAPI(
       '',
-      undefined,
+      resolvedModel,
       {
         onTextDelta: (text) => {
           const msgTicks = countTicks(text);
@@ -401,7 +413,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText + "█" + (ticks ? "\n```" : ""),
-                model: get(selectedModel),
+                model: resolvedModel,
               },
             ],
             convId
@@ -418,7 +430,7 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
               {
                 role: "assistant",
                 content: streamText,
-                model: get(selectedModel),
+                model: resolvedModel,
               },
             ],
             convId
@@ -436,7 +448,8 @@ export async function sendVisionMessage(msg: ChatCompletionRequestMessage[], ima
         },
       },
       input,
-      { convId: conversationUniqueId, anchorIndex }
+      { convId: conversationUniqueId, anchorIndex },
+      { reasoningEffort: config.reasoningEffort, verbosity: config.verbosity, summary: config.summary }
     );
   } finally {
     isStreaming.set(false);
@@ -521,13 +534,13 @@ export function supportsReasoning(model: string): boolean {
  * Build a consistent Responses payload used by all call sites.
  * Includes reasoning and verbosity fields only for reasoning-capable models.
  */
-export function buildResponsesPayload(model: string, input: any[], stream: boolean) {
+export function buildResponsesPayload(model: string, input: any[], stream: boolean, opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }) {
   const payload: any = { model, input, store: false, stream };
 
   if (supportsReasoning(model)) {
-    const eff = get(reasoningEffort) || 'medium';
-    const verb = get(verbosity) || 'medium';
-    const sum = get(summary) || 'auto';
+    const eff = (opts?.reasoningEffort ?? get(reasoningEffort)) || 'medium';
+    const verb = (opts?.verbosity ?? get(verbosity)) || 'medium';
+    const sum = (opts?.summary ?? get(summary)) || 'auto';
 
     // text.verbosity only for reasoning-capable models per requirements
     payload.text = { verbosity: verb };
@@ -597,14 +610,14 @@ export function buildResponsesInputFromMessages(messages: ChatCompletionRequestM
   }));
 }
 
-export async function createResponseViaResponsesAPI(prompt: string, model?: string) {
+export async function createResponseViaResponsesAPI(prompt: string, model?: string, opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }) {
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
 
   const liveSelected = get(selectedModel);
   const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
   const input = buildResponsesInputFromPrompt(prompt);
-  const payload = buildResponsesPayload(resolvedModel, input, false);
+  const payload = buildResponsesPayload(resolvedModel, input, false, opts);
 
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -754,7 +767,8 @@ export async function streamResponseViaResponsesAPI(
   model?: string,
   callbacks?: ResponsesStreamCallbacks,
   inputOverride?: any[],
-  uiContext?: { convId?: string; anchorIndex?: number }
+  uiContext?: { convId?: string; anchorIndex?: number },
+  opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }
 ): Promise<string> {
   const key = get(apiKey);
   if (!key) throw new Error('No API key configured');
@@ -762,7 +776,7 @@ export async function streamResponseViaResponsesAPI(
   const liveSelected = get(selectedModel);
   const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
   const input = inputOverride || buildResponsesInputFromPrompt(prompt);
-  const payload = buildResponsesPayload(resolvedModel, input, true);
+  const payload = buildResponsesPayload(resolvedModel, input, true, opts);
 
   const controller = new AbortController();
   globalAbortController = controller;

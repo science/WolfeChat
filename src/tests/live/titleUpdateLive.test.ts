@@ -52,7 +52,7 @@ registerTest({
     ];
 
     try {
-      await sendRegularMessage(userMsg as any, convId);
+      await sendRegularMessage(userMsg as any, convId, { model: get(selectedModel) });
     } catch (e) {
       assert.that(false, `sendRegularMessage completed without throwing: ${e?.message ?? e}`);
       // Restore model before exiting

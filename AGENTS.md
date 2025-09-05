@@ -35,36 +35,6 @@ To keep CI logs quiet but allow deep diagnostics locally, e2e tests can gate ver
   - 2: show browser console errors, pre-flight diagnostics, and OpenAI request/response summaries
   - 3: include high-volume SSE event names (debug spam)
 
-Pattern to use in tests (example):
-
-````ts
-// Inside a test
-const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0');
-if (DEBUG_LVL >= 2) {
-  page.on('console', msg => {
-    const text = msg.text();
-    if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(text) || msg.type() === 'error') {
-      console.log(`[BROWSER-${msg.type()}] ${text}`);
-    }
-  });
-  page.on('pageerror', err => console.log('[BROWSER-PAGEERROR]', err.message));
-  page.on('request', req => { if (req.url().includes('api.openai.com')) console.log('[NET-REQ]', req.method(), req.url()); });
-  page.on('response', res => { if (res.url().includes('api.openai.com')) console.log('[NET-RES]', res.status(), res.url()); });
-}
-
-// Propagate level into the page if needed by injected code
-if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL);
-
-// When injecting page scripts, gate verbose logs:
-await page.addScriptTag({ type: 'module', content: `
-  window.__runSomething = async function() {
-    // ...
-    const verbose = (window as any).__DEBUG_E2E >= 3;
-    if (verbose) console.debug('[TEST] SSE event xyz');
-  };
-`});
-````
-
 Usage examples:
 - Run one test with network/console logs:
   - `DEBUG_E2E=2 npx playwright test tests-e2e/live/sse-events-live.spec.ts -g "hook-based"`
@@ -92,6 +62,30 @@ Note for e2e authors:
 - Avoid ad-hoc localStorage hacks for API keys; always use the Settings flow to ensure `modelsStore` is populated before selecting a model.
 - Keep per-test timeouts reasonable; live SSE tests use `test.setTimeout(45_000)` instead of `test.slow()`.
 
+#### Key Helper Functions
+
+• bootstrapLiveAPI(page): Opens Settings, fills API key, clicks "Check API", waits for models
+• operateQuickSettings(page, opts): Idempotent Quick Settings operator with options:
+ • mode: 'ensure-open', 'ensure-closed', 'open', 'close'
+ • model: string or RegExp for model selection
+ • reasoningEffort, verbosity, summary: reasoning controls
+ • closeAfter: boolean to close panel after operations
+
+
+#### Semantic Selectors
+
+• Quick Settings toggle: button[aria-controls="quick-settings-body"]
+• Model select: #current-model-select or getByRole('combobox', { name: /api model/i })
+• Reasoning controls: #reasoning-effort, #verbosity, #summary
+• Chat input: getByRole('textbox', { name: /chat input/i })
+• Sidebar new conversation: nav .getByRole('button', { name: /^new conversation$/i })
+• Conversation rows: .conversation.title-container
+
+#### Wait Mechanisms
+
+• SSE Event Hooks: Use bindToCallbacks() from TestSSEEvents.ts
+• Key waits: waitForOutputCompleted(), waitForReasoningSummaryDone(), waitForAllDone()
+• Network intercepts: Monitor api.openai.com requests to verify payloads
 
 ## Source code management
 

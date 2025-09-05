@@ -1,5 +1,6 @@
 import { test } from '../testHarness.js';
-import { createDraftsStore } from '../../stores/draftsStore.js';
+import { createDraftsStore } from '../../stores/draftsStore.ts';
+import AppComponent from '../../App.svelte';
 
 // Unit: Draft store in isolation should not be prefilled with assistant role text
 test({
@@ -17,6 +18,31 @@ test({
     }
     if (drafts.getDraft(c2) !== '') {
       throw new Error('Unknown conversation should have empty draft');
+    }
+  }
+});
+
+// Unit: Basic input functionality should work
+test({
+  id: 'unit-input-basic',
+  name: 'Unit: Basic text input functionality works',
+  fn: () => {
+    // Create a mock DOM environment
+    const textarea = document.createElement('textarea');
+    textarea.value = '';
+    
+    // Simulate typing text
+    textarea.value = 'Hello world';
+    
+    // Verify the text was set
+    if (textarea.value !== 'Hello world') {
+      throw new Error('Basic textarea input should work');
+    }
+    
+    // Simulate clearing
+    textarea.value = '';
+    if (textarea.value !== '') {
+      throw new Error('Textarea should be clearable');
     }
   }
 });

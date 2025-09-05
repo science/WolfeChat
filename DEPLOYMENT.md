@@ -113,7 +113,7 @@ Provisioning for CI when running browser tests:
 ```bash
 npm ci
 npx playwright install --with-deps
-npm run test:browser
+npx playwright test tests-e2e          # all E2E tests
 ```
 
 Notes:
@@ -148,18 +148,20 @@ npx playwright install --with-deps  # for browser tests
     npm run test:all
     ```
 
-- Browser tests (non-live, no external API calls):
+- Browser E2E tests (non-live, no external API calls):
 ```bash
-npm run test:browser       # runs tests-e2e/nonlive
+npx playwright test tests-e2e/nonlive  # direct Playwright (recommended)
+npm run test:browser                   # equivalent npm wrapper
 ```
 Notes:
 - Starts a Vite dev server automatically (reuses an existing server on :5173 if running)
 - Produces artifacts (HTML report, screenshots, traces) under `playwright-report/` and `test-results/`
 
-- Browser tests (live, calls external APIs):
+- Browser E2E tests (live, calls external APIs):
 ```bash
-export OPENAI_API_KEY=sk-xxx   # or set in your shell/CI
-npm run test:browser-live  # runs tests-e2e/live
+export OPENAI_API_KEY=sk-xxx           # or set in your shell/CI
+npx playwright test tests-e2e/live     # direct Playwright (recommended)
+npm run test:browser-live              # equivalent npm wrapper
 ```
 Notes:
 - Live tests are skipped or will fail fast if `OPENAI_API_KEY` is not set
@@ -170,9 +172,11 @@ Tips:
 - Filter Playwright runs to a specific spec or grep:
   ```bash
   # Single spec
-  npm run test:browser -- tests-e2e/browser-nonlive.spec.ts
-  # Grep
-  npm run test:browser -- --grep "scroll"
+  npx playwright test tests-e2e/nonlive/some-specific.spec.ts
+  # Grep pattern
+  npx playwright test tests-e2e --grep "scroll"
+  # All E2E tests
+  npx playwright test tests-e2e
   ```
 - If you have a dev server already running on :5173, tests will reuse it. For strict isolation consider using a preview server (update baseURL in `playwright.config.ts`).
 
