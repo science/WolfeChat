@@ -24,25 +24,9 @@ Tests are automatically discovered based on folder structure:
 # Unit tests (default)
 npm run test
 
-# Live API tests (requires OPENAI_API_KEY)
-npm run test:live
-
-# All tests
-npm run test:all
-
 # Browser E2E tests (Playwright)
 # Recommended: Run directly with Playwright
 npx playwright test tests-e2e                    # all E2E tests
-npx playwright test tests-e2e/nonlive            # nonlive tests
-npx playwright test tests-e2e/live               # live API tests (requires OPENAI_API_KEY)
-
-# Alternative: npm wrappers (equivalent to above)
-npm run test:browser          # wraps: npx playwright test tests-e2e/nonlive
-npm run test:browser-live     # wraps: npx playwright test tests-e2e/live
-
-# Run single test file
-node run-tests.mjs --name "specific-test-name"
-node run-tests.mjs --tag "tag-name"
 ```
 
 ## Architecture
@@ -81,20 +65,10 @@ WolfeChat is a Svelte-based ChatGPT UI that uses the OpenAI Responses API for st
 
 ### Testing Architecture
 
-Tests use automatic discovery based on folder placement. The `run-tests.mjs` runner compiles TypeScript with esbuild and provides JSDOM environment for unit tests. Playwright handles browser tests.
+Tests use automatic discovery based on folder placement. Playwright handles browser tests.
 
 Key test utilities:
-- `src/tests/testHarness.ts` - Core test framework with Assert class
-- `src/tests/mocks/` - Svelte store and component mocks for Node.js
-- `tests-e2e/live/helpers.ts` - Shared Playwright test helpers
-
-#### Standard Test Models
-
-For consistency across tests, use these specific models:
-- **Non-reasoning tests**: `gpt-3.5-turbo` - Fast, reliable, cost-effective
-- **Reasoning tests**: `gpt-5-nano` - Supports reasoning features with minimal cost
-
-These models provide consistent behavior and are available across different API access levels.
+- `tests-e2e/live/helpers.ts` - Refer to `tests-e2e/live/README.md` for guidance when writing live E2E tests.
 
 ### API Integration
 
