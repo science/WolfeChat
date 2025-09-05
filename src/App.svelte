@@ -42,11 +42,13 @@
   import { ScrollMemory } from './utils/scrollState.js';
   import { enterBehavior } from './stores/keyboardSettings.js';
   import { shouldSendOnEnter } from './utils/keyboard.js';
+  import { draftsStore } from './stores/draftsStore.js';
 
   let fileInputElement; 
   let input: string = "";
   let textAreaElement; 
-  let editTextArea; 
+  let editTextArea;
+  let updatingInputFromDraft = false; 
 
 
   let chatContainer: HTMLElement;
@@ -66,6 +68,24 @@
   }
 
 
+  // Handle conversation switching without circular reactive updates
+  function handleConversationSwitch(newConvId: number | null, oldConvId: number | null) {
+    const currentConversations = $conversations;
+    
+    // Save draft for previous conversation before switching
+    if (oldConvId !== null && oldConvId !== newConvId && currentConversations[oldConvId]) {
+      draftsStore.setDraft(currentConversations[oldConvId].id, input);
+    }
+
+    if (newConvId !== undefined && newConvId !== null && currentConversations[newConvId]) {
+      // Load draft for new conversation
+      const conversationDraft = draftsStore.getDraft(currentConversations[newConvId].id);
+      updatingInputFromDraft = true;
+      input = conversationDraft;
+      updatingInputFromDraft = false;
+    }
+  }
+
   $: {
     const currentConversationId = $chosenConversationId;
     const currentConversations = $conversations;
@@ -74,14 +94,35 @@
     if (currentConversationId !== undefined && currentConversations[currentConversationId]) {
       conversationTitle = currentConversations[currentConversationId].title || "New Conversation";
     }
+    
     if (currentConversationId === undefined || currentConversationId === null || currentConversationId < 0 || currentConversationId >= totalConversations) {
       console.log("changing conversation from ID", $chosenConversationId);
       chosenConversationId.set(totalConversations > 0 ? totalConversations - 1 : null);
       console.log("to ID", $chosenConversationId);
-
+    }
+    
+    // Handle conversation switching only when the conversation actually changes
+    if (lastConvId !== currentConversationId) {
+      handleConversationSwitch(currentConversationId, lastConvId);
+      lastConvId = currentConversationId;
     }
   }
 
+  // Save draft when input changes (but not when we're loading from draft)
+  let draftSaveTimer: number | null = null;
+  $: {
+    if (!updatingInputFromDraft && $chosenConversationId !== undefined && $conversations[$chosenConversationId] && input !== undefined) {
+      // Cancel previous timer
+      if (draftSaveTimer) {
+        clearTimeout(draftSaveTimer);
+      }
+      // Save draft after a short delay to avoid interfering with rapid typing
+      draftSaveTimer = setTimeout(() => {
+        draftsStore.setDraft($conversations[$chosenConversationId].id, input);
+        draftSaveTimer = null;
+      }, 300);
+    }
+  }
 
 function clearFiles() {  
     base64Images.set([]); // Assuming this is a writable store tracking uploaded images  
@@ -117,7 +158,10 @@ function clearFiles() {
     }
     
     // Setup MutationObserver after app initialization and component mounting  
-    setupMutationObserver();  
+    setupMutationObserver();
+    
+    // Make drafts available globally for e2e tests
+    (window as any).drafts = draftsStore;
   });  
   
   onDestroy(() => {  
@@ -161,6 +205,10 @@ function autoExpand(event) {
     addRecentModel($selectedModel);
     routeMessage(input, convId);
     input = ""; 
+    // Clear the draft since message was sent
+    if ($conversations[convId]) {
+      draftsStore.setDraft($conversations[convId].id, "");
+    }
     clearFiles ();
     textAreaElement.style.height = '96px'; // Reset the height after sending
   }
