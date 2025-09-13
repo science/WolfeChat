@@ -1,11 +1,11 @@
 import type { ChatCompletionRequestMessage } from "openai";
-import { get, writable } from "svelte/store";
+import { get } from "svelte/store";
 import { conversations, chosenConversationId, combinedTokens, createNewConversation } from "../stores/stores.js";
-import { type Conversation, defaultAssistantRole } from "../stores/stores.js";
-import { selectedModel, selectedVoice, audioUrls, base64Images } from '../stores/stores.js';
+import { type Conversation } from "../stores/stores.js";
+import { selectedModel, selectedVoice, base64Images } from '../stores/stores.js';
 import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore.js';
 import { addRecentModel } from '../stores/recentModelsStore.js';
-import { reasoningWindows, clearReasoningForConversation } from '../stores/reasoningStore.js';
+import { reasoningWindows } from '../stores/reasoningStore.js';
 
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService.js";
 let streamText = "";
@@ -14,7 +14,7 @@ let streamText = "";
 
 
 
-export function setHistory(msg, convId = get(chosenConversationId)): Promise<void> {
+export function setHistory(msg: ChatCompletionRequestMessage[], convId: number = get(chosenConversationId)): Promise<void> {
   return new Promise<void>((resolve, reject) => {
       try {
           let conv = get(conversations);
@@ -178,7 +178,7 @@ async function createTitle(currentInput: string) {
     }
 }
 
-export function displayAudioMessage(audioUrl) {
+export function displayAudioMessage(audioUrl: string) {
     const audioMessage = {
   role: "assistant",
   content: "Audio file generated.",

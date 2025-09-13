@@ -32,7 +32,7 @@
 {#if windowsForAnchor.length > 0}
   {#each windowsForAnchor as w (w.id)}
     <details class="my-3 rounded border border-gray-500 bg-primary shadow-sm open:shadow-md" open={w.open} role="region" aria-label="Reasoning">
-      <summary class="cursor-pointer select-none px-3 py-2 bg-secondary hover:bg-hover2 text-white/80 font-medium rounded-t" role="button" aria-expanded={w.open} aria-label="Reasoning window toggle">
+      <summary class="cursor-pointer select-none px-3 py-2 bg-secondary hover:bg-hover2 text-white/80 font-medium rounded-t" aria-expanded={w.open} aria-label="Reasoning window toggle">
         Reasoning
         {#if w.model}<span class="ml-2 text-xs text-white/60">({w.model})</span>{/if}
         <span class="ml-2 text-xs text-white/60">

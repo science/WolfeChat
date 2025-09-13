@@ -7,14 +7,13 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "test:browser": "playwright test tests-e2e/nonlive",
-    "test:browser-live": "playwright test tests-e2e/live",
-    "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "node run-tests.mjs",
+    "test:browser": "npx playwright test tests-e2e/nonlive",
+    "test:browser-live": "npx playwright test tests-e2e/live",
     "pretest:live": "vite build",
     "test:live": "node run-tests.mjs --live",
     "test:all": "node run-tests.mjs --suite all",
-    "test:old": "TS_NODE_TRANSPILE_ONLY=1 node --loader ts-node/esm test-runner.ts"
+    "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

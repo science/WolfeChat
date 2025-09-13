@@ -24,25 +24,9 @@ Tests are automatically discovered based on folder structure:
 # Unit tests (default)
 npm run test
 
-# Live API tests (requires OPENAI_API_KEY)
-npm run test:live
-
-# All tests
-npm run test:all
-
 # Browser E2E tests (Playwright)
 # Recommended: Run directly with Playwright
 npx playwright test tests-e2e                    # all E2E tests
-npx playwright test tests-e2e/nonlive            # nonlive tests
-npx playwright test tests-e2e/live               # live API tests (requires OPENAI_API_KEY)
-
-# Alternative: npm wrappers (equivalent to above)
-npm run test:browser          # wraps: npx playwright test tests-e2e/nonlive
-npm run test:browser-live     # wraps: npx playwright test tests-e2e/live
-
-# Run single test file
-node run-tests.mjs --name "specific-test-name"
-node run-tests.mjs --tag "tag-name"
 ```
 
 ## Architecture
@@ -81,20 +65,55 @@ WolfeChat is a Svelte-based ChatGPT UI that uses the OpenAI Responses API for st
 
 ### Testing Architecture
 
-Tests use automatic discovery based on folder placement. The `run-tests.mjs` runner compiles TypeScript with esbuild and provides JSDOM environment for unit tests. Playwright handles browser tests.
+Tests use automatic discovery based on folder placement. Playwright handles browser tests.
 
 Key test utilities:
-- `src/tests/testHarness.ts` - Core test framework with Assert class
-- `src/tests/mocks/` - Svelte store and component mocks for Node.js
-- `tests-e2e/live/helpers.ts` - Shared Playwright test helpers
+- `tests-e2e/live/helpers.ts` - Refer to `tests-e2e/live/README.md` for guidance when writing live E2E tests.
 
-#### Standard Test Models
+#### Test-Driven Development (TDD) Guidelines
 
-For consistency across tests, use these specific models:
-- **Non-reasoning tests**: `gpt-3.5-turbo` - Fast, reliable, cost-effective
-- **Reasoning tests**: `gpt-5-nano` - Supports reasoning features with minimal cost
+When writing TDD tests, follow these practices:
 
-These models provide consistent behavior and are available across different API access levels.
+1. **Write Tests for Desired Behavior** - Tests should describe what the feature SHOULD do when working correctly, not what it currently does wrong.
+
+2. **Red-Green-Refactor Cycle**:
+   - **Red**: Write a test that describes the desired behavior. Run it to confirm it fails (because the feature doesn't exist yet)
+   - **Green**: Implement the minimal code to make the test pass
+   - **Refactor**: Improve the implementation while keeping tests passing
+
+3. **Test Naming**: Use descriptive names that explain the expected behavior:
+   ```typescript
+   // Good: describes desired behavior
+   test('should preserve input text when creating new conversation')
+
+   // Bad: focuses on current broken state
+   test('new chat button clears input - SHOULD FAIL INITIALLY')
+   ```
+
+4. **Test Comments**: Write comments that describe the expected behavior, not the current bugs:
+   ```typescript
+   // Good: describes what should happen
+   // Assert: Input should contain the original message
+
+   // Bad: focuses on current failure
+   // This will fail initially due to the bug - proving the bug exists
+   ```
+
+5. **Console Logging**: Use positive language in test output:
+   ```typescript
+   // Good: describes successful behavior
+   console.log('✓ Input text preserved after new chat creation')
+
+   // Bad: celebrates failure
+   console.log('❌ TEST FAILED AS EXPECTED - This proves the bug exists!')
+   ```
+
+6. **When Tests Initially Fail**: This is expected and good! It means:
+   - The test correctly identifies missing functionality
+   - You have a clear target for implementation
+   - You can measure progress as tests begin passing
+
+Remember: TDD tests are specifications for how code should behave, written before the implementation exists.
 
 ### API Integration
 

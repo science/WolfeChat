@@ -4,10 +4,8 @@
  * Ensures that markdown code blocks (```) are surrounded by newlines.
  * Adds a newline before opening ticks (odd count) if missing.
  * Adds a newline after closing ticks (even count) if missing.
- * @param {string} markdown The raw markdown string.
- * @returns {string} Markdown string with enforced newlines around code blocks.
  */
-function ensureNewlinesAroundCodeBlocks(markdown) {
+function ensureNewlinesAroundCodeBlocks(markdown: string): string {
     if (typeof markdown !== 'string') {
         console.warn("ensureNewlinesAroundCodeBlocks received non-string input:", markdown);
         return markdown; // Return original if not a string

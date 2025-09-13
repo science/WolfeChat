@@ -28,6 +28,18 @@
     dispatch("new-chat");
   }
 
+   function clearChat() {
+    // Create fresh conversation then delete current
+    const idx = $chosenConversationId;
+    const convs = $conversations;
+    const newConv = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, history: [], conversationTokens: 0, assistantRole: convs[idx]?.assistantRole ?? "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.", title: '' };
+    conversations.set([...convs, newConv]);
+    chosenConversationId.set($conversations.length); // select newly appended index
+    // remove old index
+    conversations.set($conversations.filter((_, i) => i !== idx));
+    dispatch("clear-chat");
+  }
+
   function openSettings() {
     helpVisible.set(false);
     debugVisible.set(false);
@@ -148,16 +160,7 @@ let editingTitleId = null;
       <div class="flex justify-between items-center py-3 px-3 w-full rounded-lg z-20">
         <p class="text-center font-bold text-2xl m-0">WolfeChat</p>
         <div class="flex items-center gap-2">
-          <button title="Clear Conversation" aria-label="Clear Conversation" class="w-6 h-6 flex items-center justify-center hover:opacity-80" on:click={() => {
-            // Create fresh conversation then delete current
-            const idx = $chosenConversationId;
-            const convs = $conversations;
-            const newConv = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, history: [], conversationTokens: 0, assistantRole: convs[idx]?.assistantRole ?? "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.", title: '' };
-            conversations.set([...convs, newConv]);
-            chosenConversationId.set($conversations.length); // select newly appended index
-            // remove old index
-            conversations.set($conversations.filter((_, i) => i !== idx));
-          }}>
+          <button title="Clear Conversation" aria-label="Clear Conversation" class="w-6 h-6 flex items-center justify-center hover:opacity-80" on:click={clearChat}>
             <img src={ClearChat} alt="Clear Conversation" class="w-6 h-6 filter-white" />
           </button>
           <button class="hover:bg-gray-700 rounded-lg p-1" title="New Conversation" aria-label="New Conversation" on:click={newChat}>

@@ -1,7 +1,7 @@
 import { base64Images } from "../stores/stores.js";
 import { clearFileInputSignal } from "../stores/stores.js";
 
-export function handleImageUpload(event) {
+export function handleImageUpload(event: Event & { target: HTMLInputElement }) {
     onSendVisionMessageComplete(); // Clear images before adding new ones
     const files = event.target.files;
     for (let file of files) {

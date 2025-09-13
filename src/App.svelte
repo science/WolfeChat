@@ -71,10 +71,13 @@
   // Handle conversation switching without circular reactive updates
   function handleConversationSwitch(newConvId: number | null, oldConvId: number | null) {
     const currentConversations = $conversations;
-    
-    // Save draft for previous conversation before switching
+
+    // Enhanced draft saving with additional safety checks
     if (oldConvId !== null && oldConvId !== newConvId && currentConversations[oldConvId]) {
-      draftsStore.setDraft(currentConversations[oldConvId].id, input);
+      // Only save if input is not empty and not already being updated from draft
+      if (!updatingInputFromDraft && input.trim() !== '') {
+        draftsStore.setDraft(currentConversations[oldConvId].id, input);
+      }
     }
 
     if (newConvId !== undefined && newConvId !== null && currentConversations[newConvId]) {
@@ -111,7 +114,11 @@
   // Save draft when input changes (but not when we're loading from draft)
   let draftSaveTimer: number | null = null;
   $: {
-    if (!updatingInputFromDraft && $chosenConversationId !== undefined && $conversations[$chosenConversationId] && input !== undefined) {
+    if (!updatingInputFromDraft &&
+        $chosenConversationId !== undefined &&
+        $conversations[$chosenConversationId] &&
+        input !== undefined &&
+        input.trim() !== '') { // Only save non-empty drafts
       // Cancel previous timer
       if (draftSaveTimer) {
         clearTimeout(draftSaveTimer);
@@ -146,8 +153,13 @@ function clearFiles() {
     chatContainerObserver.observe(chatContainer, config);    
   }  
 
-  onMount(async () => {  
-    await initApp();  
+  onMount(async () => {
+    await initApp();
+
+    // Ensure at least one conversation exists for tests
+    if ($conversations.length === 0) {
+      newChat();
+    }
 
     // Attach scroll memory to chat container and initialize for current conversation
     if (chatContainer) {
@@ -162,6 +174,8 @@ function clearFiles() {
     
     // Make drafts available globally for e2e tests
     (window as any).drafts = draftsStore;
+    (window as any).conversations = $conversations;
+    (window as any).chosenConversationId = $chosenConversationId;
   });  
   
   onDestroy(() => {  
@@ -174,7 +188,13 @@ function clearFiles() {
     scrollMem.detach();
     // Clean up app-specific resources  
     cleanupApp();  
-  });  
+  });
+
+  // Keep window references updated when stores change for e2e tests
+  $: if (typeof window !== 'undefined') {
+    (window as any).conversations = $conversations;
+    (window as any).chosenConversationId = $chosenConversationId;
+  }
 
   function scrollChatToEnd() {    
   if (chatContainer) {    
@@ -272,9 +292,35 @@ function startEditMessage(i: number) {
 
   function isImageUrl(url) {
     // Ensure the URL has no spaces and matches the domain and specific content type for images
-    return !/\s/.test(url) && 
-           url.includes('blob.core.windows.net') && 
+    return !/\s/.test(url) &&
+           url.includes('blob.core.windows.net') &&
            /rsct=image\/(jpeg|jpg|gif|png|bmp)/i.test(url);
+  }
+
+  /**
+   * Handles new chat creation while preserving input drafts.
+   * This function ensures the current conversation's draft is saved
+   * before creating a new conversation, preventing data loss.
+   *
+   * Order of operations:
+   * 1. Save current input as draft for active conversation
+   * 2. Create new conversation (triggers conversation switch)
+   * 3. Clear input field (new conversation starts with empty input)
+   */
+  function handleNewChat() {
+    // Save current draft before switching conversations
+    const currentConvId = $chosenConversationId;
+    const currentConversations = $conversations;
+
+    if (currentConvId !== null && currentConvId !== undefined && currentConversations[currentConvId]) {
+      draftsStore.setDraft(currentConversations[currentConvId].id, input);
+    }
+
+    // Now create the new chat (this will trigger conversation switching)
+    newChat();
+
+    // Clear input only after successful conversation switch
+    input = '';
   }
 
 </script>
@@ -289,12 +335,12 @@ function startEditMessage(i: number) {
 {/if}
 
 <main class="bg-primary overflow-hidden">
-  <Sidebar on:new-chat={() => newChat()} />
+  <Sidebar on:new-chat={handleNewChat} on:clear-chat={() => { input = ''; }} />
     <div class="h-screen flex justify-stretch flex-col md:ml-[260px] bg-secondary text-white/80 height-manager main-content-area">
-      <Topbar bind:conversation_title={conversationTitle} on:new-chat={newChat} />
+      <Topbar bind:conversation_title={conversationTitle} on:new-chat={handleNewChat} />
       <div class="py-5 bg-primary px-5 flex flex-row justify-between flex-wrap-reverse">
         
-      <QuickSettings />
+      <QuickSettings on:input-cleared={() => { input = ''; }} />
       </div>
       <div class="flex bg-primary overflow-y-auto overflow-x-hidden justify-center grow" data-testid="chat-scroll-container" bind:this={chatContainer}>
       {#if $conversations.length > 0 && $conversations[$chosenConversationId]}
