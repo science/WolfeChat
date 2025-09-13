@@ -42,7 +42,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       await expect(clearButton).toBeVisible();
       await clearButton.click();
 
-      // Assert: Input should be empty (THIS WILL FAIL INITIALLY - proving bug exists)
+      // Assert: Input should be empty
       await expect(input).toHaveValue('');
     });
 
@@ -65,7 +65,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       await expect(clearButtonQuickSettings).toBeVisible();
       await clearButtonQuickSettings.click();
 
-      // Assert: Input should be empty (THIS WILL FAIL INITIALLY - proving bug exists)
+      // Assert: Input should be empty
       await expect(input).toHaveValue('');
     });
 
@@ -80,7 +80,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
       await clearButton.click();
 
-      // Assert: Input should be empty (THIS WILL FAIL INITIALLY - proving bug exists)
+      // Assert: Input should be empty
       await expect(input).toHaveValue('');
     });
 
@@ -95,7 +95,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
       await clearButton.click();
 
-      // Assert: Input should be empty (THIS WILL FAIL INITIALLY - proving bug exists)
+      // Assert: Input should be empty
       await expect(input).toHaveValue('');
     });
   });
@@ -113,7 +113,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       await expect(newChatButton).toBeVisible();
       await newChatButton.click();
 
-      // Assert: Input should be empty (THIS WILL FAIL INITIALLY - proving bug exists)
+      // Assert: Input should be empty
       await expect(input).toHaveValue('');
     });
 
@@ -132,7 +132,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       await expect(newChatTopbar).toBeVisible();
       await newChatTopbar.click();
 
-      // Assert: Input should be empty (THIS WILL FAIL INITIALLY - proving bug exists)
+      // Assert: Input should be empty
       await expect(input).toHaveValue('');
     });
 
@@ -157,7 +157,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
       await newChatButton.click();
 
-      // Assert: Input should be empty (THIS WILL FAIL INITIALLY - proving bug exists)
+      // Assert: Input should be empty
       await expect(input).toHaveValue('');
     });
   });
@@ -174,7 +174,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
       await clearButton.click();
 
-      // Assert: Input should be empty (THIS WILL FAIL INITIALLY - proving bug exists)
+      // Assert: Input should be empty
       await expect(input).toHaveValue('');
     });
 
@@ -194,7 +194,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Small delay to ensure all clicks are processed
       await page.waitForTimeout(500);
 
-      // Assert: Input should remain empty (THIS WILL FAIL INITIALLY - proving bug exists)
+      // Assert: Input should remain empty
       await expect(input).toHaveValue('');
 
       // Also verify we can still type in the input after rapid clicks

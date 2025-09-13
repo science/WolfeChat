@@ -70,6 +70,51 @@ Tests use automatic discovery based on folder placement. Playwright handles brow
 Key test utilities:
 - `tests-e2e/live/helpers.ts` - Refer to `tests-e2e/live/README.md` for guidance when writing live E2E tests.
 
+#### Test-Driven Development (TDD) Guidelines
+
+When writing TDD tests, follow these practices:
+
+1. **Write Tests for Desired Behavior** - Tests should describe what the feature SHOULD do when working correctly, not what it currently does wrong.
+
+2. **Red-Green-Refactor Cycle**:
+   - **Red**: Write a test that describes the desired behavior. Run it to confirm it fails (because the feature doesn't exist yet)
+   - **Green**: Implement the minimal code to make the test pass
+   - **Refactor**: Improve the implementation while keeping tests passing
+
+3. **Test Naming**: Use descriptive names that explain the expected behavior:
+   ```typescript
+   // Good: describes desired behavior
+   test('should preserve input text when creating new conversation')
+
+   // Bad: focuses on current broken state
+   test('new chat button clears input - SHOULD FAIL INITIALLY')
+   ```
+
+4. **Test Comments**: Write comments that describe the expected behavior, not the current bugs:
+   ```typescript
+   // Good: describes what should happen
+   // Assert: Input should contain the original message
+
+   // Bad: focuses on current failure
+   // This will fail initially due to the bug - proving the bug exists
+   ```
+
+5. **Console Logging**: Use positive language in test output:
+   ```typescript
+   // Good: describes successful behavior
+   console.log('✓ Input text preserved after new chat creation')
+
+   // Bad: celebrates failure
+   console.log('❌ TEST FAILED AS EXPECTED - This proves the bug exists!')
+   ```
+
+6. **When Tests Initially Fail**: This is expected and good! It means:
+   - The test correctly identifies missing functionality
+   - You have a clear target for implementation
+   - You can measure progress as tests begin passing
+
+Remember: TDD tests are specifications for how code should behave, written before the implementation exists.
+
 ### API Integration
 
 The app expects an OpenAI API key to be configured in Settings. It supports:
