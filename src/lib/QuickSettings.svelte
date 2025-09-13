@@ -1,10 +1,13 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   import { selectedModel, conversations, chosenConversationId } from '../stores/stores.js';
   import { modelsStore } from '../stores/modelStore.js';
   import { recentModelsStore } from '../stores/recentModelsStore.js';
   import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
   import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore';
   import { supportsReasoning } from '../services/openaiService.js';
+
+  const dispatch = createEventDispatcher();
 
   let open = false;
   function toggle() { open = !open; }
@@ -28,6 +31,7 @@
        chosenConversationId.set(get(conversations).length - 1);
        // Delete the old conversation by index
        conversations.update((arr) => arr.filter((_, i) => i !== idx));
+       dispatch('input-cleared');
      } catch (e) {
        console.error('Failed to clear conversation', e);
      }

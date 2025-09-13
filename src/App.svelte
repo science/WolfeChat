@@ -289,12 +289,12 @@ function startEditMessage(i: number) {
 {/if}
 
 <main class="bg-primary overflow-hidden">
-  <Sidebar on:new-chat={() => newChat()} />
+  <Sidebar on:new-chat={() => { newChat(); input = ''; }} on:clear-chat={() => { input = ''; }} />
     <div class="h-screen flex justify-stretch flex-col md:ml-[260px] bg-secondary text-white/80 height-manager main-content-area">
-      <Topbar bind:conversation_title={conversationTitle} on:new-chat={newChat} />
+      <Topbar bind:conversation_title={conversationTitle} on:new-chat={() => { newChat(); input = ''; }} />
       <div class="py-5 bg-primary px-5 flex flex-row justify-between flex-wrap-reverse">
         
-      <QuickSettings />
+      <QuickSettings on:input-cleared={() => { input = ''; }} />
       </div>
       <div class="flex bg-primary overflow-y-auto overflow-x-hidden justify-center grow" data-testid="chat-scroll-container" bind:this={chatContainer}>
       {#if $conversations.length > 0 && $conversations[$chosenConversationId]}
