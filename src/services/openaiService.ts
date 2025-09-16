@@ -42,6 +42,21 @@ let configuration: any = null;
 // Global abort controller for streaming
 let globalAbortController: AbortController | null = null;
 
+// Helper function to append error messages to conversation history
+export function appendErrorToHistory(error: any, currentHistory: ChatCompletionRequestMessage[], convId: number): void {
+  const errorMessage = error?.message || 'An error occurred while processing your request.';
+  const userFriendlyError = errorMessage.includes('API key')
+    ? 'There was an error. Maybe the API key is wrong? Or the servers could be down?'
+    : `There was an error: ${errorMessage}`;
+
+  const errorChatMessage: ChatCompletionRequestMessage = {
+    role: "assistant",
+    content: userFriendlyError,
+  };
+
+  setHistory([...currentHistory, errorChatMessage], convId);
+}
+
 // Gracefully stop an in-flight streaming response
 export function closeStream() {
   try {
@@ -159,7 +174,14 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
   } catch (error) {
     console.error("Error in sendRequest:", error);
     configuration = null;
-    await setHistory(errorMessage);
+
+    // Get the current conversation history and ID to preserve existing messages
+    const currentHistory = get(conversations)[get(chosenConversationId)]?.messages || [];
+    const convId = get(chosenConversationId);
+
+    // Append error to existing history instead of replacing it
+    appendErrorToHistory(error, currentHistory, convId);
+
     throw error;
   }
 }
@@ -337,7 +359,8 @@ export async function sendVisionMessage(
           isStreaming.set(false);
           onSendVisionMessageComplete();
         },
-        onError: (_err) => {
+        onError: (err) => {
+          appendErrorToHistory(err, currentHistory, convId);
           isStreaming.set(false);
           onSendVisionMessageComplete();
         },
@@ -346,6 +369,11 @@ export async function sendVisionMessage(
       { convId: conversationUniqueId, anchorIndex },
       { reasoningEffort: config.reasoningEffort, verbosity: config.verbosity, summary: config.summary }
     );
+  } catch (error) {
+    // Handle errors from streamResponseViaResponsesAPI itself
+    console.error("Error in sendVisionMessage:", error);
+    appendErrorToHistory(error, currentHistory, convId);
+    onSendVisionMessageComplete();
   } finally {
     isStreaming.set(false);
   }
@@ -443,7 +471,8 @@ export async function sendVisionMessage(
           streamText = "";
           isStreaming.set(false);
         },
-        onError: (_err) => {
+        onError: (err) => {
+          appendErrorToHistory(err, currentHistory, convId);
           isStreaming.set(false);
         },
       },
@@ -451,6 +480,10 @@ export async function sendVisionMessage(
       { convId: conversationUniqueId, anchorIndex },
       { reasoningEffort: config.reasoningEffort, verbosity: config.verbosity, summary: config.summary }
     );
+  } catch (error) {
+    // Handle errors from streamResponseViaResponsesAPI itself
+    console.error("Error in sendRegularMessage:", error);
+    appendErrorToHistory(error, currentHistory, convId);
   } finally {
     isStreaming.set(false);
   }

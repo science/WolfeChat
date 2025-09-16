@@ -16,36 +16,56 @@ npm run dev
 
 ## Testing
 
-The project includes a comprehensive test suite with automatic test discovery based on folder structure.
+The project includes a comprehensive test suite with both unit tests and end-to-end (E2E) browser tests.
+
+### Test Organization
+
+**Unit Tests** (Node.js with JSDOM):
+- `src/tests/unit/` - Fast unit tests for individual components and functions
+
+**E2E Tests** (Playwright browser tests):
+- `tests-e2e/nonlive/` - Browser tests that don't require external APIs
+- `tests-e2e/live/` - Browser tests that require OpenAI API (set `OPENAI_API_KEY` env var)
 
 ### Running Tests
 
+**Unit Tests:**
 ```bash
-# Run unit tests (default)
+# Run all unit tests (recommended - uses pinned Node 18)
 npm run test
 
-# Run live/API tests (requires OpenAI API key)
-npm run test:live
-
-# Run specific test suite
+# Alternative unit test commands
 node run-tests.mjs --suite unit          # Unit tests only
-node run-tests.mjs --suite browser-nonlive  # Browser tests (future)
-node run-tests.mjs --suite live          # API tests only
-node run-tests.mjs --suite all           # All tests
+node run-tests.mjs --suite live          # Unit tests requiring APIs
+node run-tests.mjs --suite all           # All unit test suites
 
-# Filter tests
+# Filter unit tests
 node run-tests.mjs --tag keyboard        # Run tests tagged 'keyboard'
 node run-tests.mjs --name "scroll"       # Run tests containing 'scroll' in name
 ```
 
-### Test Organization
+**E2E Browser Tests:**
+```bash
+# Run all E2E tests
+npx playwright test tests-e2e
 
-Tests are automatically discovered based on their location:
-- `src/tests/unit/` - Unit tests that run in Node.js with JSDOM
-- `src/tests/browser-nonlive/` - Tests requiring a real browser (future implementation)
-- `src/tests/live/` - Tests that require external APIs (OpenAI, etc.)
+# Run non-live E2E tests (no API key needed)
+npx playwright test tests-e2e/nonlive
 
-Simply add a `*.test.ts` file to the appropriate folder and it will be automatically included in the test suite.
+# Run live E2E tests (requires OPENAI_API_KEY)
+npx playwright test tests-e2e/live
+
+# Run specific test file
+npx playwright test tests-e2e/live/api-error-preserves-conversation.spec.ts
+```
+
+**Important:** This project requires Node.js 18 due to test dependencies.
+
+**Node Version Management:**
+- This project is configured with Volta to automatically use Node 18.20.5 and npm 10.2.4
+- If you have [Volta](https://volta.sh/) installed, it should automatically use the correct versions
+- If tests fail with Node version errors, try: `volta run npm run test`
+- If you don't have Volta, manually install Node.js 18.x or install Volta: `curl https://get.volta.sh | bash`
 
 See [CLI_TESTING.md](CLI_TESTING.md) for detailed testing documentation.
 
