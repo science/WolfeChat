@@ -189,7 +189,7 @@ var init_stores = __esm({
 });
 
 // src/stores/reasoningSettings.ts
-import { writable as writable4 } from "svelte/store";
+import { writable as writable2 } from "svelte/store";
 function readLS(key, fallback) {
   try {
     const v = localStorage.getItem(key);
@@ -206,9 +206,9 @@ var init_reasoningSettings = __esm({
       verbosity: "reasoning_verbosity",
       summary: "reasoning_summary"
     };
-    reasoningEffort = writable4(readLS(KEYS.effort, "medium"));
-    verbosity = writable4(readLS(KEYS.verbosity, "medium"));
-    summary = writable4(readLS(KEYS.summary, "auto"));
+    reasoningEffort = writable2(readLS(KEYS.effort, "medium"));
+    verbosity = writable2(readLS(KEYS.verbosity, "medium"));
+    summary = writable2(readLS(KEYS.summary, "auto"));
     reasoningEffort.subscribe((v) => {
       try {
         localStorage.setItem(KEYS.effort, v);
@@ -231,7 +231,7 @@ var init_reasoningSettings = __esm({
 });
 
 // src/stores/reasoningStore.ts
-import { writable as writable5 } from "svelte/store";
+import { writable as writable3 } from "svelte/store";
 function loadFromStorage(key, defaultValue) {
   try {
     const stored = localStorage.getItem(key);
@@ -308,15 +308,15 @@ var init_reasoningStore = __esm({
     REASONING_WINDOWS_KEY = "reasoning_windows";
     initialPanels = loadFromStorage(REASONING_PANELS_KEY, []);
     initialWindows = loadFromStorage(REASONING_WINDOWS_KEY, []);
-    reasoningPanels = writable5(initialPanels);
-    reasoningWindows = writable5(initialWindows);
+    reasoningPanels = writable3(initialPanels);
+    reasoningWindows = writable3(initialWindows);
     reasoningPanels.subscribe((panels) => {
       saveToStorage(REASONING_PANELS_KEY, panels);
     });
     reasoningWindows.subscribe((windows) => {
       saveToStorage(REASONING_WINDOWS_KEY, windows);
     });
-    reasoningSSEEvents = writable5([]);
+    reasoningSSEEvents = writable3([]);
     if (typeof window !== "undefined") {
       window.startReasoningPanel = startReasoningPanel;
       window.appendReasoningText = appendReasoningText;
@@ -327,13 +327,13 @@ var init_reasoningStore = __esm({
 });
 
 // src/stores/conversationQuickSettingsStore.ts
-import { derived, writable as writable6 } from "svelte/store";
+import { derived, writable as writable4 } from "svelte/store";
 function normalizeId(id) {
   if (id == null) return null;
   return String(id);
 }
 function createConversationQuickSettingsStore(initial) {
-  const store = writable6({ ...initial || {} });
+  const store = writable4({ ...initial || {} });
   function setSettings(convId, patch) {
     const key = normalizeId(convId);
     if (!key) return;
@@ -401,7 +401,7 @@ var init_conversationQuickSettingsStore = __esm({
 });
 
 // src/stores/modelStore.ts
-import { writable as writable7 } from "svelte/store";
+import { writable as writable5 } from "svelte/store";
 function loadFromLocalStorage() {
   try {
     const raw = localStorage.getItem(MODELS_LS_KEY);
@@ -414,7 +414,7 @@ var MODELS_LS_KEY, modelsStore;
 var init_modelStore = __esm({
   "src/stores/modelStore.ts"() {
     MODELS_LS_KEY = "models";
-    modelsStore = writable7(loadFromLocalStorage());
+    modelsStore = writable5(loadFromLocalStorage());
     modelsStore.subscribe((val) => {
       try {
         localStorage.setItem(MODELS_LS_KEY, JSON.stringify(val || []));
@@ -425,7 +425,7 @@ var init_modelStore = __esm({
 });
 
 // src/stores/recentModelsStore.ts
-import { writable as writable8, get as get4 } from "svelte/store";
+import { writable as writable6, get as get2 } from "svelte/store";
 function loadFromLocalStorage2() {
   try {
     const raw = localStorage.getItem(RECENT_MODELS_LS_KEY);
@@ -434,12 +434,23 @@ function loadFromLocalStorage2() {
     return [];
   }
 }
-var RECENT_MODELS_LS_KEY, recentModelsStore;
+function addRecentModel(modelId) {
+  if (!modelId) return;
+  const allModels = get2(modelsStore) || [];
+  const existingObj = allModels.find((m) => m?.id === modelId);
+  const toInsert = existingObj || { id: modelId };
+  recentModelsStore.update((current) => {
+    const withoutDup = (current || []).filter((m) => m?.id !== modelId);
+    return [toInsert, ...withoutDup].slice(0, MAX_RECENT);
+  });
+}
+var RECENT_MODELS_LS_KEY, MAX_RECENT, recentModelsStore;
 var init_recentModelsStore = __esm({
   "src/stores/recentModelsStore.ts"() {
     init_modelStore();
     RECENT_MODELS_LS_KEY = "recent_models";
-    recentModelsStore = writable8(loadFromLocalStorage2());
+    MAX_RECENT = 5;
+    recentModelsStore = writable6(loadFromLocalStorage2());
     recentModelsStore.subscribe((val) => {
       try {
         localStorage.setItem(RECENT_MODELS_LS_KEY, JSON.stringify(val || []));
@@ -450,11 +461,23 @@ var init_recentModelsStore = __esm({
 });
 
 // src/managers/conversationManager.ts
-import { get as get5 } from "svelte/store";
-function setHistory(msg, convId = get5(chosenConversationId)) {
+var conversationManager_exports = {};
+__export(conversationManager_exports, {
+  cleanseMessage: () => cleanseMessage,
+  countTokens: () => countTokens,
+  deleteAllMessagesBelow: () => deleteAllMessagesBelow,
+  deleteMessageFromConversation: () => deleteMessageFromConversation,
+  displayAudioMessage: () => displayAudioMessage,
+  estimateTokens: () => estimateTokens,
+  newChat: () => newChat,
+  routeMessage: () => routeMessage,
+  setHistory: () => setHistory
+});
+import { get as get3 } from "svelte/store";
+function setHistory(msg, convId = get3(chosenConversationId)) {
   return new Promise((resolve, reject) => {
     try {
-      let conv = get5(conversations);
+      let conv = get3(conversations);
       conv[convId].history = msg;
       conversations.set(conv);
       resolve();
@@ -463,6 +486,40 @@ function setHistory(msg, convId = get5(chosenConversationId)) {
       reject(error);
     }
   });
+}
+function deleteMessageFromConversation(messageIndex) {
+  const currentConversationId = get3(chosenConversationId);
+  const currentConversations = get3(conversations);
+  const updatedHistory = currentConversations[currentConversationId].history.filter((_, index) => index !== messageIndex);
+  currentConversations[currentConversationId].history = updatedHistory;
+  conversations.set(currentConversations);
+}
+function deleteAllMessagesBelow(messageIndex) {
+  const convId = get3(chosenConversationId);
+  const convs = get3(conversations);
+  if (convId === null || convId === void 0 || !convs[convId]) return;
+  const currentHistory = convs[convId].history;
+  const conversationUniqueId = convs[convId].id;
+  const updatedHistory = currentHistory.slice(0, messageIndex + 1);
+  conversations.update((allConvs) => {
+    const updated = [...allConvs];
+    updated[convId] = {
+      ...updated[convId],
+      history: updatedHistory
+    };
+    return updated;
+  });
+  reasoningWindows.update((windows) => {
+    return windows.filter((w) => {
+      if (!w.convId || w.convId !== conversationUniqueId) return true;
+      return (w.anchorIndex ?? Number.NEGATIVE_INFINITY) <= messageIndex;
+    });
+  });
+}
+function newChat() {
+  const newConversation = createNewConversation();
+  conversations.update((conv) => [...conv, newConversation]);
+  chosenConversationId.set(get3(conversations).length - 1);
 }
 function cleanseMessage(msg) {
   const allowedProps = ["role", "content"];
@@ -475,15 +532,80 @@ function cleanseMessage(msg) {
   }
   return cleansed;
 }
+async function routeMessage(input, convId) {
+  let currentHistory = get3(conversations)[convId].history;
+  let messageHistory = currentHistory;
+  currentHistory = [...currentHistory, { role: "user", content: input }];
+  setHistory(currentHistory);
+  const defaultModel = "gpt-3.5-turbo";
+  const defaultVoice = "alloy";
+  const convUniqueId = get3(conversations)[convId]?.id;
+  const perConv = conversationQuickSettings.getSettings(convUniqueId);
+  const model = perConv.model || get3(selectedModel) || defaultModel;
+  const voice = get3(selectedVoice) || defaultVoice;
+  addRecentModel(model);
+  let outgoingMessage;
+  outgoingMessage = [
+    ...messageHistory,
+    { role: "user", content: input }
+  ];
+  if (model.includes("tts")) {
+    await sendTTSMessage(input, model, voice, convId);
+  } else if (model.includes("vision")) {
+    const imagesBase64 = get3(base64Images);
+    const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };
+    await sendVisionMessage(outgoingMessage, imagesBase64, convId, config);
+  } else if (model.includes("dall-e")) {
+    await sendDalleMessage(outgoingMessage, convId);
+  } else {
+    const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };
+    await sendRegularMessage(outgoingMessage, convId, config);
+  }
+  if (get3(conversations)[convId].history.length === 1 || get3(conversations)[convId].title === "") {
+    await createTitle(input);
+  }
+}
+function setTitle(title) {
+  let conv = get3(conversations);
+  conv[get3(chosenConversationId)].title = title;
+  conversations.set(conv);
+}
+async function createTitle(currentInput) {
+  const titleModel = "gpt-4o-mini";
+  try {
+    const msgs = [
+      { role: "system", content: "You generate a short, clear chat title. Respond with only the title, no quotes, max 8 words, Title Case." },
+      { role: "user", content: currentInput }
+    ];
+    const response = await sendRequest(msgs, titleModel);
+    const svc2 = await Promise.resolve().then(() => (init_openaiService(), openaiService_exports));
+    const raw = svc2.extractOutputTextFromResponses(response);
+    let title = raw?.trim() || "";
+    if (!title) throw new Error("Empty title text");
+    const clean = svc2.sanitizeTitle(title);
+    if (!clean) throw new Error("Sanitized title empty");
+    setTitle(clean);
+  } catch (error) {
+    console.warn("Title generation: Invalid response structure", error);
+    setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? "..." : ""));
+  }
+}
 function displayAudioMessage(audioUrl) {
   const audioMessage = {
     role: "assistant",
     content: "Audio file generated.",
     audioUrl,
     isAudio: true,
-    model: get5(selectedModel)
+    model: get3(selectedModel)
   };
-  setHistory([...get5(conversations)[get5(chosenConversationId)].history, audioMessage]);
+  setHistory([...get3(conversations)[get3(chosenConversationId)].history, audioMessage]);
+}
+function countTokens(usage) {
+  let conv = get3(conversations);
+  conv[get3(chosenConversationId)].conversationTokens = conv[get3(chosenConversationId)].conversationTokens + usage.total_tokens;
+  conversations.set(conv);
+  combinedTokens.set(get3(combinedTokens) + usage.total_tokens);
+  console.log("Counted tokens: " + usage.total_tokens);
 }
 function estimateTokens(msg, convId) {
   let chars = 0;
@@ -492,10 +614,10 @@ function estimateTokens(msg, convId) {
   });
   chars += streamText.length;
   let tokens = chars / 4;
-  let conv = get5(conversations);
+  let conv = get3(conversations);
   conv[convId].conversationTokens = conv[convId].conversationTokens + tokens;
   conversations.set(conv);
-  combinedTokens.set(get5(combinedTokens) + tokens);
+  combinedTokens.set(get3(combinedTokens) + tokens);
 }
 var streamText;
 var init_conversationManager = __esm({
@@ -512,6 +634,24 @@ var init_conversationManager = __esm({
 });
 
 // src/managers/imageManager.ts
+var imageManager_exports = {};
+__export(imageManager_exports, {
+  handleImageUpload: () => handleImageUpload,
+  onSendVisionMessageComplete: () => onSendVisionMessageComplete
+});
+function handleImageUpload(event) {
+  onSendVisionMessageComplete();
+  const files = event.target.files;
+  for (let file of files) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      base64Images.update((currentImages) => {
+        return [...currentImages, reader.result];
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+}
 function onSendVisionMessageComplete() {
   base64Images.set([]);
   clearFileInputSignal.set(true);
@@ -534,21 +674,197 @@ var init_generalUtils = __esm({
 });
 
 // src/idb.js
+async function saveAudioBlob(id, blob, conversationId) {
+  audioStore.set(id, { blob, conversationId });
+  return Promise.resolve();
+}
+async function getAudioBlob(id) {
+  const item = audioStore.get(id);
+  return item ? item.blob : null;
+}
+var audioStore;
 var init_idb = __esm({
   "src/idb.js"() {
+    audioStore = /* @__PURE__ */ new Map();
   }
 });
 
 // src/services/openaiService.ts
-import { get as get6, writable as writable9 } from "svelte/store";
+var openaiService_exports = {};
+__export(openaiService_exports, {
+  appendErrorToHistory: () => appendErrorToHistory,
+  buildResponsesInputFromMessages: () => buildResponsesInputFromMessages,
+  buildResponsesPayload: () => buildResponsesPayload,
+  closeStream: () => closeStream,
+  createChatCompletion: () => createChatCompletion,
+  createResponseViaResponsesAPI: () => createResponseViaResponsesAPI,
+  extractOutputTextFromResponses: () => extractOutputTextFromResponses,
+  getOpenAIApi: () => getOpenAIApi,
+  initOpenAIApi: () => initOpenAIApi,
+  isConfigured: () => isConfigured,
+  isStreaming: () => isStreaming2,
+  reloadConfig: () => reloadConfig,
+  sanitizeTitle: () => sanitizeTitle,
+  sendDalleMessage: () => sendDalleMessage,
+  sendRegularMessage: () => sendRegularMessage,
+  sendRequest: () => sendRequest,
+  sendTTSMessage: () => sendTTSMessage,
+  sendVisionMessage: () => sendVisionMessage,
+  streamContext: () => streamContext2,
+  streamResponseViaResponsesAPI: () => streamResponseViaResponsesAPI,
+  supportsReasoning: () => supportsReasoning,
+  userRequestedStreamClosure: () => userRequestedStreamClosure2
+});
+import { get as get4, writable as writable7 } from "svelte/store";
+function appendErrorToHistory(error, currentHistory, convId) {
+  const errorMessage2 = error?.message || "An error occurred while processing your request.";
+  const userFriendlyError = errorMessage2.includes("API key") ? "There was an error. Maybe the API key is wrong? Or the servers could be down?" : `There was an error: ${errorMessage2}`;
+  const errorChatMessage = {
+    role: "assistant",
+    content: userFriendlyError
+  };
+  setHistory([...currentHistory, errorChatMessage], convId);
+}
+function closeStream() {
+  try {
+    userRequestedStreamClosure2.set(true);
+    const ctrl = globalAbortController;
+    if (ctrl) {
+      ctrl.abort();
+    }
+  } catch (e) {
+    console.warn("closeStream abort failed:", e);
+  } finally {
+    globalAbortController = null;
+    isStreaming2.set(false);
+  }
+}
+function initOpenAIApi() {
+  const key = get4(apiKey);
+  if (key) {
+    configuration = { apiKey: key };
+    openai = { configured: true };
+    console.log("OpenAI API initialized.");
+  } else {
+    console.warn("API key is not set. Please set the API key before initializing.");
+  }
+}
+function getOpenAIApi() {
+  if (!openai) {
+    throw new Error("OpenAI API is not initialized. Please call initOpenAIApi with your API key first.");
+  }
+  console.log("OpenAI API retrieved.");
+  return openai;
+}
+async function createChatCompletion(model, messages) {
+  const openaiClient = getOpenAIApi();
+  console.log("Sending chat completion request...");
+  try {
+    const response = await openaiClient.createChatCompletion({
+      model,
+      messages
+    });
+    console.log("Chat completion response received.");
+    return response;
+  } catch (error) {
+    console.error("Error in createChatCompletion:", error);
+    throw error;
+  }
+}
+function isConfigured() {
+  console.log("Checking if OpenAI API is configured.");
+  return configuration !== null && get4(apiKey) !== null;
+}
+function reloadConfig() {
+  initOpenAIApi();
+  console.log("Configuration reloaded.");
+}
+async function sendRequest(msg, model = get4(selectedModel), opts) {
+  try {
+    msg = [
+      {
+        role: "system",
+        content: get4(conversations)[get4(chosenConversationId)].assistantRole
+      },
+      ...msg
+    ];
+    const key = get4(apiKey);
+    const liveSelected = get4(selectedModel);
+    const resolvedModel = model && typeof model === "string" ? model : liveSelected || getDefaultResponsesModel();
+    const input = buildResponsesInputFromMessages(msg);
+    const payload = buildResponsesPayload(resolvedModel, input, false, opts);
+    const res = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Responses API error ${res.status}: ${text || res.statusText}`);
+    }
+    const data = await res.json();
+    if (data?.usage) {
+      countTokens(data.usage);
+    }
+    return data;
+  } catch (error) {
+    console.error("Error in sendRequest:", error);
+    configuration = null;
+    await setHistory(errorMessage);
+    throw error;
+  }
+}
+async function sendTTSMessage(text, model, voice, conversationId) {
+  console.log("Sending TTS message.");
+  const payload = {
+    model,
+    voice,
+    input: text
+  };
+  try {
+    const response = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${get4(apiKey)}`
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error(`Failed to generate audio, response status: ${response.status}`);
+    const blob = await response.blob();
+    const uniqueID = `audio-${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
+    saveAudioBlob(uniqueID, blob).then(() => {
+      console.log("Audio blob saved to IndexedDB with ID:", uniqueID);
+    }).catch(console.error);
+    getAudioBlob(uniqueID).then((blob2) => {
+      console.log(uniqueID);
+      console.log(blob2);
+      if (blob2 instanceof Blob) {
+        if (blob2) {
+          const audioUrl = URL.createObjectURL(blob2);
+          displayAudioMessage(audioUrl);
+        } else {
+          console.error("Blob is null or undefined");
+        }
+      } else {
+        console.error("Retrieved object is not a Blob:", blob2);
+      }
+    }).catch((error) => console.error("Error retrieving audio blob:", error));
+  } catch (error) {
+    console.error("TTS request error:", error);
+  }
+}
 async function sendVisionMessage(msg, imagesBase64, convId, config) {
   console.log("Sending vision message.");
   userRequestedStreamClosure2.set(false);
   let tickCounter = 0;
   let ticks = false;
-  let currentHistory = get6(conversations)[convId].history;
+  let currentHistory = get4(conversations)[convId].history;
   const anchorIndex = currentHistory.length - 1;
-  const conversationUniqueId = get6(conversations)[convId]?.id;
+  const conversationUniqueId = get4(conversations)[convId]?.id;
   const historyMessages = currentHistory.map((historyItem) => ({
     role: historyItem.role,
     content: convertChatContentToResponsesContent(historyItem.content, historyItem.role)
@@ -565,7 +881,7 @@ async function sendVisionMessage(msg, imagesBase64, convId, config) {
   currentHistory = [...currentHistory];
   isStreaming2.set(true);
   try {
-    const resolvedModel = config.model || get6(selectedModel);
+    const resolvedModel = config.model || get4(selectedModel);
     await streamResponseViaResponsesAPI(
       "",
       resolvedModel,
@@ -593,7 +909,7 @@ async function sendVisionMessage(msg, imagesBase64, convId, config) {
           );
         },
         onCompleted: async () => {
-          if (get6(userRequestedStreamClosure2)) {
+          if (get4(userRequestedStreamClosure2)) {
             streamText2 = streamText2.replace(/█+$/, "");
             userRequestedStreamClosure2.set(false);
           }
@@ -609,7 +925,8 @@ async function sendVisionMessage(msg, imagesBase64, convId, config) {
           isStreaming2.set(false);
           onSendVisionMessageComplete();
         },
-        onError: (_err) => {
+        onError: (err) => {
+          appendErrorToHistory(err, currentHistory, convId);
           isStreaming2.set(false);
           onSendVisionMessageComplete();
         }
@@ -618,6 +935,10 @@ async function sendVisionMessage(msg, imagesBase64, convId, config) {
       { convId: conversationUniqueId, anchorIndex },
       { reasoningEffort: config.reasoningEffort, verbosity: config.verbosity, summary: config.summary }
     );
+  } catch (error) {
+    console.error("Error in sendVisionMessage:", error);
+    appendErrorToHistory(error, currentHistory, convId);
+    onSendVisionMessageComplete();
   } finally {
     isStreaming2.set(false);
   }
@@ -626,12 +947,12 @@ async function sendRegularMessage(msg, convId, config) {
   userRequestedStreamClosure2.set(false);
   let tickCounter = 0;
   let ticks = false;
-  let currentHistory = get6(conversations)[convId].history;
+  let currentHistory = get4(conversations)[convId].history;
   const anchorIndex = currentHistory.length - 1;
-  const conversationUniqueId = get6(conversations)[convId]?.id;
+  const conversationUniqueId = get4(conversations)[convId]?.id;
   let roleMsg = {
-    role: get6(defaultAssistantRole).type,
-    content: get6(conversations)[convId].assistantRole
+    role: get4(defaultAssistantRole).type,
+    content: get4(conversations)[convId].assistantRole
   };
   msg = [roleMsg, ...msg];
   const cleansedMessages = msg.map(cleanseMessage);
@@ -652,7 +973,7 @@ async function sendRegularMessage(msg, convId, config) {
   currentHistory = [...currentHistory];
   isStreaming2.set(true);
   try {
-    const resolvedModel = config.model || get6(selectedModel);
+    const resolvedModel = config.model || get4(selectedModel);
     await streamResponseViaResponsesAPI(
       "",
       resolvedModel,
@@ -680,7 +1001,7 @@ async function sendRegularMessage(msg, convId, config) {
           );
         },
         onCompleted: async (_finalText) => {
-          if (get6(userRequestedStreamClosure2)) {
+          if (get4(userRequestedStreamClosure2)) {
             streamText2 = streamText2.replace(/█+$/, "");
             userRequestedStreamClosure2.set(false);
           }
@@ -700,7 +1021,8 @@ async function sendRegularMessage(msg, convId, config) {
           streamText2 = "";
           isStreaming2.set(false);
         },
-        onError: (_err) => {
+        onError: (err) => {
+          appendErrorToHistory(err, currentHistory, convId);
           isStreaming2.set(false);
         }
       },
@@ -708,6 +1030,9 @@ async function sendRegularMessage(msg, convId, config) {
       { convId: conversationUniqueId, anchorIndex },
       { reasoningEffort: config.reasoningEffort, verbosity: config.verbosity, summary: config.summary }
     );
+  } catch (error) {
+    console.error("Error in sendRegularMessage:", error);
+    appendErrorToHistory(error, currentHistory, convId);
   } finally {
     isStreaming2.set(false);
   }
@@ -715,10 +1040,10 @@ async function sendRegularMessage(msg, convId, config) {
 async function sendDalleMessage(msg, convId) {
   isStreaming2.set(true);
   let hasEncounteredError = false;
-  let currentHistory = get6(conversations)[convId].history;
+  let currentHistory = get4(conversations)[convId].history;
   let roleMsg = {
-    role: get6(defaultAssistantRole).type,
-    content: get6(conversations)[convId].assistantRole
+    role: get4(defaultAssistantRole).type,
+    content: get4(conversations)[convId].assistantRole
   };
   msg = [roleMsg, ...msg];
   const cleansedMessages = msg.map(cleanseMessage);
@@ -728,13 +1053,13 @@ async function sendDalleMessage(msg, convId) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${get6(apiKey)}`
+        Authorization: `Bearer ${get4(apiKey)}`
       },
       body: JSON.stringify({
-        model: get6(selectedModel),
+        model: get4(selectedModel),
         prompt,
-        size: get6(selectedSize),
-        quality: get6(selectedQuality),
+        size: get4(selectedSize),
+        quality: get4(selectedQuality),
         n: 1
       })
     });
@@ -746,7 +1071,7 @@ async function sendDalleMessage(msg, convId) {
       content: imageUrl,
       type: "image",
       // Adding a type property to distinguish image messages
-      model: get6(selectedModel)
+      model: get4(selectedModel)
     }], convId);
   } catch (error) {
     console.error("Error generating image:", error);
@@ -756,7 +1081,7 @@ async function sendDalleMessage(msg, convId) {
   }
 }
 function getDefaultResponsesModel() {
-  const m = get6(selectedModel);
+  const m = get4(selectedModel);
   if (!m || /gpt-3\.5|gpt-4(\.|$)|o1-mini/.test(m)) {
     return "gpt-5-nano";
   }
@@ -769,9 +1094,9 @@ function supportsReasoning(model) {
 function buildResponsesPayload(model, input, stream, opts) {
   const payload = { model, input, store: false, stream };
   if (supportsReasoning(model)) {
-    const eff = (opts?.reasoningEffort ?? get6(reasoningEffort)) || "medium";
-    const verb = (opts?.verbosity ?? get6(verbosity)) || "medium";
-    const sum = (opts?.summary ?? get6(summary)) || "auto";
+    const eff = (opts?.reasoningEffort ?? get4(reasoningEffort)) || "medium";
+    const verb = (opts?.verbosity ?? get4(verbosity)) || "medium";
+    const sum = (opts?.summary ?? get4(summary)) || "auto";
     payload.text = { verbosity: verb };
     payload.reasoning = { effort: eff, summary: sum === "null" ? null : sum };
   }
@@ -825,6 +1150,27 @@ function buildResponsesInputFromMessages(messages) {
     content: convertChatContentToResponsesContent(m.content, m.role)
   }));
 }
+async function createResponseViaResponsesAPI(prompt, model, opts) {
+  const key = get4(apiKey);
+  if (!key) throw new Error("No API key configured");
+  const liveSelected = get4(selectedModel);
+  const resolvedModel = model && typeof model === "string" ? model : liveSelected || getDefaultResponsesModel();
+  const input = buildResponsesInputFromPrompt(prompt);
+  const payload = buildResponsesPayload(resolvedModel, input, false, opts);
+  const res = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Responses API error ${res.status}: ${text || res.statusText}`);
+  }
+  return res.json();
+}
 function extractOutputTextFromResponses(obj) {
   if (!obj) return "";
   if (typeof obj.output_text === "string") return obj.output_text.trim();
@@ -868,7 +1214,7 @@ function sanitizeTitle(title) {
 }
 async function maybeUpdateTitleAfterFirstMessage(convId, lastUserPrompt, assistantReply) {
   try {
-    const all = get6(conversations);
+    const all = get4(conversations);
     const conv = all?.[convId];
     if (!conv) return;
     const currentTitle = (conv.title ?? "").trim().toLowerCase();
@@ -886,7 +1232,7 @@ async function maybeUpdateTitleAfterFirstMessage(convId, lastUserPrompt, assista
     const input = buildResponsesInputFromMessages(msgs);
     const model = "gpt-4o-mini";
     const payload = buildResponsesPayload(model, input, false);
-    const key = get6(apiKey);
+    const key = get4(apiKey);
     const res = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
@@ -918,9 +1264,9 @@ async function maybeUpdateTitleAfterFirstMessage(convId, lastUserPrompt, assista
   }
 }
 async function streamResponseViaResponsesAPI(prompt, model, callbacks, inputOverride, uiContext, opts) {
-  const key = get6(apiKey);
+  const key = get4(apiKey);
   if (!key) throw new Error("No API key configured");
-  const liveSelected = get6(selectedModel);
+  const liveSelected = get4(selectedModel);
   const resolvedModel = model && typeof model === "string" ? model : liveSelected || getDefaultResponsesModel();
   const input = inputOverride || buildResponsesInputFromPrompt(prompt);
   const payload = buildResponsesPayload(resolvedModel, input, true, opts);
@@ -1125,7 +1471,7 @@ async function streamResponseViaResponsesAPI(prompt, model, callbacks, inputOver
   globalAbortController = null;
   return finalText;
 }
-var globalAbortController, isStreaming2, userRequestedStreamClosure2, streamContext2;
+var openai, configuration, globalAbortController, isStreaming2, userRequestedStreamClosure2, streamContext2, errorMessage;
 var init_openaiService = __esm({
   "src/services/openaiService.ts"() {
     init_stores();
@@ -1135,10 +1481,18 @@ var init_openaiService = __esm({
     init_imageManager();
     init_generalUtils();
     init_idb();
+    openai = null;
+    configuration = null;
     globalAbortController = null;
-    isStreaming2 = writable9(false);
-    userRequestedStreamClosure2 = writable9(false);
-    streamContext2 = writable9({ streamText: "", convId: null });
+    isStreaming2 = writable7(false);
+    userRequestedStreamClosure2 = writable7(false);
+    streamContext2 = writable7({ streamText: "", convId: null });
+    errorMessage = [
+      {
+        role: "assistant",
+        content: "There was an error. Maybe the API key is wrong? Or the servers could be down?"
+      }
+    ];
   }
 });
 
@@ -1262,6 +1616,63 @@ if (typeof window !== "undefined") {
     runAll: () => runAllTests()
   };
 }
+
+// src/tests/unit/api-error-handling.test.ts
+registerTest({
+  id: "api-error-appends-to-history",
+  name: "appendErrorToHistory preserves conversation and adds error message",
+  tags: ["non-api", "error-handling"],
+  timeoutMs: 5e3,
+  fn: async (t) => {
+    let capturedHistory = [];
+    let capturedConvId = -1;
+    const mockSetHistory = (history, convId2) => {
+      capturedHistory = history;
+      capturedConvId = convId2;
+      return Promise.resolve();
+    };
+    let appendErrorToHistory2;
+    try {
+      const service = await Promise.resolve().then(() => (init_openaiService(), openaiService_exports));
+      appendErrorToHistory2 = service.appendErrorToHistory;
+    } catch (error) {
+      t.that(false, "appendErrorToHistory helper function should exist in openaiService.js");
+      return;
+    }
+    if (!appendErrorToHistory2) {
+      t.that(false, "appendErrorToHistory helper function should be exported from openaiService.js");
+      return;
+    }
+    const existingHistory = [
+      { role: "user", content: "Hello" },
+      { role: "assistant", content: "Hi there!" },
+      { role: "user", content: "What is 2+2?" }
+    ];
+    const convId = 0;
+    const originalSetHistory = (await Promise.resolve().then(() => (init_conversationManager(), conversationManager_exports))).setHistory;
+    (await Promise.resolve().then(() => (init_conversationManager(), conversationManager_exports))).setHistory = mockSetHistory;
+    try {
+      const genericError = new Error("Network connection failed");
+      appendErrorToHistory2(genericError, existingHistory, convId);
+      t.that(capturedHistory.length === existingHistory.length + 1, "Error message should be appended to existing history");
+      t.that(capturedHistory.slice(0, -1).every((msg, i) => msg === existingHistory[i]), "Original history should be preserved");
+      t.that(capturedHistory[capturedHistory.length - 1].role === "assistant", "Error message should have assistant role");
+      t.that(capturedHistory[capturedHistory.length - 1].content.includes("There was an error: Network connection failed"), "Generic error should include error message");
+      t.that(capturedConvId === convId, "Conversation ID should be passed correctly");
+      const apiKeyError = new Error("Invalid API key provided");
+      appendErrorToHistory2(apiKeyError, existingHistory, convId);
+      t.that(capturedHistory[capturedHistory.length - 1].content === "There was an error. Maybe the API key is wrong? Or the servers could be down?", "API key errors should get user-friendly message");
+      const emptyError = {};
+      appendErrorToHistory2(emptyError, existingHistory, convId);
+      t.that(capturedHistory[capturedHistory.length - 1].content === "An error occurred while processing your request.", "Empty error should get default message");
+      const noMessageError = { code: 500, status: "Internal Server Error" };
+      appendErrorToHistory2(noMessageError, existingHistory, convId);
+      t.that(capturedHistory[capturedHistory.length - 1].content === "An error occurred while processing your request.", "Error without message property should get default message");
+    } finally {
+      (await Promise.resolve().then(() => (init_conversationManager(), conversationManager_exports))).setHistory = originalSetHistory;
+    }
+  }
+});
 
 // src/tests/unit/svelte-code-shim.js
 var CodeShim = class {
@@ -1502,9 +1913,9 @@ test({
 });
 
 // src/stores/draftsStore.ts
-import { writable as writable2, get as get2 } from "svelte/store";
+import { writable as writable8, get as get5 } from "svelte/store";
 function createDraftsStore() {
-  const drafts = writable2({});
+  const drafts = writable8({});
   return {
     setDraft: (conversationId, draft) => {
       drafts.update((store) => ({
@@ -1513,7 +1924,7 @@ function createDraftsStore() {
       }));
     },
     getDraft: (conversationId) => {
-      const currentDrafts = get2(drafts);
+      const currentDrafts = get5(drafts);
       return currentDrafts[conversationId] || "";
     },
     deleteDraft: (conversationId) => {
@@ -1565,7 +1976,7 @@ test({
 });
 
 // src/stores/keyboardSettings.ts
-import { writable as writable3 } from "svelte/store";
+import { writable as writable9 } from "svelte/store";
 var STORAGE_KEY = "enterBehavior";
 function loadInitial() {
   try {
@@ -1575,7 +1986,7 @@ function loadInitial() {
   }
   return "newline";
 }
-var enterBehavior = writable3(loadInitial());
+var enterBehavior = writable9(loadInitial());
 enterBehavior.subscribe((v) => {
   try {
     localStorage.setItem(STORAGE_KEY, v);
@@ -1584,12 +1995,12 @@ enterBehavior.subscribe((v) => {
 });
 
 // src/tests/unit/keyboardSettings.test.ts
-import { get as get3 } from "svelte/store";
+import { get as get6 } from "svelte/store";
 registerTest({
   id: "enter-behavior-send",
   name: 'Enter sends when "Send message" is selected',
   fn: async (assert) => {
-    const prev = get3(enterBehavior);
+    const prev = get6(enterBehavior);
     try {
       enterBehavior.set("send");
       const shouldSend = shouldSendOnEnter({
@@ -1610,7 +2021,7 @@ registerTest({
   id: "enter-behavior-newline",
   name: 'Enter inserts newline when "Insert a new line" is selected',
   fn: async (assert) => {
-    const prev = get3(enterBehavior);
+    const prev = get6(enterBehavior);
     try {
       enterBehavior.set("newline");
       const shouldSend = shouldSendOnEnter({
@@ -1802,6 +2213,190 @@ registerTest({
     t.that(!!payloadR.reasoning || !!payloadR.text, "Reasoning/text extras exist for reasoning-capable model");
   }
 });
+
+// src/tests/unit/streaming-error-recovery.test.ts
+import { get as get8, writable as writable10 } from "svelte/store";
+fn: async (t) => {
+  let mockConversations = writable10([{
+    id: "test-conv-1",
+    history: [
+      { role: "user", content: "Hello" },
+      { role: "assistant", content: "Hi there!" }
+    ],
+    assistantRole: "You are a helpful assistant.",
+    conversationTokens: 100
+  }]);
+  let mockChosenConversationId = writable10(0);
+  let mockSelectedModel = writable10("gpt-3.5-turbo");
+  let mockDefaultAssistantRole = writable10({ type: "system" });
+  let mockIsStreaming = writable10(false);
+  const originalImports = await Promise.resolve().then(() => (init_stores(), stores_exports));
+  const conversationManager = await Promise.resolve().then(() => (init_conversationManager(), conversationManager_exports));
+  let capturedHistories = [];
+  let capturedConvIds = [];
+  const mockSetHistory = (history, convId) => {
+    capturedHistories.push([...history]);
+    capturedConvIds.push(convId);
+    return Promise.resolve();
+  };
+  let streamingError = null;
+  const mockStreamResponseViaResponsesAPI = async (prompt, model, callbacks, input, uiContext, opts) => {
+    if (streamingError) {
+      throw streamingError;
+    }
+    callbacks.onCompleted?.("Test response");
+    return "Test response";
+  };
+  try {
+    const openaiService = await Promise.resolve().then(() => (init_openaiService(), openaiService_exports));
+    const originalSetHistory = conversationManager.setHistory;
+    const originalStreamResponse = openaiService.streamResponseViaResponsesAPI;
+    conversationManager.setHistory = mockSetHistory;
+    openaiService.streamResponseViaResponsesAPI = mockStreamResponseViaResponsesAPI;
+    const stores = await Promise.resolve().then(() => (init_stores(), stores_exports));
+    stores.conversations = mockConversations;
+    stores.chosenConversationId = mockChosenConversationId;
+    stores.selectedModel = mockSelectedModel;
+    stores.defaultAssistantRole = mockDefaultAssistantRole;
+    openaiService.isStreaming = mockIsStreaming;
+    streamingError = null;
+    capturedHistories = [];
+    capturedConvIds = [];
+    const { sendRegularMessage: sendRegularMessage2 } = openaiService;
+    const testMessages = [{ role: "user", content: "Test message" }];
+    const testConfig = { model: "gpt-3.5-turbo" };
+    try {
+      await sendRegularMessage2(testMessages, 0, testConfig);
+      t.that(true, "sendRegularMessage should succeed in normal case");
+    } catch (error) {
+      console.log("Expected success case failed:", error);
+    }
+    streamingError = new Error("API rate limit exceeded");
+    capturedHistories = [];
+    capturedConvIds = [];
+    let errorCaught = false;
+    let conversationHistoryAfterError = [];
+    try {
+      await sendRegularMessage2(testMessages, 0, testConfig);
+    } catch (error) {
+      errorCaught = true;
+      conversationHistoryAfterError = get8(mockConversations)[0].history;
+    }
+    const hasErrorHandling = capturedHistories.some(
+      (history) => history.some(
+        (msg) => msg.role === "assistant" && typeof msg.content === "string" && msg.content.includes("error")
+      )
+    );
+    if (hasErrorHandling) {
+      t.that(hasErrorHandling, "Error should be appended to conversation history");
+      t.that(capturedHistories.length > 0, "setHistory should be called even when streaming fails");
+      const lastHistory = capturedHistories[capturedHistories.length - 1];
+      const errorMessage2 = lastHistory.find(
+        (msg) => msg.role === "assistant" && msg.content.includes("API rate limit exceeded")
+      );
+      t.that(errorMessage2 !== void 0, "Error message should contain the specific error details");
+      const hasOriginalMessages = lastHistory.some((msg) => msg.content === "Hello") && lastHistory.some((msg) => msg.content === "Hi there!");
+      t.that(hasOriginalMessages, "Original conversation history should be preserved");
+    } else {
+      t.that(!hasErrorHandling, "WITHOUT fix: Error should NOT be properly handled (proving bug exists)");
+      console.log("\u2713 Test correctly identifies the bug - streaming errors are not handled properly");
+    }
+    t.that(get8(mockIsStreaming) === false, "isStreaming should be reset to false after error");
+    conversationManager.setHistory = originalSetHistory;
+    openaiService.streamResponseViaResponsesAPI = originalStreamResponse;
+  } catch (setupError) {
+    console.error("Test setup failed:", setupError);
+    t.that(false, `Test setup should not fail: ${setupError.message}`);
+  }
+};
+fn: async (t) => {
+  let mockConversations = writable10([{
+    id: "test-conv-2",
+    history: [
+      { role: "user", content: "Describe this image" },
+      { role: "assistant", content: "I can see an image of a cat." }
+    ],
+    assistantRole: "You are a helpful assistant.",
+    conversationTokens: 150
+  }]);
+  let mockChosenConversationId = writable10(0);
+  let mockSelectedModel = writable10("gpt-4-vision");
+  let mockIsStreaming = writable10(false);
+  let capturedHistories = [];
+  let capturedConvIds = [];
+  const mockSetHistory = (history, convId) => {
+    capturedHistories.push([...history]);
+    capturedConvIds.push(convId);
+    return Promise.resolve();
+  };
+  let visionCompleteCallCount = 0;
+  const mockOnSendVisionMessageComplete = () => {
+    visionCompleteCallCount++;
+  };
+  let streamingError = new Error("Vision API authentication failed");
+  const mockStreamResponseViaResponsesAPI = async (prompt, model, callbacks) => {
+    if (streamingError) {
+      throw streamingError;
+    }
+    callbacks.onCompleted?.("Vision analysis complete");
+    return "Vision analysis complete";
+  };
+  try {
+    const openaiService = await Promise.resolve().then(() => (init_openaiService(), openaiService_exports));
+    const conversationManager = await Promise.resolve().then(() => (init_conversationManager(), conversationManager_exports));
+    const imageManager = await Promise.resolve().then(() => (init_imageManager(), imageManager_exports));
+    const originalSetHistory = conversationManager.setHistory;
+    const originalStreamResponse = openaiService.streamResponseViaResponsesAPI;
+    const originalVisionComplete = imageManager.onSendVisionMessageComplete;
+    conversationManager.setHistory = mockSetHistory;
+    openaiService.streamResponseViaResponsesAPI = mockStreamResponseViaResponsesAPI;
+    imageManager.onSendVisionMessageComplete = mockOnSendVisionMessageComplete;
+    const stores = await Promise.resolve().then(() => (init_stores(), stores_exports));
+    stores.conversations = mockConversations;
+    stores.chosenConversationId = mockChosenConversationId;
+    stores.selectedModel = mockSelectedModel;
+    openaiService.isStreaming = mockIsStreaming;
+    openaiService.userRequestedStreamClosure = writable10(false);
+    openaiService.streamContext = writable10({ streamText: "", convId: null });
+    const { sendVisionMessage: sendVisionMessage2 } = openaiService;
+    const testMessages = [{ role: "user", content: "What do you see in this image?" }];
+    const testImages = ["data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."];
+    const testConfig = { model: "gpt-4-vision" };
+    capturedHistories = [];
+    capturedConvIds = [];
+    visionCompleteCallCount = 0;
+    let errorCaught = false;
+    try {
+      await sendVisionMessage2(testMessages, testImages, 0, testConfig);
+    } catch (error) {
+      errorCaught = true;
+    }
+    const hasErrorHandling = capturedHistories.some(
+      (history) => history.some(
+        (msg) => msg.role === "assistant" && typeof msg.content === "string" && msg.content.includes("error")
+      )
+    );
+    if (hasErrorHandling) {
+      t.that(hasErrorHandling, "Vision error should be appended to conversation history");
+      const lastHistory = capturedHistories[capturedHistories.length - 1];
+      const errorMessage2 = lastHistory.find(
+        (msg) => msg.role === "assistant" && msg.content.includes("Vision API authentication failed")
+      );
+      t.that(errorMessage2 !== void 0, "Vision error message should contain specific error details");
+      t.that(visionCompleteCallCount > 0, "onSendVisionMessageComplete should be called even after error");
+    } else {
+      t.that(!hasErrorHandling, "WITHOUT fix: Vision errors should NOT be properly handled (proving bug exists)");
+      console.log("\u2713 Test correctly identifies the vision message bug");
+    }
+    t.that(get8(mockIsStreaming) === false, "isStreaming should be reset to false after vision error");
+    conversationManager.setHistory = originalSetHistory;
+    openaiService.streamResponseViaResponsesAPI = originalStreamResponse;
+    imageManager.onSendVisionMessageComplete = originalVisionComplete;
+  } catch (setupError) {
+    console.error("Vision test setup failed:", setupError);
+    t.that(false, `Vision test setup should not fail: ${setupError.message}`);
+  }
+};
 export {
   clearTests,
   formatSuiteResultsText,

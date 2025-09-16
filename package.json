@@ -41,5 +41,9 @@
     "puppeteer": "^22.6.1",
     "sse.js": "^0.6.1",
     "svelte-markdown": "^0.2.3"
+  },
+  "volta": {
+    "node": "18.20.5",
+    "npm": "10.2.4"
   }
 }
