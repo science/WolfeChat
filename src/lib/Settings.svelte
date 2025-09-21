@@ -1,9 +1,11 @@
 <script lang="ts">
     import { selectedModel, selectedVoice, selectedMode, showTokens, selectedSize, selectedQuality } from '../stores/stores.js';
+    import { selectedProvider, openaiApiKey, anthropicApiKey, currentApiKey } from '../stores/providerStore.js';
     import { modelsStore } from '../stores/modelStore.js';
     import { recentModelsStore } from '../stores/recentModelsStore.js';
     import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
     import { supportsReasoning } from '../services/openaiService.js';
+    import { fetchAnthropicModels, isAnthropicModel } from '../services/anthropicService.js';
     import { createEventDispatcher } from 'svelte';
     import CloseIcon from "../assets/close.svg";
     import { writable, get, derived } from "svelte/store";
@@ -30,14 +32,42 @@
   $: $selectedMode, updateFilteredRecentModels();
   $: $recentModelsStore, updateFilteredRecentModels();
 
-  let localApiTextField: string = get(apiKey) || ''; 
-  $: localApiTextField = $apiKey || '';
+  // Provider-aware API key handling
+  let localApiTextField: string = get(currentApiKey) || '';
+  $: localApiTextField = $currentApiKey || '';
 
   let apiTextField = '';
-  apiKey.subscribe(value => {
+  currentApiKey.subscribe(value => {
     apiTextField = value || '';
     localApiTextField = apiTextField;
   });
+
+  // Handle provider switching
+  function handleProviderChange() {
+    // Don't trigger during initial load
+    if (!get(selectedProvider)) return;
+
+    // Update local field with new provider's API key
+    localApiTextField = get(currentApiKey) || '';
+
+    // Check if both API keys are available for combined model list
+    const openaiKey = get(openaiApiKey);
+    const anthropicKey = get(anthropicApiKey);
+
+    if (openaiKey && anthropicKey) {
+      // Both keys available - show combined model list
+      fetchAllModels();
+    } else if (localApiTextField) {
+      // Only current provider's key available
+      fetchModels(localApiTextField);
+    } else {
+      // No key for current provider
+      modelsStore.set([]);
+    }
+  }
+
+  // Watch for provider changes
+  $: $selectedProvider && handleProviderChange();
 
   let assistantRoleField = $defaultAssistantRole.role;
   let assistantRoleTypeField = $defaultAssistantRole.type;
@@ -67,7 +97,11 @@ onMount(async() => {
         let newFilteredModels = [];
 
         if (mode === "GPT") {
-            newFilteredModels = availableModels.filter(model => model.id.includes('gpt') && !model.id.includes('vision'));
+            // Include both GPT and Claude chat models (but not vision, dalle, or tts)
+            newFilteredModels = availableModels.filter(model =>
+                (model.id.includes('gpt') && !model.id.includes('vision')) ||
+                (model.id.startsWith('claude-') && !model.id.includes('vision'))
+            );
         } else if (mode === "GPT + Vision") {
             newFilteredModels = availableModels.filter(model => model.id.includes('vision'));
         } else if (mode === "Dall-E") {
@@ -90,7 +124,11 @@ onMount(async() => {
         let newFilteredRecent = [];
 
         if (mode === "GPT") {
-            newFilteredRecent = recent.filter(model => model.id.includes('gpt') && !model.id.includes('vision'));
+            // Include both GPT and Claude chat models in recent
+            newFilteredRecent = recent.filter(model =>
+                (model.id.includes('gpt') && !model.id.includes('vision')) ||
+                (model.id.startsWith('claude-') && !model.id.includes('vision'))
+            );
         } else if (mode === "GPT + Vision") {
             newFilteredRecent = recent.filter(model => model.id.includes('vision'));
         } else if (mode === "Dall-E") {
@@ -102,16 +140,28 @@ onMount(async() => {
         filteredRecentModels.set(newFilteredRecent);
     }
 async function initializeSettings() {
-    const savedMode = localStorage.getItem("selectedMode");
-    selectedMode.set(savedMode || "GPT"); 
+    // Always use GPT mode since we removed mode selection
+    selectedMode.set("GPT");
 
     // Auto-refresh if cache is empty when opening settings
     const cachedModels = get(modelsStore);
-    if ((!cachedModels || cachedModels.length === 0) && (apiTextField || get(apiKey))) {
-        await fetchModels(get(apiKey) || apiTextField);
+    const openaiKey = get(openaiApiKey);
+    const anthropicKey = get(anthropicApiKey);
+
+    if ((!cachedModels || cachedModels.length === 0)) {
+        if (openaiKey && anthropicKey) {
+            // Both keys available - fetch all models
+            await fetchAllModels();
+        } else if (openaiKey || anthropicKey) {
+            // Only one provider available
+            const key = get(currentApiKey);
+            if (key) {
+                await fetchModels(key);
+            }
+        }
     }
 
-    updateFilteredModels(); 
+    updateFilteredModels();
     updateFilteredRecentModels();
 }
 
@@ -123,34 +173,43 @@ async function checkAPIConnection() {
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/models', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localApiTextField}`,
-        'Content-Type': 'application/json'
-      },
-    });
-
-    if (response.ok) {
+    if ($selectedProvider === 'Anthropic') {
+      // Validate Anthropic API key
+      await fetchAnthropicModels(localApiTextField);
       showMessage.set("green");
-      apiCheckMessage.set("API connection succeeded.");
-      // Optionally, reload settings or models here
-      handleSave();
-      await fetchModels(apiTextField);
-      updateFilteredModels(); 
+      apiCheckMessage.set("Anthropic API connection succeeded.");
     } else {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Existing OpenAI validation
+      const response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localApiTextField}`,
+          'Content-Type': 'application/json'
+        },
+      });
+
+      if (response.ok) {
+        showMessage.set("green");
+        apiCheckMessage.set("OpenAI API connection succeeded.");
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     }
+
+    // Save the settings and refresh models
+    handleSave();
+    await fetchModels(localApiTextField);
+    updateFilteredModels();
   } catch (error) {
-    console.error("API connection failed:", error);
+    console.error(`${$selectedProvider} API connection failed:`, error);
     showMessage.set("red");
-    apiCheckMessage.set("API connection failed.");
+    apiCheckMessage.set(`${$selectedProvider} API connection failed: ${error.message}`);
   }
 }
 
 
 
-async function fetchModels(apiKey: string) {
+async function fetchModels(apiKey: string, provider?: string) {
   if (!apiKey) {
     showMessage.set("yellow");
     console.log("showMessage", showMessage)
@@ -158,39 +217,106 @@ async function fetchModels(apiKey: string) {
     return;
   }
 
-  try {
-    const response = await fetch('https://api.openai.com/v1/models', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-    });
+  const targetProvider = provider || get(selectedProvider);
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+  try {
+    let models = [];
+
+    if (targetProvider === 'OpenAI') {
+      const response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      models = data.data.map(model => ({ ...model, provider: 'openai' }));
+    } else if (targetProvider === 'Anthropic') {
+      models = await fetchAnthropicModels(apiKey);
     }
 
-    const data = await response.json();
-    const sortedModels = data.data.sort((a, b) => a.id.localeCompare(b.id));
+    const sortedModels = models.sort((a, b) => a.id.localeCompare(b.id));
     modelsStore.set(sortedModels);
     // Persistence handled by modelsStore subscriber
   } catch (error) {
-    console.error("Failed to fetch models:", error);
+    console.error(`Failed to fetch ${targetProvider} models:`, error);
+    showMessage.set("red");
+    apiCheckMessage.set(`Failed to fetch ${targetProvider} models.`);
+  }
+}
+
+// Fetch models from all providers when both API keys are available
+async function fetchAllModels() {
+  const openaiKey = get(openaiApiKey);
+  const anthropicKey = get(anthropicApiKey);
+  let allModels = [];
+
+  try {
+    if (openaiKey) {
+      const response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${openaiKey}`,
+          'Content-Type': 'application/json'
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const openaiModels = data.data.map(model => ({ ...model, provider: 'openai' }));
+        allModels.push(...openaiModels);
+      }
+    }
+
+    if (anthropicKey) {
+      try {
+        const anthropicModels = await fetchAnthropicModels(anthropicKey);
+        allModels.push(...anthropicModels);
+      } catch (error) {
+        console.log("Anthropic models fetch failed:", error);
+      }
+    }
+
+    if (allModels.length > 0) {
+      const sortedModels = allModels.sort((a, b) => a.id.localeCompare(b.id));
+      modelsStore.set(sortedModels);
+    }
+  } catch (error) {
+    console.error("Failed to fetch models from providers:", error);
   }
 }
 
 let isRefreshing = false;
 async function refreshModels() {
-  const key = get(apiKey) || localApiTextField;
-  if (!key) {
+  const openaiKey = get(openaiApiKey);
+  const anthropicKey = get(anthropicApiKey);
+
+  if (!openaiKey && !anthropicKey) {
     showMessage.set("yellow");
     apiCheckMessage.set("API key is missing.");
     return;
   }
+
   try {
     isRefreshing = true;
-    await fetchModels(key);
+
+    if (openaiKey && anthropicKey) {
+      // Both keys available - fetch from all providers
+      await fetchAllModels();
+    } else {
+      // Only one provider available
+      const key = get(currentApiKey);
+      if (key) {
+        await fetchModels(key);
+      }
+    }
+
     updateFilteredModels();
   } finally {
     isRefreshing = false;
@@ -202,6 +328,15 @@ async function refreshModels() {
 
   function handleSave() {
   defaultAssistantRole.set({ role: assistantRoleField, type: assistantRoleTypeField });
+
+  // Save to the correct provider-specific store
+  if ($selectedProvider === 'OpenAI') {
+    openaiApiKey.set(localApiTextField);
+  } else {
+    anthropicApiKey.set(localApiTextField);
+  }
+
+  // Keep legacy apiKey for backward compatibility
   apiKey.set(localApiTextField);
 
   localStorage.setItem('selectedModel', get(selectedModel));
@@ -238,8 +373,19 @@ handleClose();
         <img class="icon-white w-8" alt="Close" src={CloseIcon} />
       </button>
       <h2 class="text-xl font-bold mb-4">Settings</h2>
-    <div class="mb-4">
-  <label for="api-key" class="block font-medium mb-2">API Key</label>
+
+    <!-- Provider configuration group -->
+    <div class="border border-gray-600 rounded-lg p-4 mb-6">
+      <div class="mb-4">
+        <label for="provider-selection" class="block font-medium mb-2">Provider</label>
+        <select bind:value={$selectedProvider} class="border text-black border-gray-300 p-2 rounded w-full" id="provider-selection">
+          <option value="OpenAI">OpenAI</option>
+          <option value="Anthropic">Anthropic</option>
+        </select>
+      </div>
+
+      <div class="mb-4">
+    <label for="api-key" class="block font-medium mb-2">{$selectedProvider} API Key</label>
   <div class="flex items-center">
     <input
       type="password"
@@ -265,15 +411,6 @@ handleClose();
 </div>
 
 
-      <div class="mb-4">
-        <label for="mode-selection" class="block font-medium mb-2">Mode Selection</label>
-        <select bind:value={$selectedMode} class="border text-black border-gray-300 p-2 rounded w-full" id="mode-selection">
-          <option value="GPT">GPT</option>
-          <option value="GPT + Vision">GPT + Vision</option>
-          <option value="Dall-E">Dall-E</option>
-          <option value="TTS">TTS</option>
-        </select>
-      </div>
       
 
       <div class="mb-4">
@@ -293,14 +430,14 @@ handleClose();
       {#if $filteredRecentModels && $filteredRecentModels.length}
         <optgroup label="Recently used">
           {#each $filteredRecentModels as r}
-            <option value={r.id}>{r.id}</option>
+            <option value={r.id}>{r.id}{r.provider ? ` (${r.provider === 'openai' ? 'OpenAI' : 'Anthropic'})` : ''}</option>
           {/each}
         </optgroup>
       {/if}
       <optgroup label="All models">
         {#each $filteredModels as model}
           {#if !$filteredRecentModels.find(r => r.id === model.id)}
-            <option value={model.id}>{model.id}</option>
+            <option value={model.id}>{model.id}{model.provider ? ` (${model.provider === 'openai' ? 'OpenAI' : 'Anthropic'})` : ''}</option>
           {/if}
         {/each}
       </optgroup>
@@ -338,6 +475,9 @@ handleClose();
         </div>
         {/if}
       </div>
+    </div>
+    <!-- End provider configuration group -->
+
       {#if $selectedModel.startsWith('tts')}
 <div class="mb-4">
   <label for="voice-selection" class="block font-medium mb-2">Voice Selection</label>

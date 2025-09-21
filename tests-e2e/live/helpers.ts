@@ -78,11 +78,18 @@ export async function openSettings(page: Page) {
   }
 }
 
-export async function bootstrapLiveAPI(page: Page) {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) throw new Error('OPENAI_API_KEY env not set for live tests.');
+export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthropic' = 'OpenAI') {
+  const key = provider === 'OpenAI'
+    ? process.env.OPENAI_API_KEY
+    : process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error(`${provider} API key env not set for live tests.`);
 
   await openSettings(page);
+
+  // Select provider first
+  const providerSelect = page.locator('#provider-selection');
+  await expect(providerSelect).toBeVisible();
+  await providerSelect.selectOption(provider);
 
   const apiInput = page.locator('#api-key');
   await expect(apiInput).toBeVisible();
@@ -133,6 +140,65 @@ export async function bootstrapLiveAPI(page: Page) {
   await expect(saveBtn).toBeVisible();
   await saveBtn.click();
   await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
+}
+
+export async function selectProvider(page: Page, provider: 'OpenAI' | 'Anthropic') {
+  await openSettings(page);
+  const providerSelect = page.locator('#provider-selection');
+  await expect(providerSelect).toBeVisible();
+  await providerSelect.selectOption(provider);
+}
+
+export async function setProviderApiKey(page: Page, provider: 'OpenAI' | 'Anthropic', apiKey: string) {
+  await selectProvider(page, provider);
+  const apiInput = page.locator('#api-key');
+  await expect(apiInput).toBeVisible();
+  await apiInput.fill(apiKey);
+  const checkBtn = page.getByRole('button', { name: /check api/i });
+  await expect(checkBtn).toBeVisible();
+  await checkBtn.click();
+
+  // Wait for models to populate
+  const modelSelect = page.locator('#model-selection');
+  await expect(modelSelect.locator('option').nth(1)).toBeVisible({ timeout: 15000 });
+}
+
+export async function getVisibleModels(page: Page): Promise<string[]> {
+  const modelSelect = page.locator('#model-selection');
+  const options = await modelSelect.locator('option').all();
+  const models = [];
+  for (const option of options) {
+    const text = await option.textContent();
+    if (text && text !== 'Select a model...' && text.trim() !== '') {
+      models.push(text.trim());
+    }
+  }
+  return models;
+}
+
+export async function verifyProviderIndicators(page: Page, expectedProviders: string[]) {
+  const models = await getVisibleModels(page);
+  for (const provider of expectedProviders) {
+    const hasProvider = models.some(m => m.includes(`(${provider})`));
+    expect(hasProvider).toBe(true);
+  }
+}
+
+export async function bootstrapBothProviders(page: Page) {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+  if (!openaiKey) throw new Error('OPENAI_API_KEY env not set for live tests.');
+  if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY env not set for live tests.');
+
+  await setProviderApiKey(page, 'OpenAI', openaiKey);
+  await setProviderApiKey(page, 'Anthropic', anthropicKey);
+
+  // Close settings
+  const closeBtn = page.getByRole('button', { name: /close|×/i });
+  if (await closeBtn.isVisible().catch(() => false)) {
+    await closeBtn.click();
+  }
 }
 
 export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-open' | 'ensure-closed' | 'open' | 'close', model?: string | RegExp, reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high', verbosity?: 'low' | 'medium' | 'high', summary?: 'auto' | 'detailed' | 'null', closeAfter?: boolean } = {}) {

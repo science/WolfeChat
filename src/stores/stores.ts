@@ -19,6 +19,9 @@ export const helpVisible = writable(false)
 export const debugVisible = writable(false)
 export const menuVisible = writable(false)
 
+// Import provider store
+import { currentApiKey } from './providerStore.js';
+
 let storedApiKey = localStorage.getItem("api_key")
 let parsedApiKey = storedApiKey !== null ? JSON.parse(storedApiKey) : null;
 
@@ -41,9 +44,12 @@ try {
 
 const initialApiKey: string | null = parsedApiKey ?? envApiKey ?? null;
 
+// Keep legacy apiKey for backward compatibility, but use currentApiKey from provider store
 export const apiKey:Writable<string|null> = writable(initialApiKey)
-// Persist to localStorage so downstream code keeps reading from the same source
 apiKey.subscribe((value) => localStorage.setItem("api_key", JSON.stringify(value)));
+
+// Re-export currentApiKey from provider store for easy access
+export { currentApiKey };
 
 let storedCombinedTokens = localStorage.getItem('combined_tokens');
 let parsedCombinedTokens: number = storedCombinedTokens !== null ? JSON.parse(storedCombinedTokens) : 0;

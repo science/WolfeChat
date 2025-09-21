@@ -36,6 +36,45 @@ var init_testModel = __esm({
   }
 });
 
+// src/stores/providerStore.ts
+import { writable } from "svelte/store";
+import { derived } from "svelte/store";
+var storedProvider, selectedProvider, storedOpenAIKey, parsedOpenAIKey, openaiApiKey, storedAnthropicKey, parsedAnthropicKey, anthropicApiKey, currentApiKey;
+var init_providerStore = __esm({
+  "src/stores/providerStore.ts"() {
+    storedProvider = localStorage.getItem("selectedProvider");
+    selectedProvider = writable(storedProvider || "OpenAI");
+    selectedProvider.subscribe((value) => {
+      localStorage.setItem("selectedProvider", value);
+    });
+    storedOpenAIKey = localStorage.getItem("openai_api_key");
+    parsedOpenAIKey = storedOpenAIKey !== null ? JSON.parse(storedOpenAIKey) : null;
+    if (!parsedOpenAIKey) {
+      const legacyKey = localStorage.getItem("api_key");
+      if (legacyKey) {
+        parsedOpenAIKey = JSON.parse(legacyKey);
+        localStorage.setItem("openai_api_key", JSON.stringify(parsedOpenAIKey));
+      }
+    }
+    openaiApiKey = writable(parsedOpenAIKey);
+    openaiApiKey.subscribe((value) => {
+      localStorage.setItem("openai_api_key", JSON.stringify(value));
+    });
+    storedAnthropicKey = localStorage.getItem("anthropic_api_key");
+    parsedAnthropicKey = storedAnthropicKey !== null ? JSON.parse(storedAnthropicKey) : null;
+    anthropicApiKey = writable(parsedAnthropicKey);
+    anthropicApiKey.subscribe((value) => {
+      localStorage.setItem("anthropic_api_key", JSON.stringify(value));
+    });
+    currentApiKey = derived(
+      [selectedProvider, openaiApiKey, anthropicApiKey],
+      ([$selectedProvider, $openaiApiKey, $anthropicApiKey]) => {
+        return $selectedProvider === "OpenAI" ? $openaiApiKey : $anthropicApiKey;
+      }
+    );
+  }
+});
+
 // src/stores/stores.ts
 var stores_exports = {};
 __export(stores_exports, {
@@ -47,6 +86,7 @@ __export(stores_exports, {
   combinedTokens: () => combinedTokens,
   conversations: () => conversations,
   createNewConversation: () => createNewConversation,
+  currentApiKey: () => currentApiKey,
   debugVisible: () => debugVisible,
   defaultAssistantRole: () => defaultAssistantRole,
   deleteConversationByIndex: () => deleteConversationByIndex,
@@ -64,7 +104,7 @@ __export(stores_exports, {
   streamContext: () => streamContext,
   userRequestedStreamClosure: () => userRequestedStreamClosure
 });
-import { writable } from "svelte/store";
+import { writable as writable2 } from "svelte/store";
 import { get } from "svelte/store";
 function deleteConversationByIndex(index) {
   conversations.update((convs) => {
@@ -107,10 +147,11 @@ function createNewConversation() {
 var settingsVisible, helpVisible, debugVisible, menuVisible, storedApiKey, parsedApiKey, envApiKey, initialApiKey, apiKey, storedCombinedTokens, parsedCombinedTokens, combinedTokens, storedDefaultAssistantRole, parsedDefaultAssistantRole, defaultAssistantRole, chosenConversationId, storedConversations, parsedConversations, conversations, selectedModel, selectedVoice, selectedMode, selectedSize, selectedQuality, audioUrls, base64Images, clearFileInputSignal, isStreaming, userRequestedStreamClosure, streamContext, storedShowTokens, parsedShowTokens, showTokens;
 var init_stores = __esm({
   "src/stores/stores.ts"() {
-    settingsVisible = writable(false);
-    helpVisible = writable(false);
-    debugVisible = writable(false);
-    menuVisible = writable(false);
+    init_providerStore();
+    settingsVisible = writable2(false);
+    helpVisible = writable2(false);
+    debugVisible = writable2(false);
+    menuVisible = writable2(false);
     storedApiKey = localStorage.getItem("api_key");
     parsedApiKey = storedApiKey !== null ? JSON.parse(storedApiKey) : null;
     envApiKey = null;
@@ -124,26 +165,26 @@ var init_stores = __esm({
     } catch {
     }
     initialApiKey = parsedApiKey ?? envApiKey ?? null;
-    apiKey = writable(initialApiKey);
+    apiKey = writable2(initialApiKey);
     apiKey.subscribe((value) => localStorage.setItem("api_key", JSON.stringify(value)));
     storedCombinedTokens = localStorage.getItem("combined_tokens");
     parsedCombinedTokens = storedCombinedTokens !== null ? JSON.parse(storedCombinedTokens) : 0;
-    combinedTokens = writable(parsedCombinedTokens);
+    combinedTokens = writable2(parsedCombinedTokens);
     combinedTokens.subscribe((value) => localStorage.setItem("combined_tokens", JSON.stringify(value)));
     storedDefaultAssistantRole = localStorage.getItem("default_assistant_role");
     parsedDefaultAssistantRole = storedDefaultAssistantRole !== null ? JSON.parse(storedDefaultAssistantRole) : 0;
-    defaultAssistantRole = writable(parsedDefaultAssistantRole || {
+    defaultAssistantRole = writable2(parsedDefaultAssistantRole || {
       role: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
       type: "system"
     });
     defaultAssistantRole.subscribe((value) => localStorage.setItem("default_assistant_role", JSON.stringify(value)));
-    chosenConversationId = writable(0);
+    chosenConversationId = writable2(0);
     storedConversations = localStorage.getItem("conversations");
     parsedConversations = storedConversations !== null ? JSON.parse(storedConversations) : null;
     if (parsedConversations) {
       parsedConversations = migrateConversations(parsedConversations);
     }
-    conversations = writable(parsedConversations || [{
+    conversations = writable2(parsedConversations || [{
       id: generateConversationId(),
       history: [],
       conversationTokens: 0,
@@ -153,11 +194,11 @@ var init_stores = __esm({
     conversations.subscribe((value) => {
       localStorage.setItem("conversations", JSON.stringify(value));
     });
-    selectedModel = writable(localStorage.getItem("selectedModel") || "gpt-3.5-turbo");
-    selectedVoice = writable(localStorage.getItem("selectedVoice") || "alloy");
-    selectedMode = writable(localStorage.getItem("selectedMode") || "GPT");
-    selectedSize = writable(localStorage.getItem("selectedSize") || "1024x1024");
-    selectedQuality = writable(localStorage.getItem("selectedQuality") || "standard");
+    selectedModel = writable2(localStorage.getItem("selectedModel") || "gpt-3.5-turbo");
+    selectedVoice = writable2(localStorage.getItem("selectedVoice") || "alloy");
+    selectedMode = writable2(localStorage.getItem("selectedMode") || "GPT");
+    selectedSize = writable2(localStorage.getItem("selectedSize") || "1024x1024");
+    selectedQuality = writable2(localStorage.getItem("selectedQuality") || "standard");
     selectedModel.subscribe((value) => {
       localStorage.setItem("selectedModel", value);
     });
@@ -173,15 +214,15 @@ var init_stores = __esm({
     selectedMode.subscribe((value) => {
       localStorage.setItem("selectedMode", value);
     });
-    audioUrls = writable([]);
-    base64Images = writable([]);
-    clearFileInputSignal = writable(false);
-    isStreaming = writable(false);
-    userRequestedStreamClosure = writable(false);
-    streamContext = writable({ streamText: "", convId: null });
+    audioUrls = writable2([]);
+    base64Images = writable2([]);
+    clearFileInputSignal = writable2(false);
+    isStreaming = writable2(false);
+    userRequestedStreamClosure = writable2(false);
+    streamContext = writable2({ streamText: "", convId: null });
     storedShowTokens = localStorage.getItem("show_tokens");
     parsedShowTokens = storedShowTokens !== null ? JSON.parse(storedShowTokens) : false;
-    showTokens = writable(parsedShowTokens);
+    showTokens = writable2(parsedShowTokens);
     showTokens.subscribe((value) => {
       localStorage.setItem("show_tokens", JSON.stringify(value));
     });
@@ -189,7 +230,7 @@ var init_stores = __esm({
 });
 
 // src/stores/reasoningSettings.ts
-import { writable as writable2 } from "svelte/store";
+import { writable as writable3 } from "svelte/store";
 function readLS(key, fallback) {
   try {
     const v = localStorage.getItem(key);
@@ -206,9 +247,9 @@ var init_reasoningSettings = __esm({
       verbosity: "reasoning_verbosity",
       summary: "reasoning_summary"
     };
-    reasoningEffort = writable2(readLS(KEYS.effort, "medium"));
-    verbosity = writable2(readLS(KEYS.verbosity, "medium"));
-    summary = writable2(readLS(KEYS.summary, "auto"));
+    reasoningEffort = writable3(readLS(KEYS.effort, "medium"));
+    verbosity = writable3(readLS(KEYS.verbosity, "medium"));
+    summary = writable3(readLS(KEYS.summary, "auto"));
     reasoningEffort.subscribe((v) => {
       try {
         localStorage.setItem(KEYS.effort, v);
@@ -231,7 +272,7 @@ var init_reasoningSettings = __esm({
 });
 
 // src/stores/reasoningStore.ts
-import { writable as writable3 } from "svelte/store";
+import { writable as writable4 } from "svelte/store";
 function loadFromStorage(key, defaultValue) {
   try {
     const stored = localStorage.getItem(key);
@@ -308,15 +349,15 @@ var init_reasoningStore = __esm({
     REASONING_WINDOWS_KEY = "reasoning_windows";
     initialPanels = loadFromStorage(REASONING_PANELS_KEY, []);
     initialWindows = loadFromStorage(REASONING_WINDOWS_KEY, []);
-    reasoningPanels = writable3(initialPanels);
-    reasoningWindows = writable3(initialWindows);
+    reasoningPanels = writable4(initialPanels);
+    reasoningWindows = writable4(initialWindows);
     reasoningPanels.subscribe((panels) => {
       saveToStorage(REASONING_PANELS_KEY, panels);
     });
     reasoningWindows.subscribe((windows) => {
       saveToStorage(REASONING_WINDOWS_KEY, windows);
     });
-    reasoningSSEEvents = writable3([]);
+    reasoningSSEEvents = writable4([]);
     if (typeof window !== "undefined") {
       window.startReasoningPanel = startReasoningPanel;
       window.appendReasoningText = appendReasoningText;
@@ -327,13 +368,13 @@ var init_reasoningStore = __esm({
 });
 
 // src/stores/conversationQuickSettingsStore.ts
-import { derived, writable as writable4 } from "svelte/store";
+import { derived as derived2, writable as writable5 } from "svelte/store";
 function normalizeId(id) {
   if (id == null) return null;
   return String(id);
 }
 function createConversationQuickSettingsStore(initial) {
-  const store = writable4({ ...initial || {} });
+  const store = writable5({ ...initial || {} });
   function setSettings(convId, patch) {
     const key = normalizeId(convId);
     if (!key) return;
@@ -357,9 +398,9 @@ function createConversationQuickSettingsStore(initial) {
     });
   }
   function currentSettingsWritable(chosenId, idResolver) {
-    const convKey$ = derived(chosenId, idResolver);
-    const fallback$ = derived([selectedModel, reasoningEffort, verbosity, summary], ([$m, $e, $v, $s]) => ({ model: $m, reasoningEffort: $e, verbosity: $v, summary: $s }));
-    const readable = derived([store, convKey$, fallback$], ([$store, $key, $fb]) => {
+    const convKey$ = derived2(chosenId, idResolver);
+    const fallback$ = derived2([selectedModel, reasoningEffort, verbosity, summary], ([$m, $e, $v, $s]) => ({ model: $m, reasoningEffort: $e, verbosity: $v, summary: $s }));
+    const readable = derived2([store, convKey$, fallback$], ([$store, $key, $fb]) => {
       if (!$key) return $fb;
       const cur = $store[$key] || {};
       return { ...$fb, ...cur };
@@ -401,7 +442,7 @@ var init_conversationQuickSettingsStore = __esm({
 });
 
 // src/stores/modelStore.ts
-import { writable as writable5 } from "svelte/store";
+import { writable as writable6 } from "svelte/store";
 function loadFromLocalStorage() {
   try {
     const raw = localStorage.getItem(MODELS_LS_KEY);
@@ -414,7 +455,7 @@ var MODELS_LS_KEY, modelsStore;
 var init_modelStore = __esm({
   "src/stores/modelStore.ts"() {
     MODELS_LS_KEY = "models";
-    modelsStore = writable5(loadFromLocalStorage());
+    modelsStore = writable6(loadFromLocalStorage());
     modelsStore.subscribe((val) => {
       try {
         localStorage.setItem(MODELS_LS_KEY, JSON.stringify(val || []));
@@ -425,7 +466,7 @@ var init_modelStore = __esm({
 });
 
 // src/stores/recentModelsStore.ts
-import { writable as writable6, get as get2 } from "svelte/store";
+import { writable as writable7, get as get2 } from "svelte/store";
 function loadFromLocalStorage2() {
   try {
     const raw = localStorage.getItem(RECENT_MODELS_LS_KEY);
@@ -450,7 +491,7 @@ var init_recentModelsStore = __esm({
     init_modelStore();
     RECENT_MODELS_LS_KEY = "recent_models";
     MAX_RECENT = 5;
-    recentModelsStore = writable6(loadFromLocalStorage2());
+    recentModelsStore = writable7(loadFromLocalStorage2());
     recentModelsStore.subscribe((val) => {
       try {
         localStorage.setItem(RECENT_MODELS_LS_KEY, JSON.stringify(val || []));
@@ -715,10 +756,10 @@ __export(openaiService_exports, {
   supportsReasoning: () => supportsReasoning,
   userRequestedStreamClosure: () => userRequestedStreamClosure2
 });
-import { get as get4, writable as writable7 } from "svelte/store";
+import { get as get4, writable as writable8 } from "svelte/store";
 function appendErrorToHistory(error, currentHistory, convId) {
-  const errorMessage2 = error?.message || "An error occurred while processing your request.";
-  const userFriendlyError = errorMessage2.includes("API key") ? "There was an error. Maybe the API key is wrong? Or the servers could be down?" : `There was an error: ${errorMessage2}`;
+  const errorMessage = error?.message || "An error occurred while processing your request.";
+  const userFriendlyError = errorMessage.includes("API key") ? "There was an error. Maybe the API key is wrong? Or the servers could be down?" : `There was an error: ${errorMessage}`;
   const errorChatMessage = {
     role: "assistant",
     content: userFriendlyError
@@ -813,7 +854,9 @@ async function sendRequest(msg, model = get4(selectedModel), opts) {
   } catch (error) {
     console.error("Error in sendRequest:", error);
     configuration = null;
-    await setHistory(errorMessage);
+    const currentHistory = get4(conversations)[get4(chosenConversationId)]?.messages || [];
+    const convId = get4(chosenConversationId);
+    appendErrorToHistory(error, currentHistory, convId);
     throw error;
   }
 }
@@ -1471,7 +1514,7 @@ async function streamResponseViaResponsesAPI(prompt, model, callbacks, inputOver
   globalAbortController = null;
   return finalText;
 }
-var openai, configuration, globalAbortController, isStreaming2, userRequestedStreamClosure2, streamContext2, errorMessage;
+var openai, configuration, globalAbortController, isStreaming2, userRequestedStreamClosure2, streamContext2;
 var init_openaiService = __esm({
   "src/services/openaiService.ts"() {
     init_stores();
@@ -1484,15 +1527,9 @@ var init_openaiService = __esm({
     openai = null;
     configuration = null;
     globalAbortController = null;
-    isStreaming2 = writable7(false);
-    userRequestedStreamClosure2 = writable7(false);
-    streamContext2 = writable7({ streamText: "", convId: null });
-    errorMessage = [
-      {
-        role: "assistant",
-        content: "There was an error. Maybe the API key is wrong? Or the servers could be down?"
-      }
-    ];
+    isStreaming2 = writable8(false);
+    userRequestedStreamClosure2 = writable8(false);
+    streamContext2 = writable8({ streamText: "", convId: null });
   }
 });
 
@@ -1913,9 +1950,9 @@ test({
 });
 
 // src/stores/draftsStore.ts
-import { writable as writable8, get as get5 } from "svelte/store";
+import { writable as writable9, get as get5 } from "svelte/store";
 function createDraftsStore() {
-  const drafts = writable8({});
+  const drafts = writable9({});
   return {
     setDraft: (conversationId, draft) => {
       drafts.update((store) => ({
@@ -1976,7 +2013,7 @@ test({
 });
 
 // src/stores/keyboardSettings.ts
-import { writable as writable9 } from "svelte/store";
+import { writable as writable10 } from "svelte/store";
 var STORAGE_KEY = "enterBehavior";
 function loadInitial() {
   try {
@@ -1986,7 +2023,7 @@ function loadInitial() {
   }
   return "newline";
 }
-var enterBehavior = writable9(loadInitial());
+var enterBehavior = writable10(loadInitial());
 enterBehavior.subscribe((v) => {
   try {
     localStorage.setItem(STORAGE_KEY, v);
@@ -2215,9 +2252,9 @@ registerTest({
 });
 
 // src/tests/unit/streaming-error-recovery.test.ts
-import { get as get8, writable as writable10 } from "svelte/store";
+import { get as get8, writable as writable11 } from "svelte/store";
 fn: async (t) => {
-  let mockConversations = writable10([{
+  let mockConversations = writable11([{
     id: "test-conv-1",
     history: [
       { role: "user", content: "Hello" },
@@ -2226,10 +2263,10 @@ fn: async (t) => {
     assistantRole: "You are a helpful assistant.",
     conversationTokens: 100
   }]);
-  let mockChosenConversationId = writable10(0);
-  let mockSelectedModel = writable10("gpt-3.5-turbo");
-  let mockDefaultAssistantRole = writable10({ type: "system" });
-  let mockIsStreaming = writable10(false);
+  let mockChosenConversationId = writable11(0);
+  let mockSelectedModel = writable11("gpt-3.5-turbo");
+  let mockDefaultAssistantRole = writable11({ type: "system" });
+  let mockIsStreaming = writable11(false);
   const originalImports = await Promise.resolve().then(() => (init_stores(), stores_exports));
   const conversationManager = await Promise.resolve().then(() => (init_conversationManager(), conversationManager_exports));
   let capturedHistories = [];
@@ -2291,10 +2328,10 @@ fn: async (t) => {
       t.that(hasErrorHandling, "Error should be appended to conversation history");
       t.that(capturedHistories.length > 0, "setHistory should be called even when streaming fails");
       const lastHistory = capturedHistories[capturedHistories.length - 1];
-      const errorMessage2 = lastHistory.find(
+      const errorMessage = lastHistory.find(
         (msg) => msg.role === "assistant" && msg.content.includes("API rate limit exceeded")
       );
-      t.that(errorMessage2 !== void 0, "Error message should contain the specific error details");
+      t.that(errorMessage !== void 0, "Error message should contain the specific error details");
       const hasOriginalMessages = lastHistory.some((msg) => msg.content === "Hello") && lastHistory.some((msg) => msg.content === "Hi there!");
       t.that(hasOriginalMessages, "Original conversation history should be preserved");
     } else {
@@ -2310,7 +2347,7 @@ fn: async (t) => {
   }
 };
 fn: async (t) => {
-  let mockConversations = writable10([{
+  let mockConversations = writable11([{
     id: "test-conv-2",
     history: [
       { role: "user", content: "Describe this image" },
@@ -2319,9 +2356,9 @@ fn: async (t) => {
     assistantRole: "You are a helpful assistant.",
     conversationTokens: 150
   }]);
-  let mockChosenConversationId = writable10(0);
-  let mockSelectedModel = writable10("gpt-4-vision");
-  let mockIsStreaming = writable10(false);
+  let mockChosenConversationId = writable11(0);
+  let mockSelectedModel = writable11("gpt-4-vision");
+  let mockIsStreaming = writable11(false);
   let capturedHistories = [];
   let capturedConvIds = [];
   const mockSetHistory = (history, convId) => {
@@ -2356,8 +2393,8 @@ fn: async (t) => {
     stores.chosenConversationId = mockChosenConversationId;
     stores.selectedModel = mockSelectedModel;
     openaiService.isStreaming = mockIsStreaming;
-    openaiService.userRequestedStreamClosure = writable10(false);
-    openaiService.streamContext = writable10({ streamText: "", convId: null });
+    openaiService.userRequestedStreamClosure = writable11(false);
+    openaiService.streamContext = writable11({ streamText: "", convId: null });
     const { sendVisionMessage: sendVisionMessage2 } = openaiService;
     const testMessages = [{ role: "user", content: "What do you see in this image?" }];
     const testImages = ["data:image/jpeg;base64,/9j/4AAQSkZJRgABA..."];
@@ -2379,10 +2416,10 @@ fn: async (t) => {
     if (hasErrorHandling) {
       t.that(hasErrorHandling, "Vision error should be appended to conversation history");
       const lastHistory = capturedHistories[capturedHistories.length - 1];
-      const errorMessage2 = lastHistory.find(
+      const errorMessage = lastHistory.find(
         (msg) => msg.role === "assistant" && msg.content.includes("Vision API authentication failed")
       );
-      t.that(errorMessage2 !== void 0, "Vision error message should contain specific error details");
+      t.that(errorMessage !== void 0, "Vision error message should contain specific error details");
       t.that(visionCompleteCallCount > 0, "onSendVisionMessageComplete should be called even after error");
     } else {
       t.that(!hasErrorHandling, "WITHOUT fix: Vision errors should NOT be properly handled (proving bug exists)");
