@@ -724,6 +724,12 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
       body: JSON.stringify(payload)
     });
 
+    // Defensive check: ensure res is a proper Response object
+    if (!res || typeof res.json !== 'function') {
+      console.warn('Title generation: Invalid response object received from fetch');
+      return;
+    }
+
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       throw new Error(`Responses API error ${res.status}: ${text || res.statusText}`);

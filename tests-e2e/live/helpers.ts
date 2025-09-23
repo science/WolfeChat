@@ -211,6 +211,7 @@ export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthrop
   await expect(saveBtn).toBeVisible();
   await saveBtn.click();
   await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
+  await page.waitForTimeout(500); // Wait for dialog animations to complete
 }
 
 export async function selectProvider(page: Page, provider: 'OpenAI' | 'Anthropic') {
@@ -234,9 +235,27 @@ export async function setProviderApiKey(page: Page, provider: 'OpenAI' | 'Anthro
   await expect(saveBtn).toBeVisible();
   await saveBtn.click();
   await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
+  await page.waitForTimeout(500); // Wait for dialog animations to complete
 }
 
 export async function getVisibleModels(page: Page): Promise<string[]> {
+  // CRITICAL FIX: Check if Settings is open and close it first (prevents z-50 overlay interference)
+  const settingsHeading = page.getByRole('heading', { name: /settings/i });
+  if (await settingsHeading.isVisible().catch(() => false)) {
+    // Settings is open - close it properly to avoid overlay blocking QuickSettings
+    const saveBtn = page.getByRole('button', { name: /^save$/i });
+    if (await saveBtn.isVisible().catch(() => false)) {
+      await saveBtn.click();
+      await expect(settingsHeading).toBeHidden({ timeout: 5000 });
+      await page.waitForTimeout(500); // Wait for dialog animations to complete
+    } else {
+      // Fallback: try Escape key if Save button not found
+      await page.keyboard.press('Escape');
+      await expect(settingsHeading).toBeHidden({ timeout: 3000 });
+      await page.waitForTimeout(500);
+    }
+  }
+
   // CRITICAL FIX: Must expand QuickSettings first to access model dropdown
   const quickSettingsButton = page.locator('button').filter({ hasText: 'Quick Settings' }).first();
   const isExpanded = await quickSettingsButton.getAttribute('aria-expanded') === 'true';

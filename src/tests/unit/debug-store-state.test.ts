@@ -94,7 +94,7 @@ registerTest({
     }
 
     // Should have 2 chat models (gpt-4 and gpt-3.5-turbo)
-    const expectedChatModels = ['gpt-4', 'gpt-3.5-turbo'];
+    const expectedChatModels = ['gpt-4', 'gpt-3.5-turbo'].sort();
     const actualChatModels = filteredModels.map(m => m.id).sort();
 
     if (JSON.stringify(actualChatModels) !== JSON.stringify(expectedChatModels)) {

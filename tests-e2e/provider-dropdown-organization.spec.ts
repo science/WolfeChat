@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootstrapLiveAPI } from './live/helpers';
+import { bootstrapLiveAPI, bootstrapBothProviders } from './live/helpers';
 
 test.describe('Provider Dropdown Organization Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -8,10 +8,7 @@ test.describe('Provider Dropdown Organization Tests', () => {
 
   test('dropdown should have separate sections for OpenAI and Anthropic when both keys are set', async ({ page }) => {
     // Set both API keys
-    await bootstrapLiveAPI(page, {
-      openaiKey: process.env.OPENAI_API_KEY,
-      anthropicKey: process.env.ANTHROPIC_API_KEY
-    });
+    await bootstrapBothProviders(page);
 
     // Open Settings
     await page.click('button[title="Settings"]');
@@ -56,9 +53,7 @@ test.describe('Provider Dropdown Organization Tests', () => {
 
   test('dropdown should only show OpenAI section when only OpenAI key is set', async ({ page }) => {
     // Set only OpenAI key
-    await bootstrapLiveAPI(page, {
-      openaiKey: process.env.OPENAI_API_KEY
-    });
+    await bootstrapLiveAPI(page, 'OpenAI');
 
     // Open Settings
     await page.click('button[title="Settings"]');
@@ -80,9 +75,7 @@ test.describe('Provider Dropdown Organization Tests', () => {
 
   test('dropdown should only show Anthropic section when only Anthropic key is set', async ({ page }) => {
     // Set only Anthropic key
-    await bootstrapLiveAPI(page, {
-      anthropicKey: process.env.ANTHROPIC_API_KEY
-    });
+    await bootstrapLiveAPI(page, 'Anthropic');
 
     // Open Settings
     await page.click('button[title="Settings"]');
