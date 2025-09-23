@@ -5,54 +5,13 @@ export async function fetchAnthropicModels(apiKey: string): Promise<any[]> {
   }
 
   try {
-    // For now, return a hardcoded list of Claude models since Anthropic doesn't have a public models endpoint
-    // In the future, this could be replaced with actual API calls if such an endpoint becomes available
-    const claudeModels = [
-      // Claude 4 models (2025)
-      { id: 'claude-4-sonnet-20250514', provider: 'anthropic', created: 1715644800 },
-      { id: 'claude-4-opus-20250514', provider: 'anthropic', created: 1715644800 },
-      { id: 'claude-opus-4-1-20250805', provider: 'anthropic', created: 1722816000 },
-
-      // Claude 3.7 models
-      { id: 'claude-3-7-sonnet-20250224', provider: 'anthropic', created: 1708732800 },
-
-      // Claude 3.5 models
-      { id: 'claude-3-5-sonnet-20241022', provider: 'anthropic', created: 1729641600 },
-      { id: 'claude-3-5-sonnet-20240620', provider: 'anthropic', created: 1718841600 },
-      { id: 'claude-3-5-haiku-20241022', provider: 'anthropic', created: 1729641600 },
-
-      // Claude 3 models
-      { id: 'claude-3-opus-20240229', provider: 'anthropic', created: 1709251200 },
-      { id: 'claude-3-sonnet-20240229', provider: 'anthropic', created: 1709251200 },
-      { id: 'claude-3-haiku-20240307', provider: 'anthropic', created: 1709856000 },
-    ];
-
-    // Test API key validity by making a simple request
-    await testAnthropicConnection(apiKey);
-
-    return claudeModels;
-  } catch (error) {
-    console.error("Failed to fetch Anthropic models:", error);
-    throw error;
-  }
-}
-
-// Test Anthropic API connection
-async function testAnthropicConnection(apiKey: string): Promise<void> {
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
+    const response = await fetch('https://api.anthropic.com/v1/models', {
+      method: 'GET',
       headers: {
         'x-api-key': apiKey,
-        'Content-Type': 'application/json',
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 1,
-        messages: [{ role: 'user', content: 'test' }]
-      })
+      }
     });
 
     if (!response.ok) {
@@ -64,13 +23,22 @@ async function testAnthropicConnection(apiKey: string): Promise<void> {
         throw new Error(`Anthropic API error: ${response.status} ${response.statusText}`);
       }
     }
+
+    const data = await response.json();
+
+    // Transform to match OpenAI's format for consistency
+    return data.data.map(model => ({
+      id: model.id,
+      provider: 'anthropic',
+      created: new Date(model.created_at).getTime() / 1000, // Convert to Unix timestamp
+      display_name: model.display_name
+    }));
   } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error("Failed to connect to Anthropic API");
+    console.error("Failed to fetch Anthropic models:", error);
+    throw error;
   }
 }
+
 
 // Check if a model is a Claude/Anthropic model
 export function isAnthropicModel(modelId: string): boolean {

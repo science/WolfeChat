@@ -1,61 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { openSettings } from './helpers';
+import {
+  openSettings,
+  setProviderApiKey,
+  bootstrapBothProviders,
+  getVisibleModels,
+  verifyProviderIndicators
+} from './helpers';
 
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
 const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
-async function setProviderApiKey(page: any, provider: 'OpenAI' | 'Anthropic', apiKey: string) {
-  await openSettings(page);
-
-  const providerSelect = page.locator('#provider-selection');
-  await providerSelect.selectOption(provider);
-
-  const apiKeyInput = page.locator('#api-key');
-  await apiKeyInput.fill(apiKey);
-
-  const checkBtn = page.getByRole('button', { name: /check api/i });
-  await checkBtn.click();
-
-  // Wait for models to populate - use a more flexible approach
-  const modelSelect = page.locator('#model-selection');
-
-  // Wait for either models to appear or error message
-  const deadline = Date.now() + 15000;
-  let modelsLoaded = false;
-
-  while (Date.now() < deadline && !modelsLoaded) {
-    const optionCount = await modelSelect.locator('option').count();
-    if (optionCount > 1) {
-      // More than just the default option
-      modelsLoaded = true;
-      break;
-    }
-
-    const options = await modelSelect.locator('option').allTextContents();
-    if (options.some(opt => opt && !opt.includes('No models') && opt !== 'Select a model...' && opt.trim() !== '')) {
-      modelsLoaded = true;
-      break;
-    }
-
-    await page.waitForTimeout(200);
-  }
-
-  // Save the settings
-  const saveBtn = page.getByRole('button', { name: /^save$/i });
-  await saveBtn.click();
-}
-
-async function getVisibleModels(page: any): Promise<string[]> {
-  // Ensure settings are open
-  await openSettings(page);
-
-  const modelSelect = page.locator('#model-selection');
-  const options = await modelSelect.locator('option').allTextContents();
-
-  return options
-    .filter(text => text && text !== 'Select a model...' && text !== 'No models available' && text.trim() !== '')
-    .map(text => text.trim());
-}
 
 (test as any)[hasOpenAIKey ? 'describe' : 'skip']('Provider Model Management', () => {
   test.beforeEach(async ({ page }) => {
@@ -112,13 +66,11 @@ async function getVisibleModels(page: any): Promise<string[]> {
   });
 
   (test as any)[hasAnthropicKey ? 'test' : 'skip']('shows combined model list with provider indicators when both keys are set', async ({ page }) => {
-    const openaiKey = process.env.OPENAI_API_KEY!;
-    const anthropicKey = process.env.ANTHROPIC_API_KEY!;
+    // Use the helper that properly handles both providers
+    await bootstrapBothProviders(page);
 
-    // Set both API keys
-    await setProviderApiKey(page, 'OpenAI', openaiKey);
-    await setProviderApiKey(page, 'Anthropic', anthropicKey);
-
+    // Re-open settings to check the model list
+    await openSettings(page);
     const models = await getVisibleModels(page);
 
     // Should have both GPT and Claude models
@@ -174,13 +126,11 @@ async function getVisibleModels(page: any): Promise<string[]> {
   });
 
   (test as any)[hasAnthropicKey ? 'test' : 'skip']('models are sorted by date (newest first)', async ({ page }) => {
-    const openaiKey = process.env.OPENAI_API_KEY!;
-    const anthropicKey = process.env.ANTHROPIC_API_KEY!;
+    // Use the helper that properly handles both providers
+    await bootstrapBothProviders(page);
 
-    // Set both API keys to get combined list
-    await setProviderApiKey(page, 'OpenAI', openaiKey);
-    await setProviderApiKey(page, 'Anthropic', anthropicKey);
-
+    // Re-open settings to check the model list
+    await openSettings(page);
     const models = await getVisibleModels(page);
 
     // Check that Claude 4 models (newest) appear before Claude 3 models

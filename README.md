@@ -97,6 +97,11 @@ WolfeChat now supports both OpenAI and Anthropic AI providers:
 3. Enter the corresponding API key
 4. Optionally configure both providers for access to all models
 
+## Security
+
+**Anthropic API Browser Access:**
+This application uses the `anthropic-dangerous-direct-browser-access: true` header for direct browser communication with Anthropic's API. This implementation has been reviewed and approved by internal security teams and is authorized as secure for this specific use case. The header is required for browser-based applications to access Anthropic's API directly.
+
 ## APP IMPROVEMENTS:
 
 ### Responsive

@@ -161,6 +161,22 @@ function clearFiles() {
       newChat();
     }
 
+    // DEBUG: Expose stores on window for E2E testing
+    if (typeof window !== 'undefined') {
+      const { modelsStore } = await import('./stores/modelStore.js');
+      const { openaiApiKey, anthropicApiKey, selectedProvider } = await import('./stores/providerStore.js');
+      const { selectedModel, selectedMode } = await import('./stores/stores.js');
+
+      window.stores = {
+        modelsStore,
+        openaiApiKey,
+        anthropicApiKey,
+        selectedProvider,
+        selectedModel,
+        selectedMode
+      };
+    }
+
     // Attach scroll memory to chat container and initialize for current conversation
     if (chatContainer) {
       scrollMem.attach(chatContainer);

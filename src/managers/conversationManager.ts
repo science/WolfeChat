@@ -1,13 +1,14 @@
 import type { ChatCompletionRequestMessage } from "openai";
 import { get } from "svelte/store";
 import { conversations, chosenConversationId, combinedTokens, createNewConversation } from "../stores/stores.js";
-import { type Conversation } from "../stores/stores.js";
 import { selectedModel, selectedVoice, base64Images } from '../stores/stores.js';
 import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore.js';
 import { addRecentModel } from '../stores/recentModelsStore.js';
 import { reasoningWindows } from '../stores/reasoningStore.js';
 
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService.js";
+import { streamAnthropicMessage } from "../services/anthropicMessagingService.js";
+import { isAnthropicModel } from "../services/anthropicService.js";
 let streamText = "";
 
 
@@ -138,6 +139,12 @@ export async function routeMessage(input: string, convId: number) {
         await sendVisionMessage(outgoingMessage, imagesBase64, convId, config);
       } else if (model.includes('dall-e')) {
         await sendDalleMessage(outgoingMessage, convId);
+      } else if (isAnthropicModel(model)) {
+        // Handle Claude/Anthropic models
+        const config = { model };
+        console.log(`Routing Claude model ${model} to Anthropic service`);
+        // For now, use streaming by default for Claude models
+        await streamAnthropicMessage(outgoingMessage, convId, config);
       } else {
         // Default case for regular messages if no specific keywords are found in the model string
         const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };

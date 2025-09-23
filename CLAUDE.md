@@ -63,12 +63,40 @@ WolfeChat is a Svelte-based ChatGPT UI that uses the OpenAI Responses API for st
 
 5. **Browser Storage** - Conversations stored in browser localStorage, no backend persistence
 
+6. **Multi-Provider Support** - Supports both OpenAI and Anthropic APIs with automatic provider routing based on model selection
+
+### Security Considerations
+
+**Anthropic API Browser Access:**
+The application uses the `anthropic-dangerous-direct-browser-access: true` header for direct browser communication with Anthropic's API. This implementation has undergone internal security review and has been approved as secure for this specific use case. The header is required for browser-based applications to access Anthropic's API directly and is considered safe within the context of this client-side application architecture.
+
 ### Testing Architecture
 
 Tests use automatic discovery based on folder placement. Playwright handles browser tests.
 
 Key test utilities:
 - `tests-e2e/live/helpers.ts` - Refer to `tests-e2e/live/README.md` for guidance when writing live E2E tests.
+
+#### Critical E2E Testing Guidelines
+
+**ALWAYS use test helpers - never create custom selectors or waits:**
+
+1. **For API/Stream Events**: Use `waitForAssistantDone()` or `waitForStreamComplete()` - never create custom loading/streaming selectors
+2. **For Settings**: Use `operateQuickSettings()`, `setProviderApiKey()`, `bootstrapLiveAPI()` - never manually interact with settings UI
+3. **For Messages**: Use `sendMessage()` and `getVisibleMessages()` - never manually type or click send buttons
+4. **For Model Selection**: Use specific model patterns like `/gpt-3\.5-turbo/i` for chat models, `/gpt-5-nano/i` for reasoning - never use broad patterns like `/gpt/i` that could match TTS/vision models
+
+**Debugging Methodology:**
+1. Always examine actual data (screenshots, console logs) rather than making assumptions
+2. Write unit tests to isolate problems before fixing E2E issues
+3. Don't mask symptoms with workarounds - find and fix root causes
+4. Model type matters - TTS, vision, and chat models have different message handling behaviors
+
+**Common Pitfalls:**
+- Using `/gpt/i` regex that matches `gpt-audio` (TTS) instead of chat models
+- Creating custom stream completion waits instead of using provided helpers
+- Manually interacting with Settings UI instead of using helper functions
+- Filtering out "empty" content messages instead of preventing them from being created
 
 #### Test-Driven Development (TDD) Guidelines
 

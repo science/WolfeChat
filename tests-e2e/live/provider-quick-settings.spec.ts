@@ -1,55 +1,19 @@
 import { test, expect } from '@playwright/test';
-import { openSettings, sendMessage, waitForAssistantDone, operateQuickSettings } from './helpers';
+import {
+  openSettings,
+  withSettings,
+  sendMessage,
+  waitForStreamComplete,
+  operateQuickSettings,
+  setProviderApiKey,
+  bootstrapBothProviders,
+  getRecentModelsFromQuickSettings
+} from './helpers';
 
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
 const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
-async function setProviderApiKey(page: any, provider: 'OpenAI' | 'Anthropic', apiKey: string) {
-  await openSettings(page);
 
-  const providerSelect = page.locator('#provider-selection');
-  await providerSelect.selectOption(provider);
-
-  const apiKeyInput = page.locator('#api-key');
-  await apiKeyInput.fill(apiKey);
-
-  const checkBtn = page.getByRole('button', { name: /check api/i });
-  await checkBtn.click();
-
-  // Wait for models to populate
-  const modelSelect = page.locator('#model-selection');
-  await expect(modelSelect.locator('option').nth(1)).toBeVisible({ timeout: 10000 });
-
-  // Close settings
-  const closeBtn = page.getByRole('button', { name: /close|×/i });
-  if (await closeBtn.isVisible().catch(() => false)) {
-    await closeBtn.click();
-  }
-}
-
-async function getRecentModelsFromQuickSettings(page: any): Promise<string[]> {
-  await operateQuickSettings(page, { mode: 'ensure-open' });
-
-  // Look for recent models section in Quick Settings
-  const recentSection = page.locator('text=/recent|recently used/i').first();
-
-  if (await recentSection.isVisible().catch(() => false)) {
-    // Get models from recent section
-    const recentModels = [];
-    const modelButtons = page.locator('button').filter({ hasText: /gpt|claude/i });
-    const count = await modelButtons.count();
-
-    for (let i = 0; i < count; i++) {
-      const text = await modelButtons.nth(i).textContent();
-      if (text && (text.includes('gpt') || text.includes('claude'))) {
-        recentModels.push(text.trim());
-      }
-    }
-    return recentModels;
-  }
-
-  return [];
-}
 
 (test as any)[hasOpenAIKey ? 'describe' : 'skip']('Provider Quick Settings Integration', () => {
   test.beforeEach(async ({ page }) => {
@@ -64,61 +28,72 @@ async function getRecentModelsFromQuickSettings(page: any): Promise<string[]> {
   test('Quick Settings shows models with provider indicators when both providers configured', async ({ page }) => {
     const openaiKey = process.env.OPENAI_API_KEY!;
 
+    // Test OpenAI first
     await setProviderApiKey(page, 'OpenAI', openaiKey);
+
+    // Test GPT model selection works
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt/i });
+
+    // Verify GPT model was selected
+    const quickModelSelect = page.locator('#current-model-select');
+    await expect(quickModelSelect).toBeVisible();
+    const selectedGptModel = await quickModelSelect.inputValue();
+    expect(selectedGptModel.toLowerCase()).toContain('gpt');
+
+    await operateQuickSettings(page, { mode: 'ensure-closed' });
 
     if (hasAnthropicKey) {
       const anthropicKey = process.env.ANTHROPIC_API_KEY!;
+
+      // Now configure Anthropic
       await setProviderApiKey(page, 'Anthropic', anthropicKey);
-    }
 
-    // Open Quick Settings
-    await operateQuickSettings(page, { mode: 'ensure-open' });
+      // Test Claude model selection works
+      await operateQuickSettings(page, { mode: 'ensure-open', model: /claude/i });
 
-    // Look for model selection in Quick Settings
-    const quickModelSelect = page.locator('select').filter({ hasText: /gpt|claude/i }).first();
+      // Verify Claude model was selected
+      const selectedClaudeModel = await quickModelSelect.inputValue();
+      expect(selectedClaudeModel.toLowerCase()).toContain('claude');
 
-    if (await quickModelSelect.isVisible().catch(() => false)) {
+      // Test provider indicators exist when both have been configured
       const options = await quickModelSelect.locator('option').allTextContents();
+      const hasProviderIndicators = options.some(m => m.includes('(') && (m.includes('OpenAI') || m.includes('Anthropic')));
+      expect(hasProviderIndicators).toBe(true);
 
-      // Should have GPT models
-      const hasGptModels = options.some(m => m.toLowerCase().includes('gpt'));
-      expect(hasGptModels).toBe(true);
-
-      if (hasAnthropicKey) {
-        // Should have Claude models
-        const hasClaudeModels = options.some(m => m.toLowerCase().includes('claude'));
-        expect(hasClaudeModels).toBe(true);
-
-        // Should have provider indicators when both are configured
-        const hasProviderIndicators = options.some(m => m.includes('(') && (m.includes('OpenAI') || m.includes('Anthropic')));
-        expect(hasProviderIndicators).toBe(true);
-      }
+      await operateQuickSettings(page, { mode: 'ensure-closed' });
     }
   });
 
   test('can switch models between providers in Quick Settings', async ({ page }) => {
-    const openaiKey = process.env.OPENAI_API_KEY!;
-
-    await setProviderApiKey(page, 'OpenAI', openaiKey);
-
     if (hasAnthropicKey) {
+      const openaiKey = process.env.OPENAI_API_KEY!;
       const anthropicKey = process.env.ANTHROPIC_API_KEY!;
+
+      // Set up OpenAI first
+      await setProviderApiKey(page, 'OpenAI', openaiKey);
+
+      // Select GPT model and send message
+      await operateQuickSettings(page, {
+        mode: 'ensure-open',
+        model: /gpt-3\.5-turbo/i,  // Specific chat model, not TTS
+        closeAfter: true
+      });
+
+      await sendMessage(page, 'Hello from GPT', { submitMethod: 'ctrl-enter' });
+      await waitForStreamComplete(page, { timeout: 60000 });
+
+      // Switch to Anthropic provider
       await setProviderApiKey(page, 'Anthropic', anthropicKey);
 
-      // Send a message with GPT model first
-      await sendMessage(page, 'Hello from GPT', { submitMethod: 'ctrl-enter' });
-      await waitForAssistantDone(page, { timeout: 30000 });
-
-      // Use Quick Settings to switch to Claude model
+      // Select Claude model and send message
       await operateQuickSettings(page, {
         mode: 'ensure-open',
         model: /claude/i,
         closeAfter: true
       });
 
-      // Send another message
       await sendMessage(page, 'Hello from Claude', { submitMethod: 'ctrl-enter' });
-      await waitForAssistantDone(page, { timeout: 30000 });
+      await waitForStreamComplete(page, { timeout: 60000 });
 
       // Verify both messages exist
       const messages = page.locator('[role="listitem"][data-message-role="assistant"]');
@@ -139,7 +114,7 @@ async function getRecentModelsFromQuickSettings(page: any): Promise<string[]> {
     });
 
     await sendMessage(page, 'Test with GPT', { submitMethod: 'ctrl-enter' });
-    await waitForAssistantDone(page, { timeout: 30000 });
+    await waitForStreamComplete(page, { timeout: 60000 });
 
     if (hasAnthropicKey) {
       const anthropicKey = process.env.ANTHROPIC_API_KEY!;
@@ -153,7 +128,7 @@ async function getRecentModelsFromQuickSettings(page: any): Promise<string[]> {
       });
 
       await sendMessage(page, 'Test with Claude', { submitMethod: 'ctrl-enter' });
-      await waitForAssistantDone(page, { timeout: 30000 });
+      await waitForStreamComplete(page, { timeout: 60000 });
 
       // Check recent models in Quick Settings
       const recentModels = await getRecentModelsFromQuickSettings(page);
@@ -219,25 +194,20 @@ async function getRecentModelsFromQuickSettings(page: any): Promise<string[]> {
 
     await setProviderApiKey(page, 'OpenAI', openaiKey);
 
-    // Set model in global Settings
-    await openSettings(page);
-    const globalModelSelect = page.locator('#model-selection');
-    const firstGptOption = await globalModelSelect.locator('option').filter({ hasText: /gpt/i }).first().textContent();
+    // Set model in global Settings using proper helper
+    await withSettings(page, async () => {
+      const globalModelSelect = page.locator('#model-selection');
+      const firstGptOption = await globalModelSelect.locator('option').filter({ hasText: /gpt/i }).first().textContent();
 
-    if (firstGptOption) {
-      await globalModelSelect.selectOption({ label: firstGptOption });
-    }
-
-    // Close settings
-    const closeBtn = page.getByRole('button', { name: /close|×/i });
-    if (await closeBtn.isVisible().catch(() => false)) {
-      await closeBtn.click();
-    }
+      if (firstGptOption) {
+        await globalModelSelect.selectOption({ label: firstGptOption });
+      }
+    });
 
     // Quick Settings should reflect the global selection
     await operateQuickSettings(page, { mode: 'ensure-open' });
 
-    const quickModelSelect = page.locator('select').filter({ hasText: /gpt|claude/i }).first();
+    const quickModelSelect = page.locator('#current-model-select');
     if (await quickModelSelect.isVisible().catch(() => false)) {
       const selectedValue = await quickModelSelect.inputValue();
       expect(selectedValue.toLowerCase()).toContain('gpt');

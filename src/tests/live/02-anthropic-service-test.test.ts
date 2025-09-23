@@ -31,6 +31,7 @@ if (hasAnthropicKey) {
       t.that(firstModel.id, 'Model should have an id');
       t.that(firstModel.provider === 'anthropic', 'Model should have provider set to anthropic');
       t.that(typeof firstModel.created === 'number', 'Model should have created timestamp');
+      t.that(firstModel.display_name, 'Model should have display_name from API');
 
       // Check that Claude models are present
       const hasClaudeModels = models.some(m => m.id.includes('claude'));

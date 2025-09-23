@@ -1,15 +1,15 @@
 import { get, writable } from 'svelte/store';
 // ChatCompletions SDK removed; using fetch-based Responses API only
 import type { ChatMessage } from "../stores/stores.js";
-import { 
-  apiKey, 
-  conversations, 
-  chosenConversationId, 
-  selectedModel, 
+import {
+  conversations,
+  chosenConversationId,
+  selectedModel,
   selectedSize,
   selectedQuality,
   defaultAssistantRole
 } from "../stores/stores.js";
+import { openaiApiKey } from "../stores/providerStore.js";
 import { reasoningEffort, verbosity, summary } from "../stores/reasoningSettings.js";
 import {
   createReasoningWindow,
@@ -88,49 +88,15 @@ const errorMessage: ChatMessage[] = [
   },
 ];
 
-// Deprecated: ChatCompletions SDK initialization removed
-export function initOpenAIApi(): void {
-  const key = get(apiKey);
-  if (key) {
-    configuration = { apiKey: key };
-    openai = { configured: true };
-    console.log("OpenAI API initialized.");
-  } else {
-    console.warn("API key is not set. Please set the API key before initializing.");
-  }
-}
-
-export function getOpenAIApi(): OpenAIApi {
-  if (!openai) {
-    throw new Error("OpenAI API is not initialized. Please call initOpenAIApi with your API key first.");
-  }
-  console.log("OpenAI API retrieved.");
-  return openai;
-}
-
-export async function createChatCompletion(model: string, messages: ChatCompletionRequestMessage[]): Promise<any> {
-  const openaiClient = getOpenAIApi();
-  console.log("Sending chat completion request...");
-  try {
-    const response = await openaiClient.createChatCompletion({
-      model: model,
-      messages: messages,
-    });
-    console.log("Chat completion response received.");
-    return response;
-  } catch (error) {
-    console.error("Error in createChatCompletion:", error);
-    throw error; // Rethrow to handle it in the caller function
-  }
-}
+// Legacy functions removed - using Responses API only
 
 export function isConfigured(): boolean {
   console.log("Checking if OpenAI API is configured.");
-  return configuration !== null && get(apiKey) !== null;
+  return get(openaiApiKey) !== null;
 }
 
 export function reloadConfig(): void {
-  initOpenAIApi(); 
+  // No-op: using direct fetch calls now 
   console.log("Configuration reloaded.");
 }
 
@@ -144,7 +110,7 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
       ...msg,
     ];
 
-    const key = get(apiKey);
+    const key = get(openaiApiKey);
   const liveSelected = get(selectedModel);
   const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
     const input = buildResponsesInputFromMessages(msg);
@@ -176,7 +142,7 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
     configuration = null;
 
     // Get the current conversation history and ID to preserve existing messages
-    const currentHistory = get(conversations)[get(chosenConversationId)]?.messages || [];
+    const currentHistory = get(conversations)[get(chosenConversationId)]?.history || [];
     const convId = get(chosenConversationId);
 
     // Append error to existing history instead of replacing it
@@ -513,7 +479,7 @@ export async function sendVisionMessage(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${get(apiKey)}`,
+          Authorization: `Bearer ${get(openaiApiKey)}`
         },
         body: JSON.stringify({
           model: get(selectedModel),
@@ -644,7 +610,7 @@ export function buildResponsesInputFromMessages(messages: ChatCompletionRequestM
 }
 
 export async function createResponseViaResponsesAPI(prompt: string, model?: string, opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }) {
-  const key = get(apiKey);
+  const key = get(openaiApiKey);
   if (!key) throw new Error('No API key configured');
 
   const liveSelected = get(selectedModel);
@@ -748,7 +714,7 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
     const model = 'gpt-4o-mini';
     const payload = buildResponsesPayload(model, input, false);
 
-    const key = get(apiKey);
+    const key = get(openaiApiKey);
     const res = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -803,7 +769,7 @@ export async function streamResponseViaResponsesAPI(
   uiContext?: { convId?: string; anchorIndex?: number },
   opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }
 ): Promise<string> {
-  const key = get(apiKey);
+  const key = get(openaiApiKey);
   if (!key) throw new Error('No API key configured');
 
   const liveSelected = get(selectedModel);

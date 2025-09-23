@@ -6,8 +6,35 @@
   import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
   import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore';
   import { supportsReasoning } from '../services/openaiService.js';
+  import { openaiApiKey, anthropicApiKey } from '../stores/providerStore.js';
+  import { get, derived } from 'svelte/store';
 
   const dispatch = createEventDispatcher();
+
+  // Filter models based on provider availability
+  const availableModels = derived(
+    [modelsStore, openaiApiKey, anthropicApiKey],
+    ([$modelsStore, $openaiApiKey, $anthropicApiKey]) => {
+      return $modelsStore.filter(model => {
+        // Only show models from providers that have API keys configured
+        if (model.provider === 'openai' && !$openaiApiKey) return false;
+        if (model.provider === 'anthropic' && !$anthropicApiKey) return false;
+        return true;
+      });
+    }
+  );
+
+  const availableRecentModels = derived(
+    [recentModelsStore, openaiApiKey, anthropicApiKey],
+    ([$recentModelsStore, $openaiApiKey, $anthropicApiKey]) => {
+      return ($recentModelsStore || []).filter(model => {
+        // Only show recent models from providers that have API keys configured
+        if (model.provider === 'openai' && !$openaiApiKey) return false;
+        if (model.provider === 'anthropic' && !$anthropicApiKey) return false;
+        return true;
+      });
+    }
+  );
 
   let open = false;
   function toggle() { open = !open; }
@@ -19,6 +46,13 @@
   });
   $: effectiveModel = $currentCQ.model || $selectedModel || '';
   $: isReasoningModel = supportsReasoning(effectiveModel);
+
+  // Helper function to determine when both providers are configured
+  function shouldShowProviderIndicators() {
+    const openaiKey = get(openaiApiKey);
+    const anthropicKey = get(anthropicApiKey);
+    return !!(openaiKey && anthropicKey);
+  }
 
    async function clearConversation() {
      try {
@@ -53,7 +87,6 @@
   }
 
   import ClearChat from '../assets/ClearChat.svg';
-  import { get } from 'svelte/store';
 
   function navigateAnchors(direction: 'up' | 'down') {
     const container = getChatContainer();
@@ -130,21 +163,34 @@
            aria-label="Model"
            bind:value={$currentCQ.model}
          >
-          {#if $modelsStore && $modelsStore.length > 0}
-            {#if $recentModelsStore && $recentModelsStore.length > 0}
+          {#if $availableModels && $availableModels.length > 0}
+            {#if $availableRecentModels && $availableRecentModels.length > 0}
               <optgroup label="Recently used">
-                {#each $recentModelsStore as r}
+                {#each $availableRecentModels as r}
                   <option value={r.id}>{r.id}</option>
                 {/each}
               </optgroup>
             {/if}
-            <optgroup label="All models">
-              {#each $modelsStore as model}
-                {#if !$recentModelsStore || !$recentModelsStore.find(r => r.id === model.id)}
-                  <option value={model.id}>{model.id}</option>
-                {/if}
-              {/each}
-            </optgroup>
+
+            {#if $openaiApiKey && $availableModels.filter(m => m.provider === 'openai').length > 0}
+              <optgroup label="OpenAI">
+                {#each $availableModels.filter(m => m.provider === 'openai').sort((a, b) => a.id.localeCompare(b.id)) as model}
+                  {#if !$availableRecentModels || !$availableRecentModels.find(r => r.id === model.id)}
+                    <option value={model.id}>{model.id}</option>
+                  {/if}
+                {/each}
+              </optgroup>
+            {/if}
+
+            {#if $anthropicApiKey && $availableModels.filter(m => m.provider === 'anthropic').length > 0}
+              <optgroup label="Anthropic">
+                {#each $availableModels.filter(m => m.provider === 'anthropic').sort((a, b) => a.id.localeCompare(b.id)) as model}
+                  {#if !$availableRecentModels || !$availableRecentModels.find(r => r.id === model.id)}
+                    <option value={model.id}>{model.id}</option>
+                  {/if}
+                {/each}
+              </optgroup>
+            {/if}
           {:else}
             <option disabled selected>No models loaded</option>
           {/if}

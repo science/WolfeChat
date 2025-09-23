@@ -1,5 +1,58 @@
 import { expect, Page, Locator } from '@playwright/test';
 
+/**
+ * CRITICAL FIX: Mock OpenAI API for nonlive E2E tests
+ * Call this before any test that needs to work without real API keys
+ */
+export async function mockOpenAIAPI(page: Page) {
+  await page.route('**/v1/models', async route => {
+    console.log('[MOCK] Intercepting OpenAI models API call');
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        object: 'list',
+        data: [
+          {
+            id: 'gpt-4',
+            object: 'model',
+            created: 1687882411,
+            owned_by: 'openai',
+            permission: [{ allow_create_engine: false }]
+          },
+          {
+            id: 'gpt-3.5-turbo',
+            object: 'model',
+            created: 1677610602,
+            owned_by: 'openai',
+            permission: [{ allow_create_engine: false }]
+          },
+          {
+            id: 'gpt-4-vision-preview',
+            object: 'model',
+            created: 1698894618,
+            owned_by: 'openai',
+            permission: [{ allow_create_engine: false }]
+          },
+          {
+            id: 'dall-e-3',
+            object: 'model',
+            created: 1698785189,
+            owned_by: 'openai',
+            permission: [{ allow_create_engine: false }]
+          }
+        ]
+      })
+    });
+  });
+}
+
+/**
+ * Opens the Settings dialog.
+ * WARNING: This leaves Settings open!
+ * Use withSettings() if you need to close it after.
+ * Use setProviderApiKey() or bootstrapLiveAPI() for API setup.
+ */
 export async function openSettings(page: Page) {
   // Semantic-first cascade to open Settings without test-only hooks
   const tryOpen = async (): Promise<boolean> => {
@@ -78,6 +131,24 @@ export async function openSettings(page: Page) {
   }
 }
 
+/**
+ * Opens Settings, executes an action, then saves and closes Settings.
+ * Guarantees Settings is properly closed even if action throws.
+ */
+export async function withSettings(page: Page, action: () => Promise<void>) {
+  await openSettings(page);
+  try {
+    await action();
+  } finally {
+    // Always save and close, even if action throws
+    const saveBtn = page.getByRole('button', { name: /^save$/i });
+    await expect(saveBtn).toBeVisible();
+    await saveBtn.click();
+    await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
+    await page.waitForTimeout(500); // Wait for dialog animations to complete
+  }
+}
+
 export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthropic' = 'OpenAI') {
   const key = provider === 'OpenAI'
     ? process.env.OPENAI_API_KEY
@@ -103,7 +174,7 @@ export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthrop
   // Prefer semantic combobox by label, fallback to id
   let modelSelect = page.getByRole('combobox', { name: /model selection/i });
   if (!(await modelSelect.isVisible().catch(() => false))) {
-    modelSelect = page.locator('#model-selection');
+    modelSelect = page.locator('#current-model-select');
   }
 
   // Wait up to 15s for real options to appear after clicking Check API
@@ -154,26 +225,103 @@ export async function setProviderApiKey(page: Page, provider: 'OpenAI' | 'Anthro
   const apiInput = page.locator('#api-key');
   await expect(apiInput).toBeVisible();
   await apiInput.fill(apiKey);
-  const checkBtn = page.getByRole('button', { name: /check api/i });
-  await expect(checkBtn).toBeVisible();
-  await checkBtn.click();
 
-  // Wait for models to populate
-  const modelSelect = page.locator('#model-selection');
-  await expect(modelSelect.locator('option').nth(1)).toBeVisible({ timeout: 15000 });
+  // Use the robust waiting function that handles both network and DOM
+  await waitForModelsToLoad(page, provider);
+
+  // Save and close Settings dialog
+  const saveBtn = page.getByRole('button', { name: /^save$/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+  await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
 }
 
 export async function getVisibleModels(page: Page): Promise<string[]> {
-  const modelSelect = page.locator('#model-selection');
+  // CRITICAL FIX: Must expand QuickSettings first to access model dropdown
+  const quickSettingsButton = page.locator('button').filter({ hasText: 'Quick Settings' }).first();
+  const isExpanded = await quickSettingsButton.getAttribute('aria-expanded') === 'true';
+
+  if (!isExpanded) {
+    await quickSettingsButton.click();
+    await page.waitForTimeout(500); // Allow expansion animation
+  }
+
+  // CRITICAL FIX: Use correct selector #current-model-select (not #current-model-select)
+  const modelSelect = page.locator('#current-model-select');
+  await modelSelect.waitFor({ timeout: 5000 });
+
   const options = await modelSelect.locator('option').all();
   const models = [];
   for (const option of options) {
     const text = await option.textContent();
-    if (text && text !== 'Select a model...' && text.trim() !== '') {
+    if (text && text !== 'Select a model...' && text !== 'No models loaded' && text.trim() !== '') {
       models.push(text.trim());
     }
   }
   return models;
+}
+
+export async function waitForModelsToLoad(
+  page: Page,
+  expectedProvider: 'OpenAI' | 'Anthropic' | 'both'
+): Promise<void> {
+  // CRITICAL FIX: Must expand QuickSettings first to access model dropdown
+  const quickSettingsButton = page.locator('button').filter({ hasText: 'Quick Settings' }).first();
+  const isExpanded = await quickSettingsButton.getAttribute('aria-expanded') === 'true';
+
+  if (!isExpanded) {
+    await quickSettingsButton.click();
+    await page.waitForTimeout(500); // Allow expansion animation
+  }
+
+  // CRITICAL FIX: Use correct selector #current-model-select (not #model-selection)
+  const modelSelect = page.locator('#current-model-select');
+
+  // Wait for network response based on expected provider
+  const responsePromise = page.waitForResponse(
+    response => {
+      const url = response.url();
+      let isCorrectEndpoint = false;
+
+      if (expectedProvider === 'OpenAI' || expectedProvider === 'both') {
+        if (url.includes('api.openai.com') && url.includes('/v1/models')) {
+          isCorrectEndpoint = true;
+        }
+      }
+      if (expectedProvider === 'Anthropic' || expectedProvider === 'both') {
+        if (url.includes('api.anthropic.com') && url.includes('/v1/models')) {
+          isCorrectEndpoint = true;
+        }
+      }
+
+      return isCorrectEndpoint && response.status() === 200;
+    },
+    { timeout: 15000 }
+  );
+
+  // Trigger the check (assumes Check API button is already visible)
+  const checkBtn = page.getByRole('button', { name: /check api/i });
+  await checkBtn.click();
+
+  // Wait for network response
+  await responsePromise;
+
+  // Wait for DOM to show real model options (not placeholders)
+  await page.waitForFunction(
+    () => {
+      const select = document.querySelector('#current-model-select') as HTMLSelectElement;
+      if (!select) return false;
+
+      // Look for options with real values (not empty, not disabled)
+      const realOptions = select.querySelectorAll('option[value]:not([value=""]):not(:disabled)');
+
+      console.log('DOM Check - Real options found:', realOptions.length);
+      console.log('DOM Check - Option values:', Array.from(realOptions).map(opt => opt.getAttribute('value')));
+
+      return realOptions.length > 0;
+    },
+    { timeout: 10000 }
+  );
 }
 
 export async function verifyProviderIndicators(page: Page, expectedProviders: string[]) {
@@ -191,18 +339,43 @@ export async function bootstrapBothProviders(page: Page) {
   if (!openaiKey) throw new Error('OPENAI_API_KEY env not set for live tests.');
   if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY env not set for live tests.');
 
-  await setProviderApiKey(page, 'OpenAI', openaiKey);
-  await setProviderApiKey(page, 'Anthropic', anthropicKey);
+  // Set both providers in a single Settings session
+  await withSettings(page, async () => {
+    // Set OpenAI provider and wait for models
+    const providerSelect = page.locator('#provider-selection');
+    await expect(providerSelect).toBeVisible();
+    await providerSelect.selectOption('OpenAI');
 
-  // Close settings
-  const closeBtn = page.getByRole('button', { name: /close|×/i });
-  if (await closeBtn.isVisible().catch(() => false)) {
-    await closeBtn.click();
-  }
+    const apiInput = page.locator('#api-key');
+    await expect(apiInput).toBeVisible();
+    await apiInput.fill(openaiKey);
+
+    const checkBtn = page.getByRole('button', { name: /check api/i });
+    await expect(checkBtn).toBeVisible();
+    await checkBtn.click();
+
+    // Wait for OpenAI models to populate
+    const modelSelect = page.locator('#current-model-select');
+    await modelSelect.locator('option').nth(1).waitFor({ state: 'attached', timeout: 5000 });
+
+    // Set Anthropic provider and wait for models
+    await providerSelect.selectOption('Anthropic');
+    await apiInput.fill(anthropicKey);
+    await checkBtn.click();
+
+    // Wait for Anthropic models to populate
+    await modelSelect.locator('option').nth(1).waitFor({ state: 'attached', timeout: 5000 });
+  });
 }
 
 export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-open' | 'ensure-closed' | 'open' | 'close', model?: string | RegExp, reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high', verbosity?: 'low' | 'medium' | 'high', summary?: 'auto' | 'detailed' | 'null', closeAfter?: boolean } = {}) {
   const { mode = 'ensure-open', model, reasoningEffort, verbosity, summary, closeAfter = false } = opts;
+
+  // Defensive check: Settings dialog must not be open
+  const settingsHeading = page.getByRole('heading', { name: /settings/i });
+  if (await settingsHeading.isVisible().catch(() => false)) {
+    throw new Error('Cannot open Quick Settings while Settings dialog is open. Fix your test to properly close Settings first.');
+  }
 
   const toggle = page.locator('button[aria-controls="quick-settings-body"]');
   await expect(toggle).toBeVisible();
@@ -388,7 +561,7 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
         lastCompletedAt: 0,
         
         startMonitoring() {
-          // Hook into the global streamResponseViaResponsesAPI if available
+          // Hook into the global streamResponseViaResponsesAPI if available (OpenAI)
           const originalStream = win.streamResponseViaResponsesAPI;
           if (originalStream && typeof originalStream === 'function') {
             win.streamResponseViaResponsesAPI = function(...args: any[]) {
@@ -410,6 +583,23 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
               return originalStream.apply(this, args);
             };
           }
+
+          // Hook into Anthropic streaming if available
+          const originalAnthropicStream = win.streamAnthropicMessage;
+          if (originalAnthropicStream && typeof originalAnthropicStream === 'function') {
+            win.streamAnthropicMessage = async function(...args: any[]) {
+              win.__streamMonitor.isStreaming = true;
+              try {
+                const result = await originalAnthropicStream.apply(this, args);
+                win.__streamMonitor.isStreaming = false;
+                win.__streamMonitor.lastCompletedAt = Date.now();
+                return result;
+              } catch (error) {
+                win.__streamMonitor.isStreaming = false;
+                throw error;
+              }
+            };
+          }
         }
       };
       win.__streamMonitor.startMonitoring();
@@ -420,8 +610,8 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
   const ssePromise = page.waitForResponse(
     response => {
       const url = response.url();
-      return url.includes('api.openai.com') && 
-             (url.includes('/chat/completions') || url.includes('/responses')) &&
+      return (url.includes('api.openai.com') || url.includes('api.anthropic.com')) &&
+             (url.includes('/chat/completions') || url.includes('/responses') || url.includes('/v1/messages')) &&
              response.status() === 200;
     },
     { timeout: Math.min(20000, timeout) }
@@ -772,4 +962,28 @@ export async function getVisibleMessages(page: Page, opts: GetMessagesOptions = 
   }
 
   return out;
+}
+
+export async function getRecentModelsFromQuickSettings(page: Page): Promise<string[]> {
+  await operateQuickSettings(page, { mode: 'ensure-open' });
+
+  // Look for recent models section in Quick Settings
+  const recentSection = page.locator('text=/recent|recently used/i').first();
+
+  if (await recentSection.isVisible().catch(() => false)) {
+    // Get models from recent section
+    const recentModels = [];
+    const modelButtons = page.locator('button').filter({ hasText: /gpt|claude/i });
+    const count = await modelButtons.count();
+
+    for (let i = 0; i < count; i++) {
+      const text = await modelButtons.nth(i).textContent();
+      if (text && (text.includes('gpt') || text.includes('claude'))) {
+        recentModels.push(text.trim());
+      }
+    }
+    return recentModels;
+  }
+
+  return [];
 }

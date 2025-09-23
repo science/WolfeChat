@@ -94,12 +94,31 @@ await operateQuickSettings(page, {
 // AVOID - fragile and unreliable
 await page.waitForSelector('button[disabled]', { state: 'hidden' });
 await page.waitForSelector('.streaming-indicator', { state: 'hidden' });
+await page.locator('#provider-selection').selectOption('OpenAI'); // Use setProviderApiKey() instead
+await page.locator('#api-key').fill(key); // Use setProviderApiKey() instead
 ```
 
 ### ✅ Use Provided Helpers
 ```javascript
 // PREFERRED - robust multi-signal completion detection
 await waitForAssistantDone(page);
+await setProviderApiKey(page, 'OpenAI', openaiKey);
+await operateQuickSettings(page, { model: /gpt-3\.5-turbo/i });
+```
+
+### ⚠️ Critical Model Selection Patterns
+```javascript
+// ❌ WRONG - matches TTS models like "gpt-audio"
+model: /gpt/i
+
+// ✅ CORRECT - specific chat model
+model: /gpt-3\.5-turbo/i
+
+// ✅ CORRECT - reasoning model
+model: /gpt-5-nano/i
+
+// ✅ CORRECT - Claude model
+model: /claude-3\.5-sonnet/i
 ```
 
 ### Standard Test Models

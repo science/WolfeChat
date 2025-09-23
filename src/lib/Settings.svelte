@@ -66,6 +66,13 @@
     }
   }
 
+  // Helper function to determine when both providers are configured
+  function shouldShowProviderIndicators() {
+    const openaiKey = get(openaiApiKey);
+    const anthropicKey = get(anthropicApiKey);
+    return !!(openaiKey && anthropicKey);
+  }
+
   // Watch for provider changes
   $: $selectedProvider && handleProviderChange();
 
@@ -97,11 +104,24 @@ onMount(async() => {
         let newFilteredModels = [];
 
         if (mode === "GPT") {
-            // Include both GPT and Claude chat models (but not vision, dalle, or tts)
-            newFilteredModels = availableModels.filter(model =>
-                (model.id.includes('gpt') && !model.id.includes('vision')) ||
-                (model.id.startsWith('claude-') && !model.id.includes('vision'))
-            );
+            // Include chat models from available providers only
+            // Use local state AND store state to handle timing issues
+            const openaiKey = get(openaiApiKey) || (localApiTextField && $selectedProvider === 'OpenAI' ? localApiTextField : null);
+            const anthropicKey = get(anthropicApiKey) || (localApiTextField && $selectedProvider === 'Anthropic' ? localApiTextField : null);
+
+            newFilteredModels = availableModels.filter(model => {
+                // First check if it's a chat model (not vision, dalle, or tts)
+                const isGptChat = model.id.includes('gpt') && !model.id.includes('vision');
+                const isClaudeChat = model.id.startsWith('claude-') && !model.id.includes('vision');
+
+                if (!isGptChat && !isClaudeChat) return false;
+
+                // Then check provider availability
+                if (model.provider === 'openai' && !openaiKey) return false;
+                if (model.provider === 'anthropic' && !anthropicKey) return false;
+
+                return true;
+            });
         } else if (mode === "GPT + Vision") {
             newFilteredModels = availableModels.filter(model => model.id.includes('vision'));
         } else if (mode === "Dall-E") {
@@ -124,11 +144,24 @@ onMount(async() => {
         let newFilteredRecent = [];
 
         if (mode === "GPT") {
-            // Include both GPT and Claude chat models in recent
-            newFilteredRecent = recent.filter(model =>
-                (model.id.includes('gpt') && !model.id.includes('vision')) ||
-                (model.id.startsWith('claude-') && !model.id.includes('vision'))
-            );
+            // Include recent chat models from available providers only
+            // Use local state AND store state to handle timing issues
+            const openaiKey = get(openaiApiKey) || (localApiTextField && $selectedProvider === 'OpenAI' ? localApiTextField : null);
+            const anthropicKey = get(anthropicApiKey) || (localApiTextField && $selectedProvider === 'Anthropic' ? localApiTextField : null);
+
+            newFilteredRecent = recent.filter(model => {
+                // First check if it's a chat model (not vision, dalle, or tts)
+                const isGptChat = model.id.includes('gpt') && !model.id.includes('vision');
+                const isClaudeChat = model.id.startsWith('claude-') && !model.id.includes('vision');
+
+                if (!isGptChat && !isClaudeChat) return false;
+
+                // Then check provider availability
+                if (model.provider === 'openai' && !openaiKey) return false;
+                if (model.provider === 'anthropic' && !anthropicKey) return false;
+
+                return true;
+            });
         } else if (mode === "GPT + Vision") {
             newFilteredRecent = recent.filter(model => model.id.includes('vision'));
         } else if (mode === "Dall-E") {
@@ -198,7 +231,16 @@ async function checkAPIConnection() {
 
     // Save the settings and refresh models
     handleSave();
-    await fetchModels(localApiTextField);
+
+    // Check if both providers have API keys for combined model list
+    const openaiKey = get(openaiApiKey);
+    const anthropicKey = get(anthropicApiKey);
+
+    if (openaiKey && anthropicKey) {
+      await fetchAllModels();
+    } else {
+      await fetchModels(localApiTextField);
+    }
     updateFilteredModels();
   } catch (error) {
     console.error(`${$selectedProvider} API connection failed:`, error);
@@ -241,7 +283,7 @@ async function fetchModels(apiKey: string, provider?: string) {
       models = await fetchAnthropicModels(apiKey);
     }
 
-    const sortedModels = models.sort((a, b) => a.id.localeCompare(b.id));
+    const sortedModels = models.sort((a, b) => (b.created || 0) - (a.created || 0));
     modelsStore.set(sortedModels);
     // Persistence handled by modelsStore subscriber
   } catch (error) {
@@ -284,7 +326,7 @@ async function fetchAllModels() {
     }
 
     if (allModels.length > 0) {
-      const sortedModels = allModels.sort((a, b) => a.id.localeCompare(b.id));
+      const sortedModels = allModels.sort((a, b) => (b.created || 0) - (a.created || 0));
       modelsStore.set(sortedModels);
     }
   } catch (error) {
@@ -430,17 +472,30 @@ handleClose();
       {#if $filteredRecentModels && $filteredRecentModels.length}
         <optgroup label="Recently used">
           {#each $filteredRecentModels as r}
-            <option value={r.id}>{r.id}{r.provider ? ` (${r.provider === 'openai' ? 'OpenAI' : 'Anthropic'})` : ''}</option>
+            <option value={r.id}>{r.id}</option>
           {/each}
         </optgroup>
       {/if}
-      <optgroup label="All models">
-        {#each $filteredModels as model}
-          {#if !$filteredRecentModels.find(r => r.id === model.id)}
-            <option value={model.id}>{model.id}{model.provider ? ` (${model.provider === 'openai' ? 'OpenAI' : 'Anthropic'})` : ''}</option>
-          {/if}
-        {/each}
-      </optgroup>
+
+      {#if get(openaiApiKey) && $filteredModels.filter(m => m.provider === 'openai').length > 0}
+        <optgroup label="OpenAI">
+          {#each $filteredModels.filter(m => m.provider === 'openai').sort((a, b) => a.id.localeCompare(b.id)) as model}
+            {#if !$filteredRecentModels.find(r => r.id === model.id)}
+              <option value={model.id}>{model.id}</option>
+            {/if}
+          {/each}
+        </optgroup>
+      {/if}
+
+      {#if get(anthropicApiKey) && $filteredModels.filter(m => m.provider === 'anthropic').length > 0}
+        <optgroup label="Anthropic">
+          {#each $filteredModels.filter(m => m.provider === 'anthropic').sort((a, b) => a.id.localeCompare(b.id)) as model}
+            {#if !$filteredRecentModels.find(r => r.id === model.id)}
+              <option value={model.id}>{model.id}</option>
+            {/if}
+          {/each}
+        </optgroup>
+      {/if}
     {:else}
       <option disabled selected>No models available</option>
     {/if}
