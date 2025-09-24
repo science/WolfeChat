@@ -345,6 +345,81 @@ export async function setProviderApiKey(page: Page, provider: 'OpenAI' | 'Anthro
   await saveAndCloseSettings(page);
 }
 
+// ============= MODAL CONFLICT RESOLUTION HELPERS =============
+// These helpers prevent Settings/QuickSettings conflicts that cause test timeouts
+
+/**
+ * Ensures Settings modal is safely closed if it's currently open
+ * Use this before any QuickSettings operations to prevent conflicts
+ * @param page - Playwright page
+ */
+export async function ensureSettingsClosed(page: Page): Promise<void> {
+  console.log('[Helper Debug] Checking if Settings modal is open...');
+  const settingsHeading = page.getByRole('heading', { name: /settings/i });
+  const isSettingsOpen = await settingsHeading.isVisible().catch(() => false);
+
+  if (isSettingsOpen) {
+    console.log('[Helper Debug] Settings is open, closing it...');
+    const saveBtn = page.getByRole('button', { name: /^save$/i });
+    if (await saveBtn.isVisible().catch(() => false)) {
+      await saveBtn.click();
+    } else {
+      // Fallback: try to close via cancel or X button
+      const cancelBtn = page.getByRole('button', { name: /cancel|close|×/i }).first();
+      if (await cancelBtn.isVisible().catch(() => false)) {
+        await cancelBtn.click();
+      }
+    }
+
+    // Wait for Settings to close completely
+    await expect(settingsHeading).toBeHidden({ timeout: 5000 });
+    await page.waitForTimeout(500); // Wait for dialog animations to complete
+    console.log('[Helper Debug] Settings closed successfully');
+  } else {
+    console.log('[Helper Debug] Settings is not open, no action needed');
+  }
+}
+
+/**
+ * Opens Settings modal and keeps it open for multiple operations
+ * Use this when you need to perform multiple Settings operations
+ * Call ensureSettingsClosed() when done
+ * @param page - Playwright page
+ * @returns SettingsHandle with methods to operate on Settings
+ */
+export async function withSettingsOpen(page: Page) {
+  console.log('[Helper Debug] Opening Settings modal...');
+  await openSettings(page);
+
+  return {
+    /**
+     * Safely closes the Settings modal
+     */
+    close: async () => {
+      console.log('[Helper Debug] Closing Settings via handle...');
+      await saveAndCloseSettings(page);
+    },
+
+    /**
+     * Selects a provider in the open Settings modal
+     */
+    selectProvider: async (provider: 'OpenAI' | 'Anthropic') => {
+      console.log(`[Helper Debug] Selecting provider: ${provider}`);
+      const providerSelect = page.locator('#provider-selection');
+      await expect(providerSelect).toBeVisible();
+      await providerSelect.selectOption(provider);
+    },
+
+    /**
+     * Gets visible models from the open Settings modal
+     */
+    getModels: async (): Promise<string[]> => {
+      console.log('[Helper Debug] Getting models from Settings...');
+      return getSettingsModels(page);
+    }
+  };
+}
+
 type ModalContext = 'settings' | 'quick-settings' | 'none';
 
 async function getModalContext(page: Page): Promise<ModalContext> {
@@ -569,11 +644,9 @@ export async function bootstrapBothProviders(page: Page) {
 export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-open' | 'ensure-closed' | 'open' | 'close', model?: string | RegExp, reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high', verbosity?: 'low' | 'medium' | 'high', summary?: 'auto' | 'detailed' | 'null', closeAfter?: boolean } = {}) {
   const { mode = 'ensure-open', model, reasoningEffort, verbosity, summary, closeAfter = false } = opts;
 
-  // Defensive check: Settings dialog must not be open
-  const settingsHeading = page.getByRole('heading', { name: /settings/i });
-  if (await settingsHeading.isVisible().catch(() => false)) {
-    throw new Error('Cannot open Quick Settings while Settings dialog is open. Fix your test to properly close Settings first.');
-  }
+  // Automatic conflict resolution: Close Settings if open
+  console.log('[operateQuickSettings] Ensuring Settings is closed to prevent conflicts...');
+  await ensureSettingsClosed(page);
 
   const toggle = page.locator('button[aria-controls="quick-settings-body"]');
   await expect(toggle).toBeVisible();

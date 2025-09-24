@@ -31,8 +31,8 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // Test OpenAI first
     await setProviderApiKey(page, 'OpenAI', openaiKey);
 
-    // Test GPT model selection works
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt/i });
+    // Test GPT model selection works - use specific chat model pattern
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-3\.5-turbo/i });
 
     // Verify GPT model was selected
     const quickModelSelect = page.locator('#current-model-select');

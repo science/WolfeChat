@@ -35,12 +35,12 @@ test.describe('QuickSettings Expansion', () => {
     await quickSettingsButton.click();
 
     // Wait for expansion animation and dropdown to appear
-    await page.waitForSelector('#model-selection', { timeout: 5000 });
+    await page.waitForSelector('#current-model-select', { timeout: 5000 });
     console.log('✅ Model dropdown appeared after expansion');
 
     // Check the dropdown content
     console.log('STEP 4: Check dropdown content');
-    const modelSelect = page.locator('#model-selection');
+    const modelSelect = page.locator('#current-model-select');
     const options = await modelSelect.locator('option').allTextContents();
     console.log('Model options:', options);
 
@@ -84,10 +84,10 @@ test.describe('QuickSettings Expansion', () => {
     // Step 1: Expand QuickSettings to access model dropdown
     const quickSettingsButton = await page.locator('button').filter({ hasText: 'Quick Settings' }).first();
     await quickSettingsButton.click();
-    await page.waitForSelector('#model-selection', { timeout: 5000 });
+    await page.waitForSelector('#current-model-select', { timeout: 5000 });
 
     // Step 2: Check current model dropdown state
-    const modelSelect = page.locator('#model-selection');
+    const modelSelect = page.locator('#current-model-select');
     const initialOptions = await modelSelect.locator('option').allTextContents();
     console.log('Initial model options:', initialOptions);
 
