@@ -4,7 +4,11 @@ import {
   setProviderApiKey,
   bootstrapBothProviders,
   getVisibleModels,
-  verifyProviderIndicators
+  verifyProviderIndicators,
+  openSettingsAndSelectProvider,
+  fillApiKeyAndWaitForModels,
+  saveAndCloseSettings,
+  getSettingsModels
 } from './helpers';
 
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
@@ -65,15 +69,20 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     expect(hasProviderIndicators).toBe(false);
   });
 
-  (test as any)[hasAnthropicKey ? 'test' : 'skip']('shows combined model list with provider indicators when both keys are set', async ({ page }) => {
+  (test as any)[hasAnthropicKey ? 'test' : 'skip']('shows combined model list with provider organization when both keys are set', async ({ page }) => {
     // Use the helper that properly handles both providers
     await bootstrapBothProviders(page);
 
-    // Re-open settings to check the model list
-    await openSettings(page);
-    const models = await getVisibleModels(page);
+    // Open QuickSettings to check the model organization
+    const quickSettingsButton = page.locator('button').filter({ hasText: 'Quick Settings' }).first();
+    await quickSettingsButton.click();
+    await page.waitForTimeout(500);
 
-    // Should have both GPT and Claude models
+    const modelSelect = page.locator('#current-model-select');
+    await modelSelect.waitFor({ timeout: 5000 });
+
+    // Should have both GPT and Claude models available
+    const models = await getVisibleModels(page);
     expect(models.length).toBeGreaterThan(0);
 
     const hasGptModels = models.some(m => m.toLowerCase().includes('gpt'));
@@ -82,31 +91,29 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     expect(hasGptModels).toBe(true);
     expect(hasClaudeModels).toBe(true);
 
-    // When both providers, should have provider indicators
-    const hasOpenAIIndicators = models.some(m => m.includes('(OpenAI)'));
-    const hasAnthropicIndicators = models.some(m => m.includes('(Anthropic)'));
+    // When both providers are configured, should have optgroups for organization
+    const openAIOptgroup = modelSelect.locator('optgroup[label="OpenAI"]');
+    const anthropicOptgroup = modelSelect.locator('optgroup[label="Anthropic"]');
 
-    expect(hasOpenAIIndicators).toBe(true);
-    expect(hasAnthropicIndicators).toBe(true);
+    await expect(openAIOptgroup).toBeVisible();
+    await expect(anthropicOptgroup).toBeVisible();
 
-    // Verify specific model format
-    const gptModel = models.find(m => m.toLowerCase().includes('gpt'));
-    const claudeModel = models.find(m => m.toLowerCase().includes('claude'));
+    // Verify that models appear in correct optgroups
+    const openAIOptions = await openAIOptgroup.locator('option').count();
+    const anthropicOptions = await anthropicOptgroup.locator('option').count();
 
-    if (gptModel) {
-      expect(gptModel).toMatch(/\(OpenAI\)$/);
-    }
-    if (claudeModel) {
-      expect(claudeModel).toMatch(/\(Anthropic\)$/);
-    }
+    expect(openAIOptions).toBeGreaterThan(0);
+    expect(anthropicOptions).toBeGreaterThan(0);
   });
 
   test('model selection persists when switching providers', async ({ page }) => {
     const openaiKey = process.env.OPENAI_API_KEY!;
 
-    await setProviderApiKey(page, 'OpenAI', openaiKey);
+    // Use atomic helpers for granular control - keep Settings open during operations
+    await openSettingsAndSelectProvider(page, 'OpenAI');
+    await fillApiKeyAndWaitForModels(page, openaiKey, 'OpenAI');
 
-    // Select a specific model
+    // Select a specific model while Settings is open
     const modelSelect = page.locator('#model-selection');
     const firstOption = await modelSelect.locator('option').nth(1).textContent();
     if (firstOption) {
@@ -115,7 +122,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
       // Verify selection
       await expect(modelSelect).toHaveValue(firstOption.replace(/\s*\(.*\)$/, ''));
 
-      // Switch provider and back
+      // Switch provider without closing Settings
       const providerSelect = page.locator('#provider-selection');
       await providerSelect.selectOption('Anthropic');
       await providerSelect.selectOption('OpenAI');
@@ -123,6 +130,9 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
       // Model selection should be preserved
       await expect(modelSelect).toHaveValue(firstOption.replace(/\s*\(.*\)$/, ''));
     }
+
+    // Finally close Settings
+    await saveAndCloseSettings(page);
   });
 
   (test as any)[hasAnthropicKey ? 'test' : 'skip']('models are sorted by date (newest first)', async ({ page }) => {
@@ -153,10 +163,12 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
   test('model list updates when API keys are added/removed', async ({ page }) => {
     const openaiKey = process.env.OPENAI_API_KEY!;
 
-    // Start with OpenAI only
-    await setProviderApiKey(page, 'OpenAI', openaiKey);
+    // Start with Settings open and set OpenAI
+    await openSettingsAndSelectProvider(page, 'OpenAI');
+    await fillApiKeyAndWaitForModels(page, openaiKey, 'OpenAI');
 
-    let models = await getVisibleModels(page);
+    // Get models while Settings is open
+    let models = await getSettingsModels(page);
     const initialModelCount = models.length;
     const hasClaudeInitially = models.some(m => m.toLowerCase().includes('claude'));
     expect(hasClaudeInitially).toBe(false);
@@ -164,10 +176,12 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     if (hasAnthropicKey) {
       const anthropicKey = process.env.ANTHROPIC_API_KEY!;
 
-      // Add Anthropic key
-      await setProviderApiKey(page, 'Anthropic', anthropicKey);
+      // Switch to Anthropic without closing Settings
+      const providerSelect = page.locator('#provider-selection');
+      await providerSelect.selectOption('Anthropic');
+      await fillApiKeyAndWaitForModels(page, anthropicKey, 'Anthropic');
 
-      models = await getVisibleModels(page);
+      models = await getSettingsModels(page);
 
       // Should now have more models (GPT + Claude)
       expect(models.length).toBeGreaterThan(initialModelCount);
@@ -175,20 +189,22 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
       const hasClaudeAfterAdd = models.some(m => m.toLowerCase().includes('claude'));
       expect(hasClaudeAfterAdd).toBe(true);
 
-      // Remove Anthropic key by clearing it
+      // Clear Anthropic key
       const apiKeyInput = page.locator('#api-key');
       await apiKeyInput.fill('');
 
-      // Switch back to OpenAI to refresh the model list
-      const providerSelect = page.locator('#provider-selection');
+      // Switch back to OpenAI
       await providerSelect.selectOption('OpenAI');
 
-      models = await getVisibleModels(page);
+      models = await getSettingsModels(page);
 
       // Should be back to original count (only GPT models)
       const hasClaudeAfterRemove = models.some(m => m.toLowerCase().includes('claude'));
       expect(hasClaudeAfterRemove).toBe(false);
     }
+
+    // Finally close Settings
+    await saveAndCloseSettings(page);
   });
 
   test('empty state shows appropriate message', async ({ page }) => {

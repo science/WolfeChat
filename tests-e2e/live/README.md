@@ -87,6 +87,105 @@ await operateQuickSettings(page, {
 });
 ```
 
+### Settings Management Helpers
+
+#### Composite Helpers (Recommended)
+Use these for standard Settings operations:
+
+##### `setProviderApiKey(page, provider, apiKey)`
+Sets up a provider with API key and closes Settings when done:
+```javascript
+await setProviderApiKey(page, 'OpenAI', openaiKey);
+// Settings is now closed, models are loaded
+```
+
+##### `bootstrapBothProviders(page)`
+Sets up both OpenAI and Anthropic providers:
+```javascript
+await bootstrapBothProviders(page);
+// Both providers configured, Settings closed
+```
+
+#### Atomic Helpers (Advanced)
+⚠️ **Only use when you need granular control during Settings operations**
+
+These helpers provide fine-grained control over Settings modal state:
+
+##### `openSettingsAndSelectProvider(page, provider?)`
+Opens Settings and optionally selects a provider:
+```javascript
+await openSettingsAndSelectProvider(page, 'OpenAI');
+// Settings is now open with OpenAI selected
+```
+
+##### `fillApiKeyAndWaitForModels(page, apiKey, provider)`
+Fills API key and waits for models (Settings must be open):
+```javascript
+await fillApiKeyAndWaitForModels(page, openaiKey, 'OpenAI');
+// Models loaded, Settings still open
+```
+
+##### `getSettingsModels(page)`
+Gets model list from Settings without closing:
+```javascript
+const models = await getSettingsModels(page);
+// Returns array of model names, Settings remains open
+```
+
+##### `selectModelInSettings(page, model)`
+Selects a model in Settings (without closing):
+```javascript
+await selectModelInSettings(page, 'gpt-4');
+// Model selected, Settings still open
+```
+
+##### `saveAndCloseSettings(page)`
+Saves and closes Settings modal:
+```javascript
+await saveAndCloseSettings(page);
+// Settings is now closed
+```
+
+#### When to Use Atomic Helpers
+
+Use atomic helpers only when you need to:
+- Perform multiple operations while Settings is open
+- Test Settings UI behavior between operations
+- Verify state changes without closing/reopening Settings
+
+**Example: Testing model persistence across provider switches**
+```javascript
+// Need Settings to stay open during provider switching
+await openSettingsAndSelectProvider(page, 'OpenAI');
+await fillApiKeyAndWaitForModels(page, openaiKey, 'OpenAI');
+
+// Select a model
+await selectModelInSettings(page, 'gpt-4');
+
+// Switch providers without closing
+const providerSelect = page.locator('#provider-selection');
+await providerSelect.selectOption('Anthropic');
+await fillApiKeyAndWaitForModels(page, anthropicKey, 'Anthropic');
+
+// Verify model selection behavior
+const models = await getSettingsModels(page);
+// ... assertions ...
+
+// Finally close Settings
+await saveAndCloseSettings(page);
+```
+
+For standard API setup, always prefer composite helpers:
+```javascript
+// ✅ PREFERRED - Simple and reliable
+await setProviderApiKey(page, 'OpenAI', openaiKey);
+
+// ❌ AVOID - Unnecessarily complex for simple setup
+await openSettingsAndSelectProvider(page, 'OpenAI');
+await fillApiKeyAndWaitForModels(page, openaiKey, 'OpenAI');
+await saveAndCloseSettings(page);
+```
+
 ## Best Practices
 
 ### ❌ Don't Create Brittle Locators

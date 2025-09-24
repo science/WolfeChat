@@ -121,20 +121,10 @@ test.describe('API Mocking for Nonlive Tests', () => {
 
     console.log('STEP 3: Test QuickSettings with correct selector');
 
-    // Close Settings modal first - try different selectors
-    try {
-      await page.click('button:has-text("×")', { timeout: 2000 });
-    } catch {
-      try {
-        await page.click('.close-button', { timeout: 2000 });
-      } catch {
-        try {
-          await page.keyboard.press('Escape');
-        } catch {
-          console.log('Could not close Settings modal, continuing anyway...');
-        }
-      }
-    }
+    // Close Settings modal properly using Save button
+    const saveBtn = page.getByRole('button', { name: /^save$/i });
+    await saveBtn.click();
+    await page.waitForSelector('h2:has-text("Settings")', { state: 'hidden', timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Expand QuickSettings

@@ -174,7 +174,7 @@ export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthrop
   // Prefer semantic combobox by label, fallback to id
   let modelSelect = page.getByRole('combobox', { name: /model selection/i });
   if (!(await modelSelect.isVisible().catch(() => false))) {
-    modelSelect = page.locator('#current-model-select');
+    modelSelect = page.locator('#model-selection');
   }
 
   // Wait up to 15s for real options to appear after clicking Check API
@@ -221,21 +221,158 @@ export async function selectProvider(page: Page, provider: 'OpenAI' | 'Anthropic
   await providerSelect.selectOption(provider);
 }
 
-export async function setProviderApiKey(page: Page, provider: 'OpenAI' | 'Anthropic', apiKey: string) {
-  await selectProvider(page, provider);
+// ============= ATOMIC SETTINGS HELPERS =============
+// These provide granular control for tests that need to perform
+// custom operations while Settings modal is open
+
+/**
+ * Opens Settings modal and optionally selects a provider
+ * @param page - Playwright page
+ * @param provider - Optional provider to select after opening
+ */
+export async function openSettingsAndSelectProvider(
+  page: Page,
+  provider?: 'OpenAI' | 'Anthropic'
+): Promise<void> {
+  await openSettings(page);
+
+  if (provider) {
+    const providerSelect = page.locator('#provider-selection');
+    await expect(providerSelect).toBeVisible({ timeout: 5000 });
+    await providerSelect.selectOption(provider);
+  }
+}
+
+/**
+ * Fills API key and waits for models to load
+ * Assumes Settings modal is already open and provider selected
+ * @param page - Playwright page
+ * @param apiKey - API key to fill
+ * @param provider - Provider to wait for models from
+ */
+export async function fillApiKeyAndWaitForModels(
+  page: Page,
+  apiKey: string,
+  provider: 'OpenAI' | 'Anthropic'
+): Promise<void> {
   const apiInput = page.locator('#api-key');
-  await expect(apiInput).toBeVisible();
+  await expect(apiInput).toBeVisible({ timeout: 5000 });
   await apiInput.fill(apiKey);
-
-  // Use the robust waiting function that handles both network and DOM
   await waitForModelsToLoad(page, provider);
+}
 
-  // Save and close Settings dialog
+/**
+ * Saves and closes Settings modal
+ * @param page - Playwright page
+ */
+export async function saveAndCloseSettings(page: Page): Promise<void> {
   const saveBtn = page.getByRole('button', { name: /^save$/i });
-  await expect(saveBtn).toBeVisible();
+  await expect(saveBtn).toBeVisible({ timeout: 5000 });
   await saveBtn.click();
-  await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
-  await page.waitForTimeout(500); // Wait for dialog animations to complete
+
+  const settingsHeading = page.getByRole('heading', { name: /settings/i });
+  await expect(settingsHeading).toBeHidden({ timeout: 5000 });
+  await page.waitForTimeout(500); // Wait for dialog animations
+}
+
+/**
+ * Gets model list from Settings modal (without closing it)
+ * @param page - Playwright page
+ * @returns Array of model names visible in Settings
+ */
+export async function getSettingsModels(page: Page): Promise<string[]> {
+  // Ensure Settings is open
+  const settingsHeading = page.getByRole('heading', { name: /settings/i });
+  if (!await settingsHeading.isVisible().catch(() => false)) {
+    await openSettings(page);
+  }
+
+  const modelSelect = page.locator('#model-selection');
+  await modelSelect.waitFor({ timeout: 5000 });
+
+  const options = await modelSelect.locator('option').all();
+  const models = [];
+
+  for (const option of options) {
+    const text = await option.textContent();
+    if (text && text !== 'Select a model...' && text !== 'No models available' && text.trim() !== '') {
+      models.push(text.trim());
+    }
+  }
+
+  return models;
+}
+
+/**
+ * Selects a model in Settings modal (without closing it)
+ * @param page - Playwright page
+ * @param model - Model to select (exact string or regex)
+ */
+export async function selectModelInSettings(
+  page: Page,
+  model: string | RegExp
+): Promise<void> {
+  const modelSelect = page.locator('#model-selection');
+  await expect(modelSelect).toBeVisible({ timeout: 5000 });
+
+  if (typeof model === 'string') {
+    await modelSelect.selectOption(model);
+  } else {
+    // For regex, find matching option
+    const options = await modelSelect.locator('option').all();
+    for (const option of options) {
+      const text = await option.textContent();
+      if (text && model.test(text)) {
+        const value = await option.getAttribute('value');
+        if (value) {
+          await modelSelect.selectOption(value);
+          return;
+        }
+      }
+    }
+    throw new Error(`No model matching ${model} found in Settings`);
+  }
+}
+
+// ============= COMPOSITE SETTINGS HELPERS =============
+// Use these for standard operations. Only use atomic helpers
+// when you need granular control during Settings operations.
+
+export async function setProviderApiKey(page: Page, provider: 'OpenAI' | 'Anthropic', apiKey: string) {
+  // Now just orchestrates atomic functions
+  await openSettingsAndSelectProvider(page, provider);
+  await fillApiKeyAndWaitForModels(page, apiKey, provider);
+  await saveAndCloseSettings(page);
+}
+
+type ModalContext = 'settings' | 'quick-settings' | 'none';
+
+async function getModalContext(page: Page): Promise<ModalContext> {
+  // Check Settings modal visibility
+  const settingsHeading = page.getByRole('heading', { name: /settings/i });
+  if (await settingsHeading.isVisible().catch(() => false)) {
+    return 'settings';
+  }
+
+  // Check QuickSettings panel expansion
+  const quickSettingsButton = page.locator('button[aria-controls="quick-settings-body"]');
+  const isExpanded = await quickSettingsButton.getAttribute('aria-expanded').catch(() => null);
+  if (isExpanded === 'true') {
+    return 'quick-settings';
+  }
+
+  return 'none';
+}
+
+function getModelSelectorForContext(context: ModalContext): string {
+  switch (context) {
+    case 'settings':
+      return '#model-selection';
+    case 'quick-settings':
+      return '#current-model-select';
+    default:
+      throw new Error(`No model selector for context: ${context}`);
+  }
 }
 
 export async function getVisibleModels(page: Page): Promise<string[]> {
@@ -284,70 +421,127 @@ export async function waitForModelsToLoad(
   page: Page,
   expectedProvider: 'OpenAI' | 'Anthropic' | 'both'
 ): Promise<void> {
-  // CRITICAL FIX: Must expand QuickSettings first to access model dropdown
+  // Detect which modal context we're in
+  const context = await getModalContext(page);
+
+  if (context === 'settings') {
+    // We're in Settings modal - use Settings selector
+    const modelSelect = page.locator('#model-selection');
+
+    // Wait for network response based on expected provider
+    const responsePromise = page.waitForResponse(
+      response => {
+        const url = response.url();
+        let isCorrectEndpoint = false;
+
+        if (expectedProvider === 'OpenAI' || expectedProvider === 'both') {
+          if (url.includes('api.openai.com') && url.includes('/v1/models')) {
+            isCorrectEndpoint = true;
+          }
+        }
+        if (expectedProvider === 'Anthropic' || expectedProvider === 'both') {
+          if (url.includes('api.anthropic.com') && url.includes('/v1/models')) {
+            isCorrectEndpoint = true;
+          }
+        }
+
+        return isCorrectEndpoint && response.status() === 200;
+      },
+      { timeout: 15000 }
+    );
+
+    // Trigger the check (assumes Check API button is already visible)
+    const checkBtn = page.getByRole('button', { name: /check api/i });
+    await checkBtn.click();
+
+    // Wait for network response
+    await responsePromise;
+
+    // Wait for DOM to show real model options in Settings
+    await page.waitForFunction(
+      () => {
+        const select = document.querySelector('#model-selection') as HTMLSelectElement;
+        if (!select) return false;
+
+        // Look for options with real values (not empty, not disabled)
+        const realOptions = select.querySelectorAll('option[value]:not([value=""]):not(:disabled)');
+
+        console.log('DOM Check - Real options found:', realOptions.length);
+        console.log('DOM Check - Option values:', Array.from(realOptions).map(opt => opt.getAttribute('value')));
+
+        return realOptions.length > 0;
+      },
+      { timeout: 10000 }
+    );
+  } else if (context === 'quick-settings') {
+    // Original QuickSettings logic - keep unchanged
+    const quickSettingsButton = page.locator('button').filter({ hasText: 'Quick Settings' }).first();
+    const isExpanded = await quickSettingsButton.getAttribute('aria-expanded') === 'true';
+
+    if (!isExpanded) {
+      await quickSettingsButton.click();
+      await page.waitForTimeout(500); // Allow expansion animation
+    }
+
+    const modelSelect = page.locator('#current-model-select');
+
+    // Wait for network response
+    const responsePromise = page.waitForResponse(
+      response => {
+        const url = response.url();
+        let isCorrectEndpoint = false;
+
+        if (expectedProvider === 'OpenAI' || expectedProvider === 'both') {
+          if (url.includes('api.openai.com') && url.includes('/v1/models')) {
+            isCorrectEndpoint = true;
+          }
+        }
+        if (expectedProvider === 'Anthropic' || expectedProvider === 'both') {
+          if (url.includes('api.anthropic.com') && url.includes('/v1/models')) {
+            isCorrectEndpoint = true;
+          }
+        }
+
+        return isCorrectEndpoint && response.status() === 200;
+      },
+      { timeout: 15000 }
+    );
+
+    const checkBtn = page.getByRole('button', { name: /check api/i });
+    await checkBtn.click();
+    await responsePromise;
+
+    await page.waitForFunction(
+      () => {
+        const select = document.querySelector('#current-model-select') as HTMLSelectElement;
+        if (!select) return false;
+        const realOptions = select.querySelectorAll('option[value]:not([value=""]):not(:disabled)');
+        return realOptions.length > 0;
+      },
+      { timeout: 10000 }
+    );
+  } else {
+    throw new Error('waitForModelsToLoad called without an open modal');
+  }
+}
+
+export async function verifyProviderIndicators(page: Page, expectedProviders: string[]) {
+  // This function checks QuickSettings which uses optgroups for organization when both providers exist
   const quickSettingsButton = page.locator('button').filter({ hasText: 'Quick Settings' }).first();
   const isExpanded = await quickSettingsButton.getAttribute('aria-expanded') === 'true';
 
   if (!isExpanded) {
     await quickSettingsButton.click();
-    await page.waitForTimeout(500); // Allow expansion animation
+    await page.waitForTimeout(500);
   }
 
-  // CRITICAL FIX: Use correct selector #current-model-select (not #model-selection)
   const modelSelect = page.locator('#current-model-select');
+  await modelSelect.waitFor({ timeout: 5000 });
 
-  // Wait for network response based on expected provider
-  const responsePromise = page.waitForResponse(
-    response => {
-      const url = response.url();
-      let isCorrectEndpoint = false;
-
-      if (expectedProvider === 'OpenAI' || expectedProvider === 'both') {
-        if (url.includes('api.openai.com') && url.includes('/v1/models')) {
-          isCorrectEndpoint = true;
-        }
-      }
-      if (expectedProvider === 'Anthropic' || expectedProvider === 'both') {
-        if (url.includes('api.anthropic.com') && url.includes('/v1/models')) {
-          isCorrectEndpoint = true;
-        }
-      }
-
-      return isCorrectEndpoint && response.status() === 200;
-    },
-    { timeout: 15000 }
-  );
-
-  // Trigger the check (assumes Check API button is already visible)
-  const checkBtn = page.getByRole('button', { name: /check api/i });
-  await checkBtn.click();
-
-  // Wait for network response
-  await responsePromise;
-
-  // Wait for DOM to show real model options (not placeholders)
-  await page.waitForFunction(
-    () => {
-      const select = document.querySelector('#current-model-select') as HTMLSelectElement;
-      if (!select) return false;
-
-      // Look for options with real values (not empty, not disabled)
-      const realOptions = select.querySelectorAll('option[value]:not([value=""]):not(:disabled)');
-
-      console.log('DOM Check - Real options found:', realOptions.length);
-      console.log('DOM Check - Option values:', Array.from(realOptions).map(opt => opt.getAttribute('value')));
-
-      return realOptions.length > 0;
-    },
-    { timeout: 10000 }
-  );
-}
-
-export async function verifyProviderIndicators(page: Page, expectedProviders: string[]) {
-  const models = await getVisibleModels(page);
+  // QuickSettings uses optgroups for organization when both providers exist
   for (const provider of expectedProviders) {
-    const hasProvider = models.some(m => m.includes(`(${provider})`));
-    expect(hasProvider).toBe(true);
+    const optgroup = modelSelect.locator(`optgroup[label="${provider}"]`);
+    await expect(optgroup).toBeVisible({ timeout: 5000 });
   }
 }
 
@@ -358,32 +552,17 @@ export async function bootstrapBothProviders(page: Page) {
   if (!openaiKey) throw new Error('OPENAI_API_KEY env not set for live tests.');
   if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY env not set for live tests.');
 
-  // Set both providers in a single Settings session
+  // Set both providers in a single Settings session using atomic helpers
   await withSettings(page, async () => {
     // Set OpenAI provider and wait for models
     const providerSelect = page.locator('#provider-selection');
     await expect(providerSelect).toBeVisible();
     await providerSelect.selectOption('OpenAI');
-
-    const apiInput = page.locator('#api-key');
-    await expect(apiInput).toBeVisible();
-    await apiInput.fill(openaiKey);
-
-    const checkBtn = page.getByRole('button', { name: /check api/i });
-    await expect(checkBtn).toBeVisible();
-    await checkBtn.click();
-
-    // Wait for OpenAI models to populate
-    const modelSelect = page.locator('#current-model-select');
-    await modelSelect.locator('option').nth(1).waitFor({ state: 'attached', timeout: 5000 });
+    await fillApiKeyAndWaitForModels(page, openaiKey, 'OpenAI');
 
     // Set Anthropic provider and wait for models
     await providerSelect.selectOption('Anthropic');
-    await apiInput.fill(anthropicKey);
-    await checkBtn.click();
-
-    // Wait for Anthropic models to populate
-    await modelSelect.locator('option').nth(1).waitFor({ state: 'attached', timeout: 5000 });
+    await fillApiKeyAndWaitForModels(page, anthropicKey, 'Anthropic');
   });
 }
 

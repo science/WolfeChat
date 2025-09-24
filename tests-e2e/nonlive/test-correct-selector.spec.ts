@@ -104,6 +104,12 @@ test.describe('Test Correct QuickSettings Selector', () => {
       // Wait for API call
       await page.waitForTimeout(3000);
 
+      // Close Settings properly before opening QuickSettings
+      const saveBtn = page.getByRole('button', { name: /^save$/i });
+      await saveBtn.click();
+      await page.waitForSelector('h2:has-text("Settings")', { state: 'hidden', timeout: 5000 });
+      await page.waitForTimeout(500);
+
       // Check store state after API setup
       const storeAfterAPI = await page.evaluate(() => {
         if (!window.stores) return { error: 'No window.stores' };
