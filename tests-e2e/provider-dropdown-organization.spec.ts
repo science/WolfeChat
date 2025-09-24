@@ -100,14 +100,20 @@ test.describe('Provider Dropdown Organization Tests', () => {
   });
 
   test('models should be alphabetically sorted within each provider section', async ({ page }) => {
-    // Set both API keys
-    await bootstrapLiveAPI(page, {
-      openaiKey: process.env.OPENAI_API_KEY,
-      anthropicKey: process.env.ANTHROPIC_API_KEY
-    });
+    // ADD API key checks first
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
-    // Open Settings
-    await page.click('button[title="Settings"]');
+    if (!openaiKey || !anthropicKey) {
+      test.skip(true, 'Requires both OPENAI_API_KEY and ANTHROPIC_API_KEY environment variables');
+      return;
+    }
+
+    // Set both API keys - use correct function
+    await bootstrapBothProviders(page);
+
+    // Open Settings using helper
+    await openSettings(page);
     await page.waitForSelector('#model-selection', { state: 'visible' });
 
     // Check OpenAI models are sorted

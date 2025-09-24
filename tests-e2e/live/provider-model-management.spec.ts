@@ -74,9 +74,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     await bootstrapBothProviders(page);
 
     // Open QuickSettings to check the model organization
-    const quickSettingsButton = page.locator('button').filter({ hasText: 'Quick Settings' }).first();
-    await quickSettingsButton.click();
-    await page.waitForTimeout(500);
+    await operateQuickSettings(page, { mode: 'ensure-open' });
 
     const modelSelect = page.locator('#current-model-select');
     await modelSelect.waitFor({ timeout: 5000 });
@@ -107,7 +105,11 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
   });
 
   test('model selection persists when switching providers', async ({ page }) => {
-    const openaiKey = process.env.OPENAI_API_KEY!;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!openaiKey) {
+      test.skip(true, 'Requires OPENAI_API_KEY environment variable');
+      return;
+    }
 
     // Use atomic helpers for granular control - keep Settings open during operations
     await openSettingsAndSelectProvider(page, 'OpenAI');
@@ -161,7 +163,11 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
   });
 
   test('model list updates when API keys are added/removed', async ({ page }) => {
-    const openaiKey = process.env.OPENAI_API_KEY!;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!openaiKey) {
+      test.skip(true, 'Requires OPENAI_API_KEY environment variable');
+      return;
+    }
 
     // Start with Settings open and set OpenAI
     await openSettingsAndSelectProvider(page, 'OpenAI');
@@ -174,7 +180,11 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     expect(hasClaudeInitially).toBe(false);
 
     if (hasAnthropicKey) {
-      const anthropicKey = process.env.ANTHROPIC_API_KEY!;
+      const anthropicKey = process.env.ANTHROPIC_API_KEY;
+      if (!anthropicKey) {
+        console.log('ANTHROPIC_API_KEY not available, skipping Anthropic portion');
+        return;
+      }
 
       // Switch to Anthropic without closing Settings
       const providerSelect = page.locator('#provider-selection');

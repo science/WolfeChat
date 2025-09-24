@@ -5,6 +5,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { openSettings } from '../live/helpers';
 
 test.describe('Debug API Fetch', () => {
   test('should monitor network requests when clicking Check API', async ({ page }) => {
@@ -170,51 +171,67 @@ test.describe('Debug API Fetch', () => {
     }
   });
 
-  test('should check if Check API button handler exists', async ({ page }) => {
-    console.log('=== Checking Check API Button Handler ===');
+  test('should verify Check API button works with real API', async ({ page }) => {
+    if (!process.env.OPENAI_API_KEY) {
+      test.skip(true, 'Requires OPENAI_API_KEY environment variable');
+      return;
+    }
+
+    console.log('=== Testing Check API Button with Real API ===');
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await openSettings(page);
 
-    // Open settings
-    const settingsButton = await page.locator('button').filter({ hasText: 'Settings' }).first();
-    await settingsButton.click();
+    // Fill in real API key
+    const apiKeyInput = page.locator('#api-key');
+    await apiKeyInput.fill(process.env.OPENAI_API_KEY!);
 
-    // Check if the button has event listeners
-    const buttonInfo = await page.evaluate(() => {
-      const button = Array.from(document.querySelectorAll('button')).find(b =>
-        b.textContent?.includes('Check API')
-      );
+    // Monitor network for API call
+    const apiPromise = page.waitForResponse(
+      resp => resp.url().includes('openai.com/v1/models') && resp.status() === 200,
+      { timeout: 10000 }
+    );
 
-      if (!button) return { error: 'Button not found' };
+    // Click Check API button
+    const checkButton = page.locator('button:has-text("Check API")');
+    await expect(checkButton).toBeVisible();
+    await checkButton.click();
 
-      // Try to get event listeners (this might not work in all browsers)
-      const listeners = getEventListeners ? getEventListeners(button) : 'getEventListeners not available';
+    // Verify API was called successfully
+    const response = await apiPromise;
+    expect(response.status()).toBe(200);
+    console.log('✅ API call successful');
 
-      return {
-        found: true,
-        outerHTML: button.outerHTML,
-        hasClickListener: button.onclick !== null,
-        listenerInfo: listeners,
-        parentInfo: {
-          tagName: button.parentElement?.tagName,
-          className: button.parentElement?.className
-        }
-      };
-    });
+    // Verify models were loaded
+    await page.waitForTimeout(2000); // Give time for models to populate
+    const modelCount = await page.locator('#model-selection option').count();
+    expect(modelCount).toBeGreaterThan(1);
+    console.log(`✅ Found ${modelCount} models after API check`);
+  });
 
-    console.log('Button handler info:', JSON.stringify(buttonInfo, null, 2));
+  test('should handle API key validation', async ({ page }) => {
+    console.log('=== Testing API Key Validation ===');
 
-    // Check if we can find the fetchModels function
-    const fetchInfo = await page.evaluate(() => {
-      // Try to access window functions that might be exposed
-      return {
-        hasFetchModels: typeof window.fetchModels === 'function',
-        windowKeys: Object.keys(window).filter(key => key.includes('fetch') || key.includes('model')),
-        hasOpenAIService: !!window.openaiService
-      };
-    });
+    await page.goto('/');
+    await openSettings(page);
 
-    console.log('Function availability:', fetchInfo);
+    // Test with invalid key
+    const apiKeyInput = page.locator('#api-key');
+    await apiKeyInput.fill('sk-invalid-key-12345');
+
+    // Monitor for error response
+    const errorPromise = page.waitForResponse(
+      resp => resp.url().includes('openai.com/v1/models') && resp.status() === 401,
+      { timeout: 10000 }
+    );
+
+    // Click Check API button
+    const checkButton = page.locator('button:has-text("Check API")');
+    await checkButton.click();
+
+    // Verify we get 401 error
+    const errorResponse = await errorPromise;
+    expect(errorResponse.status()).toBe(401);
+    console.log('✅ Invalid API key properly rejected');
   });
 });

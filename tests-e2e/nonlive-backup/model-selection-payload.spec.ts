@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { operateQuickSettings } from '../live/helpers';
 
 // Utility to build a minimal SSE stream body the app can parse
 function sseBody(text: string) {
@@ -96,35 +97,20 @@ test.describe('Model selection drives request payload.model', () => {
     // Phase 2: Switch model to gpt-5
     phase = 'second';
 
-    // Change the selected model via UI if possible; otherwise set localStorage then reload
-    // First try a combobox/labeled select
-    // Open Quick Settings via semantic aria-controls and select model
-    const qsToggleByAria = page.locator('button[aria-controls="quick-settings-body"]');
-    if (await qsToggleByAria.isVisible().catch(() => false)) {
-      await qsToggleByAria.click();
-      const prodSelect = page.locator('#current-model-select');
-      if (await prodSelect.isVisible().catch(() => false)) {
-        await prodSelect.selectOption({ label: 'gpt-5' }).catch(async () => {
-          await prodSelect.click();
-          await page.getByRole('option', { name: /^gpt-5$/ }).click();
-        });
-      } else {
-        // Fallback: try role-based select inside the opened panel
-        const combo = page.getByRole('combobox', { name: /api model/i });
-        if (await combo.isVisible().catch(() => false)) {
-          await combo.selectOption({ label: 'gpt-5' }).catch(async () => {
-            await combo.click();
-            await page.getByRole('option', { name: /^gpt-5$/ }).click();
-          });
-        } else {
-          await page.evaluate(() => localStorage.setItem('selectedModel', 'gpt-5'));
-          await page.reload();
-        }
-      }
-    } else {
-      // As a last resort, use localStorage and reload
+    // Change the selected model using helper function
+    // Fall back to localStorage if UI approach fails
+    try {
+      await operateQuickSettings(page, {
+        mode: 'ensure-open',
+        model: 'gpt-5'
+      });
+    } catch (error) {
+      console.log('QuickSettings approach failed, falling back to localStorage:', error.message);
       await page.evaluate(() => localStorage.setItem('selectedModel', 'gpt-5'));
       await page.reload();
+      await page.waitForLoadState('networkidle');
+      // Wait for stores to update after reload
+      await page.waitForTimeout(1000);
     }
 
     // Send again and assert second phase

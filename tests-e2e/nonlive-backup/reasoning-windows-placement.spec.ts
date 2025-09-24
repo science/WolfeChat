@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { operateQuickSettings } from '../live/helpers';
 
 /**
  * Simplified tests for Reasoning Windows (RW) behavior.
@@ -157,7 +158,11 @@ test.describe('Reasoning Windows Placement', () => {
     await expect(reasoningWindows).toHaveCount(0);
     
     // Select reasoning model
-    await selectModel(page, 'gpt-5-nano');
+    await operateQuickSettings(page, {
+      mode: 'ensure-open',
+      model: 'gpt-5-nano',
+      closeAfter: true
+    });
     
     // Send second message (with reasoning)
     await sendMessage(page, 'Tell me more');
@@ -204,7 +209,11 @@ test.describe('Reasoning Windows Placement', () => {
     await page.goto('/');
     
     // Use reasoning model
-    await selectModel(page, 'gpt-5-nano');
+    await operateQuickSettings(page, {
+      mode: 'ensure-open',
+      model: 'gpt-5-nano',
+      closeAfter: true
+    });
     
     // Send first message with reasoning
     await sendMessage(page, 'First message');
@@ -291,7 +300,11 @@ test.describe('Reasoning Windows Placement', () => {
     await page.goto('/');
     
     // Start with reasoning model
-    await selectModel(page, 'gpt-5-nano');
+    await operateQuickSettings(page, {
+      mode: 'ensure-open',
+      model: 'gpt-5-nano',
+      closeAfter: true
+    });
     await sendMessage(page, 'Message with reasoning model');
     await page.waitForTimeout(500);
     
@@ -300,7 +313,11 @@ test.describe('Reasoning Windows Placement', () => {
     await expect(reasoningWindows).toHaveCount(1);
     
     // Switch to non-reasoning model
-    await selectModel(page, 'gpt-3.5-turbo');
+    await operateQuickSettings(page, {
+      mode: 'ensure-open',
+      model: 'gpt-3.5-turbo',
+      closeAfter: true
+    });
     await sendMessage(page, 'Message with non-reasoning model');
     await page.waitForTimeout(500);
     
