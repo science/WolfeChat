@@ -378,6 +378,29 @@ async function refreshModels() {
     anthropicApiKey.set(localApiTextField);
   }
 
+  // Ensure both provider stores are populated from localStorage if they exist
+  // This handles the case where both providers were configured during this session
+  try {
+    const storedOpenAI = localStorage.getItem('openai_api_key');
+    const storedAnthropic = localStorage.getItem('anthropic_api_key');
+
+    if (storedOpenAI) {
+      const parsedOpenAI = JSON.parse(storedOpenAI);
+      if (parsedOpenAI && !get(openaiApiKey)) {
+        openaiApiKey.set(parsedOpenAI);
+      }
+    }
+
+    if (storedAnthropic) {
+      const parsedAnthropic = JSON.parse(storedAnthropic);
+      if (parsedAnthropic && !get(anthropicApiKey)) {
+        anthropicApiKey.set(parsedAnthropic);
+      }
+    }
+  } catch (error) {
+    console.log('Error syncing provider keys:', error);
+  }
+
   // Keep legacy apiKey for backward compatibility
   apiKey.set(localApiTextField);
 

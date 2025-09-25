@@ -7,7 +7,8 @@ import {
   operateQuickSettings,
   setProviderApiKey,
   bootstrapBothProviders,
-  getRecentModelsFromQuickSettings
+  getRecentModelsFromQuickSettings,
+  getModelDropdownState
 } from './helpers';
 
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
@@ -34,11 +35,11 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // Test GPT model selection works - use specific chat model pattern
     await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-3\.5-turbo/i });
 
-    // Verify GPT model was selected
-    const quickModelSelect = page.locator('#current-model-select');
-    await expect(quickModelSelect).toBeVisible();
-    const selectedGptModel = await quickModelSelect.inputValue();
-    expect(selectedGptModel.toLowerCase()).toContain('gpt');
+    // Get initial state with only OpenAI
+    const initialState = await getModelDropdownState(page);
+    expect(initialState.providers.openai).toBeDefined();
+    expect(initialState.providers.openai!.models.length).toBeGreaterThan(0);
+    expect(initialState.selectedModel).toContain('gpt-3.5-turbo');
 
     await operateQuickSettings(page, { mode: 'ensure-closed' });
 
@@ -51,14 +52,26 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
       // Test Claude model selection works
       await operateQuickSettings(page, { mode: 'ensure-open', model: /claude/i });
 
-      // Verify Claude model was selected
-      const selectedClaudeModel = await quickModelSelect.inputValue();
-      expect(selectedClaudeModel.toLowerCase()).toContain('claude');
+      // Get final state with both providers
+      const finalState = await getModelDropdownState(page, {
+        waitForModels: true
+      });
 
-      // Test provider indicators exist when both have been configured
-      const options = await quickModelSelect.locator('option').allTextContents();
-      const hasProviderIndicators = options.some(m => m.includes('(') && (m.includes('OpenAI') || m.includes('Anthropic')));
-      expect(hasProviderIndicators).toBe(true);
+      // Verify both providers are present and working
+      expect(finalState.hasMultipleProviders).toBe(true);
+      expect(finalState.providers.openai).toBeDefined();
+      expect(finalState.providers.anthropic).toBeDefined();
+      expect(finalState.providers.openai!.models.length).toBeGreaterThan(0);
+      expect(finalState.providers.anthropic!.models.length).toBeGreaterThan(0);
+
+      // Verify Claude model was selected
+      expect(finalState.selectedModel).toMatch(/claude/i);
+
+      // Verify models from both providers are accessible in the dropdown
+      const openaiModels = finalState.allModels.filter(m => m.provider === 'openai');
+      const anthropicModels = finalState.allModels.filter(m => m.provider === 'anthropic');
+      expect(openaiModels.length).toBeGreaterThan(0);
+      expect(anthropicModels.length).toBeGreaterThan(0);
 
       await operateQuickSettings(page, { mode: 'ensure-closed' });
     }

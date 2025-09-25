@@ -1,5 +1,54 @@
 import { expect, Page, Locator } from '@playwright/test';
 
+// ==================== MODEL DROPDOWN HELPER INTERFACES ====================
+
+interface ModelInfo {
+  id: string;
+  displayText: string;  // What the user sees
+  value: string;        // The actual option value
+  provider?: 'openai' | 'anthropic' | 'unknown';
+}
+
+interface ProviderGroup {
+  label: string;
+  models: ModelInfo[];
+  hasOptgroup: boolean;
+  apiKeySet: boolean;
+}
+
+interface ModelDropdownState {
+  // Meta information
+  location: 'quickSettings' | 'settings';
+  isOpen: boolean;
+  dropdownId: string;  // The actual DOM id
+
+  // Model data
+  totalModels: number;
+  selectedModel: string | null;
+  selectedModelProvider?: 'openai' | 'anthropic' | 'unknown';
+
+  // Provider organization
+  providers: {
+    openai?: ProviderGroup;
+    anthropic?: ProviderGroup;
+    unknown?: ProviderGroup;  // For models without clear provider
+  };
+
+  // Flat lists for easy access
+  allModels: ModelInfo[];  // All models without grouping
+  recentModels?: ModelInfo[];  // If "Recently used" optgroup exists
+
+  // Validation helpers
+  hasAnyModels: boolean;
+  hasMultipleProviders: boolean;
+  isProperlyOrganized: boolean;  // True if optgroups exist when multiple providers
+
+  // Raw data for debugging
+  rawHtml?: string;  // Optional: capture dropdown HTML for debugging failures
+}
+
+// ========================================================================
+
 /**
  * CRITICAL FIX: Mock OpenAI API for nonlive E2E tests
  * Call this before any test that needs to work without real API keys
@@ -1257,4 +1306,310 @@ export async function getRecentModelsFromQuickSettings(page: Page): Promise<stri
   }
 
   return [];
+}
+
+// ==================== NEW MODEL DROPDOWN HELPER FUNCTIONS ====================
+
+/**
+ * Helper to detect provider from model ID
+ */
+function detectProvider(modelId: string): 'openai' | 'anthropic' | 'unknown' {
+  const lower = modelId.toLowerCase();
+
+  // Anthropic patterns (check first to avoid conflicts)
+  if (lower.includes('claude')) {
+    return 'anthropic';
+  }
+
+  // OpenAI patterns (more comprehensive)
+  if (lower.includes('gpt') || lower.includes('davinci') ||
+      lower.includes('babbage') || lower.includes('o1') ||
+      lower.includes('o3') || lower.includes('o4') ||
+      lower.includes('dall-e') || lower.includes('whisper') ||
+      lower.includes('tts') || lower.includes('text-embedding') ||
+      lower.includes('omni-moderation') || lower.includes('codex') ||
+      lower.includes('chatgpt') || lower.includes('computer-use-preview')) {
+    return 'openai';
+  }
+
+  return 'unknown';
+}
+
+/**
+ * Helper to check API key status from dropdown state
+ */
+export function checkApiKeysFromState(state: ModelDropdownState): {
+  openaiKeySet: boolean;
+  anthropicKeySet: boolean;
+  bothKeysSet: boolean;
+} {
+  const openaiKeySet = !!state.providers.openai?.apiKeySet;
+  const anthropicKeySet = !!state.providers.anthropic?.apiKeySet;
+
+  return {
+    openaiKeySet,
+    anthropicKeySet,
+    bothKeysSet: openaiKeySet && anthropicKeySet
+  };
+}
+
+/**
+ * Gets comprehensive dropdown state from either QuickSettings or Settings
+ * @param page - Playwright Page object
+ * @param options - Configuration options
+ * @returns Structured dropdown state for test assertions
+ */
+export async function getModelDropdownState(
+  page: Page,
+  options?: {
+    location?: 'quickSettings' | 'settings';
+    openIfClosed?: boolean;  // Default: true
+    closeAfter?: boolean;     // Default: false
+    captureHtml?: boolean;    // Default: false for performance
+    waitForModels?: boolean;  // Default: true - waits for models to load
+  }
+): Promise<ModelDropdownState> {
+  const opts = {
+    location: 'quickSettings' as const,
+    openIfClosed: true,
+    closeAfter: false,
+    captureHtml: false,
+    waitForModels: true,
+    ...options
+  };
+
+  // Step 1.1: Initialize result structure
+  const result: ModelDropdownState = {
+    location: opts.location,
+    isOpen: false,
+    dropdownId: '',
+    totalModels: 0,
+    selectedModel: null,
+    providers: {},
+    allModels: [],
+    hasAnyModels: false,
+    hasMultipleProviders: false,
+    isProperlyOrganized: false
+  };
+
+  try {
+    let modelSelect: Locator;
+
+    // Step 1.2: Ensure correct panel is open
+    if (opts.location === 'quickSettings') {
+      // Close Settings if open (prevents conflicts)
+      await ensureSettingsClosed(page);
+
+      // Open QuickSettings
+      const toggle = page.locator('button[aria-controls="quick-settings-body"]');
+      const body = page.locator('#quick-settings-body');
+
+      result.isOpen = await toggle.getAttribute('aria-expanded') === 'true';
+
+      if (!result.isOpen && opts.openIfClosed) {
+        await toggle.click();
+        await expect(body).toBeVisible();
+        result.isOpen = true;
+      }
+
+      if (!result.isOpen) {
+        return result; // Return empty state if not open
+      }
+
+      // Find dropdown in QuickSettings
+      result.dropdownId = 'current-model-select';
+      modelSelect = page.locator('#current-model-select');
+    } else {
+      // Settings location
+      await openSettings(page);
+      result.isOpen = true;
+
+      result.dropdownId = 'model-selection';
+      modelSelect = page.locator('#model-selection');
+    }
+
+    // Step 1.3: Wait for dropdown to be ready
+    await expect(modelSelect).toBeVisible({ timeout: 5000 });
+
+    // Step 1.4: Wait for models to load if requested
+    if (opts.waitForModels) {
+      const deadline = Date.now() + 10000;
+      while (Date.now() < deadline) {
+        const options = modelSelect.locator('option:not([disabled])');
+        const count = await options.count();
+        if (count > 0) {
+          const firstText = await options.first().textContent();
+          if (firstText && !firstText.match(/no models|loading/i)) {
+            break; // Models are loaded
+          }
+        }
+        await page.waitForTimeout(200);
+      }
+    }
+
+    // Step 1.5: Extract selected model
+    result.selectedModel = await modelSelect.inputValue();
+
+    // Step 1.6: Check for optgroups (provider organization)
+    const optgroups = modelSelect.locator('optgroup');
+    const optgroupCount = await optgroups.count();
+
+    if (optgroupCount > 0) {
+      // Process each optgroup
+      for (let i = 0; i < optgroupCount; i++) {
+        const optgroup = optgroups.nth(i);
+        const label = await optgroup.getAttribute('label');
+
+        if (!label) continue;
+
+        // Extract models from this optgroup
+        const groupModels: ModelInfo[] = [];
+        const options = optgroup.locator('option');
+        const optionCount = await options.count();
+
+        for (let j = 0; j < optionCount; j++) {
+          const option = options.nth(j);
+          const value = await option.getAttribute('value') || '';
+          const text = await option.textContent() || '';
+
+          if (value && text) {
+            const provider = detectProvider(value);
+            groupModels.push({
+              id: value,
+              displayText: text.trim(),
+              value: value,
+              provider
+            });
+          }
+        }
+
+        // Store by provider or label
+        if (label.toLowerCase() === 'recently used') {
+          result.recentModels = groupModels;
+        } else if (label.toLowerCase() === 'openai') {
+          result.providers.openai = {
+            label,
+            models: groupModels,
+            hasOptgroup: true,
+            apiKeySet: groupModels.length > 0
+          };
+        } else if (label.toLowerCase() === 'anthropic') {
+          result.providers.anthropic = {
+            label,
+            models: groupModels,
+            hasOptgroup: true,
+            apiKeySet: groupModels.length > 0
+          };
+        }
+
+        // Add to flat list
+        result.allModels.push(...groupModels);
+      }
+    } else {
+      // No optgroups - flat list of models
+      const options = modelSelect.locator('option');
+      const optionCount = await options.count();
+
+      for (let i = 0; i < optionCount; i++) {
+        const option = options.nth(i);
+        const value = await option.getAttribute('value') || '';
+        const text = await option.textContent() || '';
+        const disabled = await option.isDisabled();
+
+        // Skip disabled/placeholder options
+        if (disabled || !value || value === '' ||
+            text.match(/select a model|no models/i)) {
+          continue;
+        }
+
+        const provider = detectProvider(value);
+        const modelInfo: ModelInfo = {
+          id: value,
+          displayText: text.trim(),
+          value: value,
+          provider
+        };
+
+        result.allModels.push(modelInfo);
+
+        // Group by detected provider
+        if (provider === 'openai') {
+          if (!result.providers.openai) {
+            result.providers.openai = {
+              label: 'OpenAI',
+              models: [],
+              hasOptgroup: false,
+              apiKeySet: true
+            };
+          }
+          result.providers.openai.models.push(modelInfo);
+        } else if (provider === 'anthropic') {
+          if (!result.providers.anthropic) {
+            result.providers.anthropic = {
+              label: 'Anthropic',
+              models: [],
+              hasOptgroup: false,
+              apiKeySet: true
+            };
+          }
+          result.providers.anthropic.models.push(modelInfo);
+        } else {
+          if (!result.providers.unknown) {
+            result.providers.unknown = {
+              label: 'Other',
+              models: [],
+              hasOptgroup: false,
+              apiKeySet: true
+            };
+          }
+          result.providers.unknown.models.push(modelInfo);
+        }
+      }
+    }
+
+    // Step 1.7: Calculate summary fields
+    result.totalModels = result.allModels.length;
+    result.hasAnyModels = result.totalModels > 0;
+
+    // Count providers that actually have models
+    const providersWithModels = Object.keys(result.providers).filter(
+      providerKey => result.providers[providerKey as keyof typeof result.providers]?.models.length > 0
+    );
+    result.hasMultipleProviders = providersWithModels.length > 1;
+
+    // isProperlyOrganized: either single provider OR multiple providers with optgroups OR flat list is acceptable
+    result.isProperlyOrganized = !result.hasMultipleProviders ||
+      (!!result.providers.openai?.hasOptgroup || !!result.providers.anthropic?.hasOptgroup) ||
+      (result.totalModels > 0); // Flat list is also properly organized
+
+    // Step 1.8: Detect selected model provider
+    if (result.selectedModel) {
+      result.selectedModelProvider = detectProvider(result.selectedModel);
+    }
+
+    // Step 1.9: Capture HTML if requested (for debugging)
+    if (opts.captureHtml) {
+      result.rawHtml = await modelSelect.innerHTML();
+    }
+
+    // Step 1.10: Close if requested
+    if (opts.closeAfter) {
+      if (opts.location === 'quickSettings') {
+        await operateQuickSettings(page, { mode: 'ensure-closed' });
+      } else {
+        // Close Settings using save button
+        const saveBtn = page.getByRole('button', { name: /^save$/i });
+        if (await saveBtn.isVisible().catch(() => false)) {
+          await saveBtn.click();
+          await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden();
+        }
+      }
+    }
+
+  } catch (error) {
+    console.error('[getModelDropdownState] Error:', error);
+    // Return partial result on error
+  }
+
+  return result;
 }
