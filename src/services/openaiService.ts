@@ -515,18 +515,18 @@ export async function sendVisionMessage(
 function getDefaultResponsesModel() {
   const m = get(selectedModel);
   // If no model is set, or it's an old/incompatible model, use gpt-5-nano as default for tests
-  // This includes o1-mini which is not compatible with Responses API
-  if (!m || /gpt-3\.5|gpt-4(\.|$)|o1-mini/.test(m)) {
+  // This includes older models which are not compatible with Responses API
+  if (!m || /gpt-3\.5|gpt-4(\.|$)/.test(m)) {
     // Use gpt-5-nano as the default for better test compatibility
     return 'gpt-5-nano';
   }
   return m;
 }
 
- // Only certain models (e.g., gpt-5, o3, o4 family or explicit reasoning models) support "reasoning".
+ // Only certain models (e.g., gpt-5, o1, o3, o4 family or explicit reasoning models) support "reasoning".
 export function supportsReasoning(model: string): boolean {
   const m = (model || '').toLowerCase();
-  return m.includes('gpt-5') || m.includes('o3') || m.includes('o4') || m.includes('reason');
+  return m.includes('gpt-5') || m.includes('o1-') || m.includes('o3') || m.includes('o4') || m.includes('reason');
 }
 
 /**
@@ -711,7 +711,7 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
 
     const msgs: any[] = asst ? [sys, user, asst] : [sys, user];
     const input = buildResponsesInputFromMessages(msgs);
-    const model = 'gpt-4o-mini';
+    const model = 'gpt-3.5-turbo';
     const payload = buildResponsesPayload(model, input, false);
 
     const key = get(openaiApiKey);

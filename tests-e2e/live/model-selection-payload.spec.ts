@@ -25,7 +25,7 @@ function requiresApiKey(test: any) {
 }
 
 test.describe('Model selection drives request payload.model', () => {
-  test('gpt-3.5-turbo then o1-mini reflected in payload.model', async ({ page }) => {
+  test('gpt-3.5-turbo then gpt-5-nano reflected in payload.model', async ({ page }) => {
     if (!requiresApiKey(test)) return;
 
     await page.goto('/');
@@ -50,7 +50,7 @@ test.describe('Model selection drives request payload.model', () => {
         if (phase === 'first') {
           expect(payload.model).toMatch(/gpt-3\.5-turbo/);
         } else {
-          expect(payload.model).toMatch(/o1-mini/);
+          expect(payload.model).toMatch(/gpt-5-nano/);
         }
         return route.fulfill({
           status: 200,
@@ -95,11 +95,11 @@ test.describe('Model selection drives request payload.model', () => {
     // Wait for response
     await page.waitForTimeout(500);
 
-    // Phase 2: Switch model to o1-mini
+    // Phase 2: Switch model to gpt-5-nano
     phase = 'second';
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: 'o1-mini',
+      model: 'gpt-5-nano',
       closeAfter: true
     });
 

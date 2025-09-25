@@ -96,14 +96,11 @@ global.Prism = {
 function seedTestStores() {
   // Seed model cache with reasoning-capable models
   const models = [
-    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
-    { id: 'gpt-4o', name: 'GPT-4o' },
-    { id: 'o1-mini', name: 'O1 Mini' },
-    { id: 'o1-preview', name: 'O1 Preview' },
-    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' }
+    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+    { id: 'gpt-5-nano', name: 'GPT-5 Nano' }
   ];
   localStorageMap.set('models', JSON.stringify(models));
-  localStorageMap.set('selectedModel', 'o1-mini'); // Use reasoning-capable model
+  localStorageMap.set('selectedModel', 'gpt-5-nano'); // Use reasoning-capable model
   
   // Seed reasoning settings with defaults
   localStorageMap.set('reasoning_effort', 'medium');

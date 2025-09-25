@@ -148,7 +148,7 @@ Remember: TDD tests are specifications for how code should behave, written befor
 The app expects an OpenAI API key to be configured in Settings. It supports:
 - Text completions (GPT-3.5, GPT-4, etc.)
 - Vision models (image uploads)
-- Reasoning models (o1-mini, o1-preview)
+- Reasoning models (gpt-5-nano, o1-mini, o1-preview)
 - TTS/Speech generation
 - DALL-E image generation
 

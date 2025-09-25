@@ -162,7 +162,7 @@ function setTitle(title: string) {
   }
 
 async function createTitle(currentInput: string) {
-    const titleModel = 'gpt-4o-mini';
+    const titleModel = 'gpt-3.5-turbo';
     try {
         // Use Responses API pathway consistently
         const msgs: any[] = [

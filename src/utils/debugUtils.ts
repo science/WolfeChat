@@ -695,7 +695,7 @@ export async function testResponsesStreamingWithHistory(modelOverride?: string) 
  */
 export async function testCreateTitleFlow(currentInput: string = "This is a sample conversation about testing.", modelOverride?: string) {
   const key = get(apiKey);
-  const model = modelOverride || 'gpt-4o-mini';  // Use a modern model that works with Responses API
+  const model = modelOverride || 'gpt-3.5-turbo';  // Use a model that works with Responses API
 
   console.log('=== Title Flow Responses API Test ===');
   console.log('API Key configured:', !!key);

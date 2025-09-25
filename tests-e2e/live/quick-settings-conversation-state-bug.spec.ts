@@ -8,7 +8,7 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173';
 // TDD: When fixed, the assertions on the captured request payload will pass.
 
 test.describe('Live API: Quick Settings per-conversation settings honored on submit', () => {
-  test.setTimeout(120_000);
+  test.setTimeout(60_000);  // Reduced from 120s - should be sufficient with improved timeout logic
 
   test('Live: settings persist and are honored when submitting', async ({ page }) => {
     const hasKey = !!process.env.OPENAI_API_KEY;
@@ -195,8 +195,8 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
       }
 
       // Wait for assistant response to complete streaming
-      // Use shorter timeout to ensure we complete before test timeout (120s)
-      await waitForStreamComplete(page, { timeout: 90_000 });
+      // Use shorter timeout to ensure we complete before test timeout (60s)
+      await waitForStreamComplete(page, { timeout: 45_000 });
 
       // Post-wait diagnostics
       if (DEBUG_LVL >= 2) {
