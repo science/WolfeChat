@@ -135,7 +135,7 @@ const models = await getSettingsModels(page);
 ##### `selectModelInSettings(page, model)`
 Selects a model in Settings (without closing):
 ```javascript
-await selectModelInSettings(page, 'gpt-4');
+await selectModelInSettings(page, 'gpt-3.5-turbo');
 // Model selected, Settings still open
 ```
 
@@ -160,7 +160,7 @@ await openSettingsAndSelectProvider(page, 'OpenAI');
 await fillApiKeyAndWaitForModels(page, openaiKey, 'OpenAI');
 
 // Select a model
-await selectModelInSettings(page, 'gpt-4');
+await selectModelInSettings(page, 'gpt-3.5-turbo');
 
 // Switch providers without closing
 const providerSelect = page.locator('#provider-selection');

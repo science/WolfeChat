@@ -63,13 +63,6 @@ export async function mockOpenAIAPI(page: Page) {
         object: 'list',
         data: [
           {
-            id: 'gpt-4',
-            object: 'model',
-            created: 1687882411,
-            owned_by: 'openai',
-            permission: [{ allow_create_engine: false }]
-          },
-          {
             id: 'gpt-3.5-turbo',
             object: 'model',
             created: 1677610602,
@@ -77,7 +70,7 @@ export async function mockOpenAIAPI(page: Page) {
             permission: [{ allow_create_engine: false }]
           },
           {
-            id: 'gpt-4-vision-preview',
+            id: 'gpt-5-nano',
             object: 'model',
             created: 1698894618,
             owned_by: 'openai',
