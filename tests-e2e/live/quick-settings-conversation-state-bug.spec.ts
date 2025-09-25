@@ -11,9 +11,6 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
   test.setTimeout(60_000);  // Reduced from 120s - should be sufficient with improved timeout logic
 
   test('Live: settings persist and are honored when submitting', async ({ page }) => {
-    const hasKey = !!process.env.OPENAI_API_KEY;
-    test.skip(!hasKey, 'OPENAI_API_KEY env not set for live tests');
-
     const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {

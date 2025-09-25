@@ -15,19 +15,8 @@ function sseBody(text: string) {
   ].join('\n');
 }
 
-// Skip if no API key available
-function requiresApiKey(test: any) {
-  if (!process.env.OPENAI_API_KEY) {
-    test.skip(true, 'Requires OPENAI_API_KEY environment variable');
-    return false;
-  }
-  return true;
-}
-
 test.describe('Model selection drives request payload.model', () => {
   test('gpt-3.5-turbo then gpt-5-nano reflected in payload.model', async ({ page }) => {
-    if (!requiresApiKey(test)) return;
-
     await page.goto('/');
     await bootstrapLiveAPI(page, 'OpenAI');
 

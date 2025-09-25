@@ -8,15 +8,6 @@ import { operateQuickSettings, bootstrapLiveAPI, sendMessage } from './helpers';
  * reliable reasoning sequences for UI testing.
  */
 
-// Skip if no API key available
-function requiresApiKey(test: any) {
-  if (!process.env.OPENAI_API_KEY) {
-    test.skip(true, 'Requires OPENAI_API_KEY environment variable');
-    return false;
-  }
-  return true;
-}
-
 // Monte Hall prompt that reliably generates reasoning
 const REASONING_PROMPT = "Explain the Monte Hall 3 door problem using logic";
 
@@ -55,7 +46,6 @@ async function waitForReasoningWithContent(page: import('@playwright/test').Page
 
 test.describe('Reasoning Windows Placement', () => {
   test.beforeEach(async ({ page }) => {
-    if (!requiresApiKey(test)) return;
     await page.goto('/');
     await bootstrapLiveAPI(page, 'OpenAI');
   });

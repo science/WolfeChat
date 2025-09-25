@@ -7,10 +7,6 @@ import {
   operateQuickSettings
 } from './helpers';
 
-// Check for required API keys
-const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
-const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
-
 test.describe('Model Dropdown Helper Tests', () => {
 
   test.beforeEach(async ({ page }) => {
@@ -31,11 +27,6 @@ test.describe('Model Dropdown Helper Tests', () => {
   });
 
   test('helper detects single provider models', async ({ page }) => {
-    if (!hasOpenAIKey) {
-      test.skip(true, 'Requires OPENAI_API_KEY');
-      return;
-    }
-
     await bootstrapLiveAPI(page, 'OpenAI');
 
     const state = await getModelDropdownState(page, {
@@ -53,11 +44,6 @@ test.describe('Model Dropdown Helper Tests', () => {
   });
 
   test('helper detects multiple providers with optgroups', async ({ page }) => {
-    if (!hasOpenAIKey || !hasAnthropicKey) {
-      test.skip(true, 'Requires both OPENAI_API_KEY and ANTHROPIC_API_KEY');
-      return;
-    }
-
     await bootstrapLiveAPI(page, 'OpenAI');
     await setProviderApiKey(page, 'Anthropic', process.env.ANTHROPIC_API_KEY!);
 
@@ -87,11 +73,6 @@ test.describe('Model Dropdown Helper Tests', () => {
   });
 
   test('helper correctly identifies selected model and provider', async ({ page }) => {
-    if (!hasOpenAIKey) {
-      test.skip(true, 'Requires OPENAI_API_KEY');
-      return;
-    }
-
     await bootstrapLiveAPI(page, 'OpenAI');
 
     // Select a specific model
@@ -106,11 +87,6 @@ test.describe('Model Dropdown Helper Tests', () => {
   });
 
   test('helper works with Settings dropdown', async ({ page }) => {
-    if (!hasOpenAIKey) {
-      test.skip(true, 'Requires OPENAI_API_KEY');
-      return;
-    }
-
     await bootstrapLiveAPI(page, 'OpenAI');
 
     const quickState = await getModelDropdownState(page, {
@@ -135,11 +111,6 @@ test.describe('Model Dropdown Helper Tests', () => {
   });
 
   test('checkApiKeysFromState utility works correctly', async ({ page }) => {
-    if (!hasOpenAIKey) {
-      test.skip(true, 'Requires OPENAI_API_KEY');
-      return;
-    }
-
     await bootstrapLiveAPI(page, 'OpenAI');
 
     const state1 = await getModelDropdownState(page);
@@ -149,26 +120,19 @@ test.describe('Model Dropdown Helper Tests', () => {
     expect(keys1.anthropicKeySet).toBe(false);
     expect(keys1.bothKeysSet).toBe(false);
 
-    if (hasAnthropicKey) {
-      await setProviderApiKey(page, 'Anthropic', process.env.ANTHROPIC_API_KEY!);
+    await setProviderApiKey(page, 'Anthropic', process.env.ANTHROPIC_API_KEY!);
 
-      const state2 = await getModelDropdownState(page, {
-        waitForModels: true
-      });
-      const keys2 = checkApiKeysFromState(state2);
+    const state2 = await getModelDropdownState(page, {
+      waitForModels: true
+    });
+    const keys2 = checkApiKeysFromState(state2);
 
-      expect(keys2.openaiKeySet).toBe(true);
-      expect(keys2.anthropicKeySet).toBe(true);
-      expect(keys2.bothKeysSet).toBe(true);
-    }
+    expect(keys2.openaiKeySet).toBe(true);
+    expect(keys2.anthropicKeySet).toBe(true);
+    expect(keys2.bothKeysSet).toBe(true);
   });
 
   test('helper handles captureHtml option for debugging', async ({ page }) => {
-    if (!hasOpenAIKey) {
-      test.skip(true, 'Requires OPENAI_API_KEY');
-      return;
-    }
-
     await bootstrapLiveAPI(page, 'OpenAI');
 
     const state = await getModelDropdownState(page, {
@@ -185,11 +149,6 @@ test.describe('Model Dropdown Helper Tests', () => {
   });
 
   test('helper detectProvider function works correctly', async ({ page }) => {
-    if (!hasOpenAIKey) {
-      test.skip(true, 'Requires OPENAI_API_KEY');
-      return;
-    }
-
     await bootstrapLiveAPI(page, 'OpenAI');
 
     const state = await getModelDropdownState(page, {
@@ -220,11 +179,6 @@ test.describe('Model Dropdown Helper Tests', () => {
   });
 
   test('helper closeAfter option works correctly', async ({ page }) => {
-    if (!hasOpenAIKey) {
-      test.skip(true, 'Requires OPENAI_API_KEY');
-      return;
-    }
-
     await bootstrapLiveAPI(page, 'OpenAI');
 
     // QuickSettings should be closed initially
@@ -253,11 +207,6 @@ test.describe('Model Dropdown Helper Tests', () => {
   });
 
   test('helper handles allModels flat array correctly', async ({ page }) => {
-    if (!hasOpenAIKey) {
-      test.skip(true, 'Requires OPENAI_API_KEY');
-      return;
-    }
-
     await bootstrapLiveAPI(page, 'OpenAI');
 
     const state = await getModelDropdownState(page, {

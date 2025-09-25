@@ -7,9 +7,6 @@ test.describe('Live API: Title Update', () => {
   test.setTimeout(60000);
 
   test('conversation title updates after first message', async ({ page }) => {
-    const hasKey = !!process.env.OPENAI_API_KEY;
-    test.skip(!hasKey, 'OPENAI_API_KEY env not set for live tests');
-
     await page.goto(APP_URL);
     
     // Bootstrap API key and wait for models to load

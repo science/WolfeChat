@@ -5,9 +5,6 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
   test.setTimeout(120_000);
 
   test('initial state has no recent models, all models in main list', async ({ page }) => {
-    const hasKey = !!process.env.OPENAI_API_KEY;
-    test.skip(!hasKey, 'OPENAI_API_KEY env not set for live tests');
-
     const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
@@ -70,9 +67,6 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
   });
 
   test('sending message with selected model adds it to recent models section', async ({ page }) => {
-    const hasKey = !!process.env.OPENAI_API_KEY;
-    test.skip(!hasKey, 'OPENAI_API_KEY env not set for live tests');
-
     const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
@@ -212,9 +206,6 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
   });
 
   test('switching models and sending messages builds recent models list', async ({ page }) => {
-    const hasKey = !!process.env.OPENAI_API_KEY;
-    test.skip(!hasKey, 'OPENAI_API_KEY env not set for live tests');
-
     const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {

@@ -7,9 +7,6 @@ test.describe('Live API: Responses API streaming', () => {
   test.setTimeout(45000);
 
   test('streams tokens via streaming Responses API', async ({ page }) => {
-    const hasKey = !!process.env.OPENAI_API_KEY;
-    test.skip(!hasKey, 'OPENAI_API_KEY env not set for live tests');
-
     const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0');
     
     // Set up console and network logging if debug level >= 2
