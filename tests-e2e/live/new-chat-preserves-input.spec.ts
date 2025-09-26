@@ -55,8 +55,8 @@ const hasKey = !!process.env.OPENAI_API_KEY;
     const targetIndex = Math.min(index, conversations.length - 1);
     await conversations[targetIndex].click();
 
-    // Wait a moment for the conversation to be selected
-    await page.waitForTimeout(300);
+    // Wait for conversation to be selected - check that input field is visible and active
+    await expect(page.getByRole('textbox', { name: /chat input/i })).toBeVisible();
   }
 
   /**
@@ -133,9 +133,6 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       await selectConversation(page, 1); // Original conversation should be at index 1 now
       console.log('✓ Navigated back to original conversation');
 
-      // Wait for conversation switch to complete
-      await page.waitForTimeout(300);
-
       // Assert: The input should still contain the original message
       // The input should contain the original message
       const currentInputValue = await input.inputValue();
@@ -156,42 +153,34 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Click new chat twice to create 3 total conversations
       await newChatButton.click();
-      await page.waitForTimeout(300);
       await newChatButton.click();
-      await page.waitForTimeout(300);
 
       console.log('✓ Created 3 conversations total');
 
       // Navigate to middle conversation (index 1)
       await selectConversation(page, 1);
-      await page.waitForTimeout(300);
 
       // Type in middle conversation
       const input = await getChatInput(page);
       const middleMessage = 'Middle conversation text';
       await input.fill(middleMessage);
-      await page.waitForTimeout(500); // Wait for draft save
       console.log('✓ Added text to middle conversation');
 
       // Navigate to first conversation (index 2, due to reverse order)
       await selectConversation(page, 2);
-      await page.waitForTimeout(300);
 
       // Type in first conversation
       const firstMessage = 'First conversation text';
       await input.fill(firstMessage);
-      await page.waitForTimeout(500); // Wait for draft save
       console.log('✓ Added text to first conversation');
 
       // With first conversation active, click "New Chat"
       await newChatButton.click();
-      await page.waitForTimeout(500);
       console.log('✓ Created new chat while first conversation was active');
 
       // Check all original conversations
       // First conversation (now at index 3) should have its text preserved but won't due to bug
       await selectConversation(page, 3);
-      await page.waitForTimeout(300);
       const firstConvInput = await input.inputValue();
       console.log('First conversation input after new chat:', `"${firstConvInput}"`);
 
@@ -211,14 +200,12 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Test Clear Chat behavior first (this should work correctly)
       const clearTestMessage = 'Test message for clear chat - should be cleared';
       await input.fill(clearTestMessage);
-      await page.waitForTimeout(500);
       console.log('✓ Added text for clear chat test');
 
       // Click Clear Chat button
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
       await expect(clearButton).toBeVisible();
       await clearButton.click();
-      await page.waitForTimeout(300);
 
       // Verify clear chat correctly cleared the input
       const clearedInput = await input.inputValue();
@@ -229,17 +216,14 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Add text to a conversation
       const newChatTestMessage = 'Test message for new chat - should be preserved';
       await input.fill(newChatTestMessage);
-      await page.waitForTimeout(500);
       console.log('✓ Added text for new chat test');
 
       // Click New Chat button
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
       await newChatButton.click();
-      await page.waitForTimeout(500);
 
       // Navigate back to the previous conversation
       await selectConversation(page, 1);
-      await page.waitForTimeout(300);
 
       // Check if text is preserved (it won't be due to the bug)
       const preservedInput = await input.inputValue();

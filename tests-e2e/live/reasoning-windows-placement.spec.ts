@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { operateQuickSettings, bootstrapLiveAPI, sendMessage } from './helpers';
+import { operateQuickSettings, bootstrapLiveAPI, sendMessage, waitForAssistantDone } from './helpers';
 
 /**
  * Live Reasoning Windows (RW) behavior tests.
@@ -55,7 +55,7 @@ test.describe('Reasoning Windows Placement', () => {
 
     // Send first message with non-reasoning model to establish baseline
     await sendMessage(page, 'Hello');
-    await page.waitForTimeout(1000);
+    await waitForAssistantDone(page);
 
     // Verify no reasoning windows initially
     let reasoningWindows = page.locator('details:has-text("Reasoning")');
@@ -175,7 +175,7 @@ test.describe('Reasoning Windows Placement', () => {
 
     console.log('Sending Monte Hall prompt to non-reasoning model...');
     await sendMessage(page, REASONING_PROMPT);
-    await page.waitForTimeout(3000); // Wait for full response
+    await waitForAssistantDone(page);
 
     // Verify no reasoning windows appear
     const reasoningWindows = page.locator('details:has-text("Reasoning")');
@@ -212,7 +212,7 @@ test.describe('Reasoning Windows Placement', () => {
     });
 
     await sendMessage(page, 'Thank you for the explanation');
-    await page.waitForTimeout(2000);
+    await waitForAssistantDone(page);
 
     // Should still have only the original reasoning window(s)
     const finalReasoningCount = await reasoningWindows.count();
