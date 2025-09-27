@@ -90,7 +90,7 @@ registerTest({
   setModel('gpt-3.5-turbo');
 
   await withMockedStreamResponse(async () => {
-    await sendRegularMessage([{ role: 'user', content: 'Hi' }], 0, { model: get(selectedModel) });
+    await sendRegularMessage([{ role: 'user', content: 'Hi' }], 'conv-test', { model: get(selectedModel) });
   });
 
   const conv = get(conversations)[0];

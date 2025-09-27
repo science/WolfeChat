@@ -237,12 +237,17 @@ function autoExpand(event) {
   }
 
   function processMessage() {
-    let convId = $chosenConversationId;
+    let convIndex = $chosenConversationId;
+    let convId = $conversations[convIndex]?.id;
+    if (!convId) {
+      console.error('No conversation selected');
+      return;
+    }
     routeMessage(input, convId);
-    input = ""; 
+    input = "";
     // Clear the draft since message was sent
-    if ($conversations[convId]) {
-      draftsStore.setDraft($conversations[convId].id, "");
+    if ($conversations[convIndex]) {
+      draftsStore.setDraft($conversations[convIndex].id, "");
     }
     clearFiles ();
     textAreaElement.style.height = '96px'; // Reset the height after sending
@@ -301,7 +306,12 @@ function startEditMessage(i: number) {
       deleteMessageFromConversation($conversations[$chosenConversationId].history.length - 1);
     }
     // Process the edited message as new input
-    let convId = $chosenConversationId;
+    let convIndex = $chosenConversationId;
+    let convId = $conversations[convIndex]?.id;
+    if (!convId) {
+      console.error('No conversation selected');
+      return;
+    }
     routeMessage(editedContent, convId);
     cancelEdit(); // Reset editing state
   }

@@ -59,7 +59,7 @@ combinedTokens.subscribe((value) => localStorage.setItem("combined_tokens", JSON
 let storedDefaultAssistantRole = localStorage.getItem('default_assistant_role');
 let parsedDefaultAssistantRole: DefaultAssistantRole = storedDefaultAssistantRole !== null ? JSON.parse(storedDefaultAssistantRole) : 0;
 export const defaultAssistantRole = writable(parsedDefaultAssistantRole || {
-    role: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
+    role: "Don't provide compliments or enthusiastic comments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
     type: "system",
   });
 defaultAssistantRole.subscribe((value) => localStorage.setItem("default_assistant_role", JSON.stringify(value)));
@@ -115,7 +115,7 @@ export const conversations: Writable<Conversation[]> = writable(parsedConversati
     id: generateConversationId(),
     history: [],
     conversationTokens: 0,
-    assistantRole: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
+    assistantRole: "Don't provide compliments or enthusiastic comments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
     title: "",
   }]);
 
@@ -175,7 +175,7 @@ export function createNewConversation(): Conversation {
     id: generateConversationId(),
     history: [],
     conversationTokens: 0,
-    assistantRole: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
+    assistantRole: "Don't provide compliments or enthusiastic comments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
     title: "",
   };
 }

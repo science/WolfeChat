@@ -146,9 +146,9 @@ Remember: TDD tests are specifications for how code should behave, written befor
 ### API Integration
 
 The app expects an OpenAI API key to be configured in Settings. It supports:
-- Text completions (GPT-3.5, GPT-4, etc.)
+- Text completions, streaming models (gpt-3.5-turbo, gpt-4o, gpt-4.1)
 - Vision models (image uploads)
-- Reasoning models (gpt-5-nano, o1-mini, o1-preview)
+- Reasoning models (gpt-5, gpt-5-mini, gpt-5-nano, o3, o4)
 - TTS/Speech generation
 - DALL-E image generation
 
@@ -160,5 +160,4 @@ SSE streaming is handled via fetch with proper abort controller management for s
 - The app uses Svelte 3 (not SvelteKit)
 - TypeScript is configured with `checkJs: true`
 - Tests automatically discovered by file location - no manual registration needed
-- Reasoning text from o1 models is displayed but never sent back as conversation context
 - Quick Settings changes are preserved per conversation across sessions

@@ -347,20 +347,29 @@ export async function sendVisionMessage(
 
   export async function sendRegularMessage(
   msg: ChatCompletionRequestMessage[],
-  convId: any,
+  convId: string,
   config: { model: string; reasoningEffort?: string; verbosity?: string; summary?: string }
 ) {
   userRequestedStreamClosure.set(false);
   let tickCounter = 0;
   let ticks = false;
-  let currentHistory = get(conversations)[convId].history;
+
+  // Find conversation by string ID instead of using numeric index
+  const allConversations = get(conversations);
+  const conversationIndex = allConversations.findIndex(c => c.id === convId);
+  if (conversationIndex === -1) {
+    throw new Error(`Conversation with ID ${convId} not found`);
+  }
+  const conversation = allConversations[conversationIndex];
+
+  let currentHistory = conversation.history;
   const anchorIndex = currentHistory.length - 1;
-  // Get the conversation's unique string ID for reasoning window tracking
-  const conversationUniqueId = get(conversations)[convId]?.id;
-  
+  // The conversation's unique string ID is now the convId parameter
+  const conversationUniqueId = convId;
+
   let roleMsg: ChatCompletionRequestMessage = {
     role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
-    content: get(conversations)[convId].assistantRole,
+    content: conversation.assistantRole,
   };
   
   msg = [roleMsg, ...msg];
@@ -410,7 +419,7 @@ export async function sendVisionMessage(
                 model: resolvedModel,
               },
             ],
-            convId
+            conversationIndex
           );
         },
         onCompleted: async (_finalText) => {
@@ -427,18 +436,18 @@ export async function sendVisionMessage(
                 model: resolvedModel,
               },
             ],
-            convId
+            conversationIndex
           );
-          estimateTokens(msg, convId);
+          estimateTokens(msg, conversationIndex);
 
           // Trigger title generation for brand-new conversations
-          await maybeUpdateTitleAfterFirstMessage(convId, lastUserPromptText, streamText);
+          await maybeUpdateTitleAfterFirstMessage(conversationIndex, lastUserPromptText, streamText);
 
           streamText = "";
           isStreaming.set(false);
         },
         onError: (err) => {
-          appendErrorToHistory(err, currentHistory, convId);
+          appendErrorToHistory(err, currentHistory, conversationIndex);
           isStreaming.set(false);
         },
       },
@@ -449,7 +458,7 @@ export async function sendVisionMessage(
   } catch (error) {
     // Handle errors from streamResponseViaResponsesAPI itself
     console.error("Error in sendRegularMessage:", error);
-    appendErrorToHistory(error, currentHistory, convId);
+    appendErrorToHistory(error, currentHistory, conversationIndex);
   } finally {
     isStreaming.set(false);
   }
@@ -817,6 +826,41 @@ export async function streamResponseViaResponsesAPI(
     ? createReasoningWindow(convIdCtx, resolvedModel, anchorIndexCtx)
     : null;
 
+  // Set up structured SSE logging if debug session is active
+  let apiCallLog: any = null;
+  try {
+    const win = typeof window !== 'undefined' ? (window as any) : null;
+    const sessionId = win?.__SSE_DEBUG_SESSION;
+    console.log('[SSE-DEBUG-CHECK] Session ID:', sessionId, 'Available:', !!win?.__SSE_LOGS?.[sessionId]);
+    if (sessionId && win.__SSE_LOGS?.[sessionId]) {
+      apiCallLog = {
+        callId: `call-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        timestamp: new Date().toISOString(),
+        request: {
+          url: 'https://api.openai.com/v1/responses',
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }, // Sanitized headers
+          body: payload
+        },
+        response: {
+          status: res.status,
+          headers: { 'content-type': res.headers.get('content-type') || '' },
+          streamEvents: [],
+          summary: {
+            totalChunks: 0,
+            reasoningEvents: 0,
+            outputEvents: 0,
+            parseErrors: 0
+          }
+        }
+      };
+      win.__SSE_LOGS[sessionId].apiCalls.push(apiCallLog);
+      console.log(`[SSE-DEBUG] Started logging API call: ${apiCallLog.callId}`);
+    }
+  } catch (e) {
+    console.warn('[SSE-DEBUG] Failed to set up logging:', e);
+  }
+
   let completedEmitted = false;
 
   function processSSEBlock(block: string) {
@@ -876,6 +920,25 @@ export async function streamResponseViaResponsesAPI(
     // Log every SSE type compactly for the collapsible UI (not reused as prompt input)
     logSSEEvent(resolvedType, obj, convIdCtx);
 
+    // Log parsed event if SSE debugging is active
+    if (apiCallLog && apiCallLog.response.streamEvents.length > 0) {
+      // Find the most recent event that doesn't have parsed data yet
+      for (let i = apiCallLog.response.streamEvents.length - 1; i >= 0; i--) {
+        const eventLog = apiCallLog.response.streamEvents[i];
+        if (eventLog.parsed === null && eventLog.rawChunk.includes('data:')) {
+          eventLog.parsed = { type: resolvedType, data: obj };
+
+          // Track event types
+          if (resolvedType.includes('reasoning')) {
+            apiCallLog.response.summary.reasoningEvents++;
+          } else if (resolvedType.includes('output_text')) {
+            apiCallLog.response.summary.outputEvents++;
+          }
+          break;
+        }
+      }
+    }
+
     // Handle reasoning-related events
     if (resolvedType === 'response.reasoning_summary_part.added' || 
         resolvedType === 'response.reasoning_summary_text.delta' || 
@@ -886,6 +949,16 @@ export async function streamResponseViaResponsesAPI(
         panelTracker.set('summary', panelId);
         panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('summary', obj?.part);
+
+        // Mark that reasoning store received this event
+        if (apiCallLog) {
+          const recentEvent = apiCallLog.response.streamEvents.find((e: any) =>
+            e.parsed?.type === resolvedType && !e.reasoningStoreReceived
+          );
+          if (recentEvent) {
+            recentEvent.reasoningStoreReceived = true;
+          }
+        }
       }
       if (typeof delta === 'string' && delta) {
         const panelId = panelTracker.get('summary')!;
@@ -919,6 +992,16 @@ export async function streamResponseViaResponsesAPI(
         panelTracker.set('text', panelId);
         panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('text');
+
+        // Mark that reasoning store received this event
+        if (apiCallLog) {
+          const recentEvent = apiCallLog.response.streamEvents.find((e: any) =>
+            e.parsed?.type === resolvedType && !e.reasoningStoreReceived
+          );
+          if (recentEvent) {
+            recentEvent.reasoningStoreReceived = true;
+          }
+        }
       }
       if (typeof delta === 'string' && delta) {
         const panelId = panelTracker.get('text')!;
@@ -1002,6 +1085,19 @@ export async function streamResponseViaResponsesAPI(
     const { value, done } = await reader.read();
     if (done) break;
     const decoded = decoder.decode(value, { stream: true });
+
+    // Log raw chunk if SSE debugging is active
+    if (apiCallLog) {
+      apiCallLog.response.summary.totalChunks++;
+      const eventLog = {
+        timestamp: new Date().toISOString(),
+        rawChunk: decoded,
+        parsed: null,
+        reasoningStoreReceived: false
+      };
+      apiCallLog.response.streamEvents.push(eventLog);
+    }
+
     buffer += decoded;
 
     const parts = buffer.split('\n\n');

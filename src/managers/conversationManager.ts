@@ -107,16 +107,25 @@ export function cleanseMessage(msg: ChatCompletionRequestMessage | { role: strin
 
 
 
-export async function routeMessage(input: string, convId: number) {
+export async function routeMessage(input: string, convId: string) {
 
-    let currentHistory = get(conversations)[convId].history;
+    // Find conversation by string ID instead of using numeric index
+    const allConversations = get(conversations);
+    const conversationIndex = allConversations.findIndex(c => c.id === convId);
+    if (conversationIndex === -1) {
+        throw new Error(`Conversation with ID ${convId} not found`);
+    }
+    const conversation = allConversations[conversationIndex];
+
+    let currentHistory = conversation.history;
     let messageHistory = currentHistory;
     currentHistory = [...currentHistory, { role: "user", content: input }];
-    setHistory(currentHistory);
+    setHistory(currentHistory, conversationIndex);
 
-    const defaultModel = 'gpt-3.5-turbo'; 
-    const defaultVoice = 'alloy'; 
-    const convUniqueId = get(conversations)[convId]?.id;
+    const defaultModel = 'gpt-3.5-turbo';
+    const defaultVoice = 'alloy';
+    // The conversation's unique string ID is now the convId parameter
+    const convUniqueId = convId;
     const perConv = conversationQuickSettings.getSettings(convUniqueId);
     const model = perConv.model || get(selectedModel) || defaultModel;
     const voice = get(selectedVoice) || defaultVoice;
@@ -132,25 +141,27 @@ export async function routeMessage(input: string, convId: number) {
 
     if (model.includes('tts')) {
         // The model string contains 'tts', proceed with TTS message handling
-        await sendTTSMessage(input, model, voice, convId);
+        await sendTTSMessage(input, model, voice, conversationIndex);
       } else if (model.includes('vision')) {
         const imagesBase64 = get(base64Images); // Retrieve the current array of base64 encoded images
         const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };
-        await sendVisionMessage(outgoingMessage, imagesBase64, convId, config);
+        await sendVisionMessage(outgoingMessage, imagesBase64, conversationIndex, config);
       } else if (model.includes('dall-e')) {
-        await sendDalleMessage(outgoingMessage, convId);
+        await sendDalleMessage(outgoingMessage, conversationIndex);
       } else if (isAnthropicModel(model)) {
         // Handle Claude/Anthropic models
         const config = { model };
         console.log(`Routing Claude model ${model} to Anthropic service`);
         // For now, use streaming by default for Claude models
-        await streamAnthropicMessage(outgoingMessage, convId, config);
+        await streamAnthropicMessage(outgoingMessage, conversationIndex, config);
       } else {
         // Default case for regular messages if no specific keywords are found in the model string
         const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };
         await sendRegularMessage(outgoingMessage, convId, config);
       }
-    if (get(conversations)[convId].history.length === 1 || get(conversations)[convId].title === '') {
+    // Check if we need to create a title (first message or empty title)
+    const updatedConversation = get(conversations)[conversationIndex];
+    if (updatedConversation.history.length === 1 || updatedConversation.title === '') {
         await createTitle(input);
     }
 }
