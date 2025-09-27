@@ -29,6 +29,7 @@ import {
 import { onSendVisionMessageComplete } from "../managers/imageManager.js";
 import { countTicks } from "../utils/generalUtils.js";
 import { saveAudioBlob, getAudioBlob } from "../idb.js";
+import { debugLog } from "../utils/debugLayerLogger.js";
 
 // Type definitions for legacy OpenAI SDK compatibility
 type ChatCompletionRequestMessage = ChatMessage;
@@ -864,6 +865,11 @@ export async function streamResponseViaResponsesAPI(
   let completedEmitted = false;
 
   function processSSEBlock(block: string) {
+    debugLog.sseParser('sse_block_received', {
+      blockLength: block.length,
+      blockSnippet: block.slice(0, 100)
+    }, convIdCtx);
+
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
     let eventType = 'message';
     const dataLines: string[] = [];
@@ -875,10 +881,18 @@ export async function streamResponseViaResponsesAPI(
         dataLines.push(line.slice('data:'.length).trim());
       }
     }
-    if (dataLines.length === 0) return;
+    if (dataLines.length === 0) {
+      debugLog.sseParser('sse_block_empty_data', { eventType }, convIdCtx);
+      return;
+    }
 
     const dataStr = dataLines.join('\n');
     if (dataStr === '[DONE]') {
+      debugLog.sseParser('sse_stream_done', {
+        finalTextLength: finalText.length,
+        activePanels: panelTracker.size
+      }, convIdCtx);
+
       // Finalize any still-open reasoning panels
       for (const [kind, panelId] of panelTracker.entries()) {
         completeReasoningPanel(panelId);
@@ -895,7 +909,19 @@ export async function streamResponseViaResponsesAPI(
     let obj: any = null;
     try {
       obj = JSON.parse(dataStr);
+      debugLog.sseParser('sse_json_parsed', {
+        eventType,
+        hasId: !!obj?.id,
+        hasChoices: !!obj?.choices,
+        objType: obj?.type
+      }, convIdCtx);
     } catch (e) {
+      debugLog.sseParser('sse_json_parse_error', {
+        eventType,
+        dataSnippet: dataStr.slice(0, 100),
+        error: String(e)
+      }, convIdCtx);
+
       console.warn('[SSE] Failed to parse SSE JSON block', { blockSnippet: (dataStr || '').slice(0, 200), error: String(e) });
       callbacks?.onError?.(new Error(`Failed to parse SSE data JSON: ${e}`));
       // Also emit synthetic completion to avoid hangs
@@ -915,6 +941,12 @@ export async function streamResponseViaResponsesAPI(
 
     // Prefer explicit SSE event name; if missing, fall back to payload.type
     const resolvedType = eventType !== 'message' ? eventType : (obj?.type || 'message');
+
+    debugLog.sseParser('sse_event_resolved', {
+      rawEventType: eventType,
+      resolvedType,
+      hasData: !!obj
+    }, convIdCtx);
 
     callbacks?.onEvent?.({ type: resolvedType, data: obj });
     // Log every SSE type compactly for the collapsible UI (not reused as prompt input)
@@ -1083,8 +1115,18 @@ export async function streamResponseViaResponsesAPI(
 
   while (true) {
     const { value, done } = await reader.read();
-    if (done) break;
+    if (done) {
+      debugLog.sseParser('stream_reader_done', {
+        totalChunksProcessed: buffer.length
+      }, convIdCtx);
+      break;
+    }
     const decoded = decoder.decode(value, { stream: true });
+
+    debugLog.sseParser('raw_chunk_received', {
+      chunkLength: decoded.length,
+      chunkSnippet: decoded.slice(0, 50)
+    }, convIdCtx);
 
     // Log raw chunk if SSE debugging is active
     if (apiCallLog) {
