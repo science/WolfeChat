@@ -291,12 +291,28 @@ export async function sendVisionMessage(
       resolvedModel,
       {
         onTextDelta: (text) => {
+          debugLog.messageAssembly('vision_text_delta_received', {
+            deltaText: text,
+            deltaLength: text.length,
+            currentStreamLength: streamText.length,
+            convId,
+            resolvedModel
+          }, conversationUniqueId);
+
           const msgTicks = countTicks(text);
           tickCounter += msgTicks;
           if (msgTicks === 0) tickCounter = 0;
           if (tickCounter === 3) { ticks = !ticks; tickCounter = 0; }
           streamText += text;
           streamContext.set({ streamText, convId });
+
+          debugLog.messageAssembly('vision_assistant_message_creating', {
+            messageContent: streamText + "█" + (ticks ? "\n```" : ""),
+            contentLength: streamText.length,
+            convId,
+            historyLength: currentHistory.length
+          }, conversationUniqueId);
+
           setHistory(
             [
               ...currentHistory,
@@ -308,12 +324,34 @@ export async function sendVisionMessage(
             ],
             convId
           );
+
+          debugLog.messageAssembly('vision_setHistory_called_streaming', {
+            convId,
+            newHistoryLength: currentHistory.length + 1,
+            assistantContent: streamText + "█" + (ticks ? "\n```" : ""),
+            model: resolvedModel
+          }, conversationUniqueId);
         },
         onCompleted: async () => {
+          debugLog.messageAssembly('vision_stream_completed', {
+            streamText,
+            convId,
+            userRequestedClosure: get(userRequestedStreamClosure)
+          }, conversationUniqueId);
+
           if (get(userRequestedStreamClosure)) {
             streamText = streamText.replace(/█+$/, '');
             userRequestedStreamClosure.set(false);
           }
+
+          debugLog.messageAssembly('vision_final_assistant_message_creating', {
+            finalContent: streamText,
+            contentLength: streamText.length,
+            convId,
+            historyLength: currentHistory.length,
+            model: resolvedModel
+          }, conversationUniqueId);
+
           await setHistory(
             [
               ...currentHistory,
@@ -321,6 +359,14 @@ export async function sendVisionMessage(
             ],
             convId
           );
+
+          debugLog.messageAssembly('vision_setHistory_called_final', {
+            convId,
+            newHistoryLength: currentHistory.length + 1,
+            finalContent: streamText,
+            model: resolvedModel
+          }, conversationUniqueId);
+
           estimateTokens(msg, convId);
           streamText = "";
           isStreaming.set(false);
@@ -357,10 +403,28 @@ export async function sendVisionMessage(
 
   // Find conversation by string ID instead of using numeric index
   const allConversations = get(conversations);
+
+  debugLog.messageAssembly('conversation_lookup_start', {
+    convId,
+    totalConversations: allConversations.length,
+    conversationIds: allConversations.map(c => c.id)
+  }, convId);
+
   const conversationIndex = allConversations.findIndex(c => c.id === convId);
   if (conversationIndex === -1) {
+    debugLog.messageAssembly('conversation_lookup_failed', {
+      convId,
+      availableIds: allConversations.map(c => c.id)
+    }, convId);
     throw new Error(`Conversation with ID ${convId} not found`);
   }
+
+  debugLog.messageAssembly('conversation_lookup_success', {
+    convId,
+    conversationIndex,
+    conversationTitle: allConversations[conversationIndex].title
+  }, convId);
+
   const conversation = allConversations[conversationIndex];
 
   let currentHistory = conversation.history;
@@ -402,6 +466,14 @@ export async function sendVisionMessage(
       resolvedModel,
       {
         onTextDelta: (text) => {
+          debugLog.messageAssembly('text_delta_received', {
+            deltaText: text,
+            deltaLength: text.length,
+            currentStreamLength: streamText.length,
+            conversationIndex,
+            resolvedModel
+          }, conversationUniqueId);
+
           const msgTicks = countTicks(text);
           tickCounter += msgTicks;
           if (msgTicks === 0) tickCounter = 0;
@@ -411,6 +483,14 @@ export async function sendVisionMessage(
           }
           streamText += text;
           streamContext.set({ streamText, convId });
+
+          debugLog.messageAssembly('assistant_message_creating', {
+            messageContent: streamText + "█" + (ticks ? "\n```" : ""),
+            contentLength: streamText.length,
+            conversationIndex,
+            historyLength: currentHistory.length
+          }, conversationUniqueId);
+
           setHistory(
             [
               ...currentHistory,
@@ -422,12 +502,35 @@ export async function sendVisionMessage(
             ],
             conversationIndex
           );
+
+          debugLog.messageAssembly('setHistory_called_streaming', {
+            conversationIndex,
+            newHistoryLength: currentHistory.length + 1,
+            assistantContent: streamText + "█" + (ticks ? "\n```" : ""),
+            model: resolvedModel
+          }, conversationUniqueId);
         },
         onCompleted: async (_finalText) => {
+          debugLog.messageAssembly('stream_completed', {
+            finalText: _finalText,
+            streamText,
+            conversationIndex,
+            userRequestedClosure: get(userRequestedStreamClosure)
+          }, conversationUniqueId);
+
           if (get(userRequestedStreamClosure)) {
             streamText = streamText.replace(/█+$/, '');
             userRequestedStreamClosure.set(false);
           }
+
+          debugLog.messageAssembly('final_assistant_message_creating', {
+            finalContent: streamText,
+            contentLength: streamText.length,
+            conversationIndex,
+            historyLength: currentHistory.length,
+            model: resolvedModel
+          }, conversationUniqueId);
+
           await setHistory(
             [
               ...currentHistory,
@@ -439,6 +542,14 @@ export async function sendVisionMessage(
             ],
             conversationIndex
           );
+
+          debugLog.messageAssembly('setHistory_called_final', {
+            conversationIndex,
+            newHistoryLength: currentHistory.length + 1,
+            finalContent: streamText,
+            model: resolvedModel
+          }, conversationUniqueId);
+
           estimateTokens(msg, conversationIndex);
 
           // Trigger title generation for brand-new conversations

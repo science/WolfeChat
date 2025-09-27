@@ -9,6 +9,7 @@ import { reasoningWindows } from '../stores/reasoningStore.js';
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService.js";
 import { streamAnthropicMessage } from "../services/anthropicMessagingService.js";
 import { isAnthropicModel } from "../services/anthropicService.js";
+import { debugLog } from "../utils/debugLayerLogger.js";
 let streamText = "";
 
 
@@ -18,11 +19,73 @@ let streamText = "";
 export function setHistory(msg: ChatCompletionRequestMessage[], convId: number = get(chosenConversationId)): Promise<void> {
   return new Promise<void>((resolve, reject) => {
       try {
+          // Get conversation string ID for debug logging
+          const allConversations = get(conversations);
+          const conversationUniqueId = allConversations[convId]?.id;
+
+          debugLog.storeUpdates('setHistory_called', {
+            convId,
+            conversationUniqueId,
+            incomingHistoryLength: msg.length,
+            incomingMessages: msg.map(m => ({
+              role: m.role,
+              contentLength: typeof m.content === 'string' ? m.content.length : JSON.stringify(m.content || '').length,
+              hasModel: !!(m as any).model
+            })),
+            totalConversations: allConversations.length
+          }, conversationUniqueId);
+
           let conv = get(conversations);
+
+          // Log before state
+          debugLog.storeUpdates('conversation_state_before', {
+            convId,
+            conversationExists: !!conv[convId],
+            currentHistoryLength: conv[convId]?.history?.length || 0,
+            conversationTitle: conv[convId]?.title || '',
+            conversationId: conv[convId]?.id || ''
+          }, conversationUniqueId);
+
           conv[convId].history = msg;
+
+          debugLog.storeUpdates('conversation_state_after', {
+            convId,
+            newHistoryLength: msg.length,
+            conversationTitle: conv[convId]?.title || '',
+            conversationId: conv[convId]?.id || '',
+            lastMessage: msg.length > 0 ? {
+              role: msg[msg.length - 1].role,
+              contentLength: typeof msg[msg.length - 1].content === 'string'
+                ? msg[msg.length - 1].content.length
+                : JSON.stringify(msg[msg.length - 1].content || '').length
+            } : null
+          }, conversationUniqueId);
+
+          debugLog.storeUpdates('conversations_store_set', {
+            convId,
+            totalConversations: conv.length,
+            targetConversationHistoryLength: conv[convId].history.length,
+            storeUpdateTimestamp: performance.now()
+          }, conversationUniqueId);
+
           conversations.set(conv);
+
+          debugLog.storeUpdates('setHistory_completed', {
+            convId,
+            conversationUniqueId,
+            finalHistoryLength: msg.length,
+            success: true
+          }, conversationUniqueId);
+
           resolve(); // No value is being resolved here
       } catch (error) {
+          debugLog.storeUpdates('setHistory_error', {
+            convId,
+            error: String(error),
+            errorMessage: (error as any)?.message || 'Unknown error',
+            messageCount: msg?.length || 0
+          });
+
           console.error("Failed to update history", error);
           reject(error); // Propagate the error
       }

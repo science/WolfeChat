@@ -374,33 +374,151 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
       if (DEBUG_LVL >= 2) console.log('[TEST] extracted modelStr', modelStr);
       expect(modelStr).toMatch(expectModelRe);
 
-      // Capture debug data before final assertions
+      // Capture comprehensive debug data before final assertions
       if (DEBUG_LVL >= 1) {
-        console.log('\n=== DEBUG DATA SUMMARY ===');
-        console.log(`[TEST-SUMMARY] SSE events captured: ${sseEvents.length}`);
-        console.log('[TEST-SUMMARY] SSE event types:', sseEvents.map(e => e.type));
+        console.log('\n=== COMPREHENSIVE DEBUG DATA ANALYSIS ===');
+        console.log(`[TEST-SUMMARY] Network SSE events captured: ${sseEvents.length}`);
+        console.log('[TEST-SUMMARY] Network SSE event types:', sseEvents.map(e => e.type));
 
         try {
-          const browserDebugData = await page.evaluate(() => (window as any).__testDebugData);
-          console.log('[TEST-SUMMARY] Browser reasoning events:', browserDebugData?.reasoningEvents?.length || 0);
-          console.log('[TEST-SUMMARY] Browser assistant messages:', browserDebugData?.assistantMessages?.length || 0);
-          console.log('[TEST-SUMMARY] Browser stream state:', browserDebugData?.streamState?.length || 0);
+          // Get comprehensive debug data from our new layer system
+          const comprehensiveDebugData = await page.evaluate(() => {
+            const win = window as any;
 
-          if (browserDebugData?.reasoningEvents?.length > 0) {
-            console.log('[TEST-SUMMARY] Browser reasoning event types:', browserDebugData.reasoningEvents.map((e: any) => e.type));
+            // Get data from our new debug infrastructure
+            let layerDebugData = null;
+            if (typeof win.getDebugData === 'function') {
+              layerDebugData = win.getDebugData();
+            }
+
+            // Get browser-specific debug data
+            const browserDebugData = win.__testDebugData;
+
+            return {
+              layerDebugData,
+              browserDebugData,
+              debugMode: win.__DEBUG_E2E,
+              hasGetDebugData: typeof win.getDebugData === 'function'
+            };
+          });
+
+          console.log(`[TEST-SUMMARY] Debug mode enabled: ${comprehensiveDebugData.debugMode}`);
+          console.log(`[TEST-SUMMARY] Has getDebugData function: ${comprehensiveDebugData.hasGetDebugData}`);
+
+          if (comprehensiveDebugData.layerDebugData) {
+            const layers = comprehensiveDebugData.layerDebugData.layers;
+            const timeline = comprehensiveDebugData.layerDebugData.timeline;
+
+            console.log('[TEST-SUMMARY] === LAYER-BY-LAYER DEBUG ANALYSIS ===');
+            console.log(`[TEST-SUMMARY] SSE Parser events: ${layers.sseParser?.length || 0}`);
+            console.log(`[TEST-SUMMARY] Message Assembly events: ${layers.messageAssembly?.length || 0}`);
+            console.log(`[TEST-SUMMARY] Store Update events: ${layers.storeUpdates?.length || 0}`);
+            console.log(`[TEST-SUMMARY] Reasoning Store events: ${layers.reasoning?.length || 0}`);
+            console.log(`[TEST-SUMMARY] Total timeline events: ${timeline?.length || 0}`);
+
+            // Analyze critical checkpoints
+            const sseEvents = layers.sseParser || [];
+            const msgEvents = layers.messageAssembly || [];
+            const storeEvents = layers.storeUpdates || [];
+            const reasoningEvents = layers.reasoning || [];
+
+            console.log('[TEST-SUMMARY] === CRITICAL CHECKPOINT ANALYSIS ===');
+
+            // Check if SSE events arrived
+            const sseChunks = sseEvents.filter(e => e.event === 'raw_chunk_received');
+            const sseCompleted = sseEvents.filter(e => e.event === 'sse_stream_done');
+            console.log(`[TEST-SUMMARY] ✓ SSE chunks received: ${sseChunks.length}`);
+            console.log(`[TEST-SUMMARY] ✓ SSE streams completed: ${sseCompleted.length}`);
+
+            // Check if messages were assembled
+            const textDeltas = msgEvents.filter(e => e.event === 'text_delta_received');
+            const messagesCreated = msgEvents.filter(e => e.event === 'assistant_message_creating');
+            const setHistoryCalls = msgEvents.filter(e => e.event.includes('setHistory_called'));
+            console.log(`[TEST-SUMMARY] ✓ Text deltas received: ${textDeltas.length}`);
+            console.log(`[TEST-SUMMARY] ✓ Assistant messages created: ${messagesCreated.length}`);
+            console.log(`[TEST-SUMMARY] ✓ SetHistory calls from msg assembly: ${setHistoryCalls.length}`);
+
+            // Check if store was updated
+            const storeUpdates = storeEvents.filter(e => e.event === 'conversations_store_set');
+            const storeCompleted = storeEvents.filter(e => e.event === 'setHistory_completed');
+            console.log(`[TEST-SUMMARY] ✓ Store updates executed: ${storeUpdates.length}`);
+            console.log(`[TEST-SUMMARY] ✓ Store updates completed: ${storeCompleted.length}`);
+
+            // Check reasoning events
+            const windowsCreated = reasoningEvents.filter(e => e.event === 'window_creation_completed');
+            const panelsCreated = reasoningEvents.filter(e => e.event === 'panel_creation_completed');
+            const textUpdates = reasoningEvents.filter(e => e.event === 'text_content_updated');
+            const panelsCompleted = reasoningEvents.filter(e => e.event === 'panel_completion_completed');
+            console.log(`[TEST-SUMMARY] ✓ Reasoning windows created: ${windowsCreated.length}`);
+            console.log(`[TEST-SUMMARY] ✓ Reasoning panels created: ${panelsCreated.length}`);
+            console.log(`[TEST-SUMMARY] ✓ Reasoning text updates: ${textUpdates.length}`);
+            console.log(`[TEST-SUMMARY] ✓ Reasoning panels completed: ${panelsCompleted.length}`);
+
+            // Identify where the flow breaks
+            console.log('[TEST-SUMMARY] === FAILURE POINT ANALYSIS ===');
+            if (sseChunks.length === 0) {
+              console.log('[TEST-CRITICAL] 🚨 SSE events never arrived - network issue');
+            } else if (textDeltas.length === 0) {
+              console.log('[TEST-CRITICAL] 🚨 SSE events arrived but text deltas not created - SSE parsing issue');
+            } else if (messagesCreated.length === 0) {
+              console.log('[TEST-CRITICAL] 🚨 Text deltas created but assistant messages not assembled - message assembly issue');
+            } else if (storeUpdates.length === 0) {
+              console.log('[TEST-CRITICAL] 🚨 Messages assembled but store not updated - store update issue');
+            } else if (windowsCreated.length === 0 && panelsCreated.length === 0) {
+              console.log('[TEST-CRITICAL] 🚨 Store updated but reasoning windows/panels not created - reasoning store issue');
+            } else if (textUpdates.length === 0 && panelsCreated.length > 0) {
+              console.log('[TEST-CRITICAL] 🚨 Reasoning panels created but never received text content - reasoning text flow issue');
+            } else {
+              console.log('[TEST-SUCCESS] ✅ All layers functioning - issue may be in DOM reactivity or component rendering');
+            }
+
+            // Show conversation context correlation
+            const timelineByConv = timeline ? timeline.reduce((acc: any, event: any) => {
+              const convId = event.conversationId || 'unknown';
+              if (!acc[convId]) acc[convId] = [];
+              acc[convId].push(event.event);
+              return acc;
+            }, {}) : {};
+
+            console.log('[TEST-SUMMARY] === CONVERSATION CONTEXT TRACKING ===');
+            Object.entries(timelineByConv).forEach(([convId, events]) => {
+              console.log(`[TEST-SUMMARY] Conv ${convId}: ${(events as string[]).length} events - ${(events as string[]).slice(0, 5).join(', ')}${(events as string[]).length > 5 ? '...' : ''}`);
+            });
+
+          } else {
+            console.log('[TEST-WARNING] ⚠️  Layer debug data not available - debug infrastructure may not be loaded');
+          }
+
+          const browserDebugData = comprehensiveDebugData.browserDebugData;
+          if (browserDebugData) {
+            console.log('[TEST-SUMMARY] === BROWSER-SPECIFIC DEBUG DATA ===');
+            console.log(`[TEST-SUMMARY] Browser reasoning events: ${browserDebugData.reasoningEvents?.length || 0}`);
+            console.log(`[TEST-SUMMARY] Browser assistant messages: ${browserDebugData.assistantMessages?.length || 0}`);
+            console.log(`[TEST-SUMMARY] Browser stream state: ${browserDebugData.streamState?.length || 0}`);
+
+            if (browserDebugData.reasoningEvents?.length > 0) {
+              console.log('[TEST-SUMMARY] Browser reasoning event types:', browserDebugData.reasoningEvents.map((e: any) => e.type));
+            }
           }
         } catch (e) {
-          console.log('[TEST-SUMMARY] Failed to get browser debug data:', e);
+          console.log('[TEST-ERROR] ❌ Failed to get comprehensive debug data:', e);
         }
 
-        // Check reasoning window state
+        // Check reasoning window state in DOM
         const reasoningWindow = page.locator('[role="region"][aria-label*="Reasoning"], details:has-text("Reasoning")');
         const reasoningVisible = await reasoningWindow.isVisible().catch(() => false);
         const reasoningText = await reasoningWindow.innerText().catch(() => '');
+        console.log(`[TEST-SUMMARY] === DOM REASONING WINDOW STATE ===`);
         console.log(`[TEST-SUMMARY] Reasoning window visible: ${reasoningVisible}`);
-        console.log(`[TEST-SUMMARY] Reasoning window text: ${reasoningText.slice(0, 200)}`);
+        console.log(`[TEST-SUMMARY] Reasoning window text length: ${reasoningText.length}`);
+        console.log(`[TEST-SUMMARY] Reasoning window preview: ${reasoningText.slice(0, 200)}`);
 
-        console.log('=== END DEBUG SUMMARY ===\n');
+        // Check for "0 messages" issue
+        if (reasoningVisible && reasoningText.includes('0 messages')) {
+          console.log(`[TEST-CRITICAL] 🚨 CONFIRMED BUG: Reasoning window shows "0 messages" despite potential data`);
+        }
+
+        console.log('=== END COMPREHENSIVE DEBUG ANALYSIS ===\n');
       }
 
       // The assistant response should already be visible from waitForAssistantDone
