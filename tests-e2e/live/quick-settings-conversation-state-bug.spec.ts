@@ -139,7 +139,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
 
     // conv2 (rows.nth(1))
     await rows.nth(1).click();
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'high', verbosity: 'high', summary: 'auto' });
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'medium', verbosity: 'medium', summary: 'auto' });
     await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5-nano/i);
     await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
 
@@ -161,7 +161,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     };
 
     await verifyUiFor(0, { effort: 'minimal', verbosity: 'low', summary: 'detailed' });
-    await verifyUiFor(1, { effort: 'high', verbosity: 'high', summary: 'auto' });
+    await verifyUiFor(1, { effort: 'medium', verbosity: 'medium', summary: 'auto' });
     await verifyUiFor(2, { effort: 'medium', verbosity: 'medium', summary: 'null' });
 
     // Network capture: verify outgoing payload honors current conversation settings
@@ -585,7 +585,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
 
     // Assertions for each conversation
     await sendAndAssert(0, 'conv3', /gpt-5/i, 'minimal', 'low', 'detailed');
-    await sendAndAssert(1, 'conv2', /gpt-5-nano/i, 'high', 'high', 'auto');
+    await sendAndAssert(1, 'conv2', /gpt-5-nano/i, 'medium', 'medium', 'auto');
     await sendAndAssert(2, 'conv1', /gpt-5-nano/i, 'medium', 'medium', 'null');
 
     // Extract SSE debug data after test completion

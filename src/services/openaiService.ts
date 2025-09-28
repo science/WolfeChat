@@ -933,10 +933,8 @@ export async function streamResponseViaResponsesAPI(
   const convIdCtx = uiContext?.convId;
   const anchorIndexCtx = uiContext?.anchorIndex;
 
-  // One reasoning window per API Response (only for reasoning-capable models)
-  const responseWindowId: string | null = supportsReasoning(resolvedModel)
-    ? createReasoningWindow(convIdCtx, resolvedModel, anchorIndexCtx)
-    : null;
+  // Lazy reasoning window creation - only create when reasoning events arrive
+  let responseWindowId: string | null = null;
 
   // Set up structured SSE logging if debug session is active
   let apiCallLog: any = null;
@@ -974,6 +972,14 @@ export async function streamResponseViaResponsesAPI(
   }
 
   let completedEmitted = false;
+
+  // Helper function to ensure reasoning window is created when first reasoning event arrives
+  function ensureReasoningWindow(): string | null {
+    if (!responseWindowId && supportsReasoning(resolvedModel)) {
+      responseWindowId = createReasoningWindow(convIdCtx, resolvedModel, anchorIndexCtx);
+    }
+    return responseWindowId;
+  }
 
   function processSSEBlock(block: string) {
     debugLog.sseParser('sse_block_received', {
@@ -1083,12 +1089,14 @@ export async function streamResponseViaResponsesAPI(
     }
 
     // Handle reasoning-related events
-    if (resolvedType === 'response.reasoning_summary_part.added' || 
-        resolvedType === 'response.reasoning_summary_text.delta' || 
+    if (resolvedType === 'response.reasoning_summary_part.added' ||
+        resolvedType === 'response.reasoning_summary_text.delta' ||
         resolvedType === 'response.reasoning_summary.delta') {
       const delta = obj?.delta ?? '';
       if (!panelTracker.has('summary')) {
-        const panelId = startReasoningPanel('summary', convIdCtx, responseWindowId || undefined);
+        // Create reasoning window lazily on first reasoning event
+        const windowId = ensureReasoningWindow();
+        const panelId = startReasoningPanel('summary', convIdCtx, windowId || undefined);
         panelTracker.set('summary', panelId);
         panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('summary', obj?.part);
@@ -1127,11 +1135,13 @@ export async function streamResponseViaResponsesAPI(
         panelTracker.delete('summary');
         panelTextTracker.delete(panelId);
       }
-    } else if (resolvedType === 'response.reasoning_text.delta' || 
+    } else if (resolvedType === 'response.reasoning_text.delta' ||
                resolvedType === 'response.reasoning.delta') {
       const delta = obj?.delta ?? '';
       if (!panelTracker.has('text')) {
-        const panelId = startReasoningPanel('text', convIdCtx, responseWindowId || undefined);
+        // Create reasoning window lazily on first reasoning event
+        const windowId = ensureReasoningWindow();
+        const panelId = startReasoningPanel('text', convIdCtx, windowId || undefined);
         panelTracker.set('text', panelId);
         panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('text');
@@ -1163,7 +1173,9 @@ export async function streamResponseViaResponsesAPI(
       
       // Only create a new panel if we don't have one AND we have text to show
       if (!panelId && text) {
-        panelId = startReasoningPanel('text', convIdCtx, responseWindowId || undefined);
+        // Create reasoning window lazily on first reasoning event
+        const windowId = ensureReasoningWindow();
+        panelId = startReasoningPanel('text', convIdCtx, windowId || undefined);
         panelTracker.set('text', panelId);
         panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('text');
