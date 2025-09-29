@@ -13,6 +13,7 @@ import { setHistory } from '../managers/conversationManager.js';
 import { createAnthropicClient } from './anthropicClientFactory.js';
 import { convertToSDKFormatWithSystem } from './anthropicSDKConverter.js';
 import { addThinkingConfigurationWithBudget, createAnthropicReasoningSupport } from './anthropicReasoning.js';
+import { getMaxOutputTokens } from './anthropicModelConfig.js';
 
 /**
  * Send non-streaming message to Anthropic API using SDK
@@ -42,10 +43,10 @@ export async function sendAnthropicMessageSDK(
       hasSystem: !!system
     });
 
-    // Build request parameters
+    // Build request parameters with model-specific max_tokens
     const requestParams: any = {
       model: config.model,
-      max_tokens: 4096,
+      max_tokens: getMaxOutputTokens(config.model), // Dynamic max_tokens from model config
       messages: sdkMessages,
       stream: false
     };
@@ -135,10 +136,10 @@ export async function streamAnthropicMessageSDK(
       hasSystem: !!system
     });
 
-    // Build request parameters
+    // Build request parameters with model-specific max_tokens
     const requestParams: any = {
       model: config.model,
-      max_tokens: 4096,
+      max_tokens: getMaxOutputTokens(config.model), // Dynamic max_tokens from model config
       messages: sdkMessages,
       stream: true
     };

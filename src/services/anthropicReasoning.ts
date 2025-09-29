@@ -11,33 +11,24 @@ import {
   setReasoningText,
   completeReasoningPanel
 } from '../stores/reasoningStore.js';
-
-/**
- * Claude models that support extended thinking/reasoning
- */
-const REASONING_MODELS = [
-  'claude-opus-4-1',
-  'claude-opus-4',
-  'claude-sonnet-4',
-  'claude-sonnet-3.7'
-];
-
-/**
- * Default thinking budget in tokens
- */
-const DEFAULT_THINKING_BUDGET = 16384; // 16k tokens as recommended
+import {
+  supportsReasoning as modelSupportsReasoning,
+  getThinkingBudget as getModelThinkingBudget
+} from './anthropicModelConfig.js';
 
 /**
  * Check if a Claude model supports reasoning/extended thinking
+ *
+ * Now uses the centralized model configuration system instead of hardcoded lists
  */
 export function supportsAnthropicReasoning(model: string): boolean {
-  return REASONING_MODELS.some(reasoningModel =>
-    model.includes(reasoningModel)
-  );
+  return modelSupportsReasoning(model);
 }
 
 /**
  * Add thinking configuration to request parameters for reasoning models
+ *
+ * Now uses model-specific thinking budget from model configuration
  */
 export function addThinkingConfiguration(params: any): any {
   // Only add thinking config if model supports reasoning
@@ -45,11 +36,18 @@ export function addThinkingConfiguration(params: any): any {
     return params;
   }
 
+  const thinkingBudget = getModelThinkingBudget(params.model);
+
+  // Only add thinking if budget > 0
+  if (thinkingBudget === 0) {
+    return params;
+  }
+
   return {
     ...params,
     thinking: {
       type: 'enabled',
-      budget_tokens: DEFAULT_THINKING_BUDGET
+      budget_tokens: thinkingBudget
     }
   };
 }
@@ -183,19 +181,37 @@ export function setThinkingBudget(budget: number): void {
   customThinkingBudget = budget;
 }
 
-export function getThinkingBudget(): number {
-  return customThinkingBudget || DEFAULT_THINKING_BUDGET;
+export function getThinkingBudget(model?: string): number {
+  if (customThinkingBudget) {
+    return customThinkingBudget;
+  }
+
+  // If model is provided, get model-specific budget
+  if (model) {
+    return getModelThinkingBudget(model); // Use imported function from modelConfig
+  }
+
+  // Fallback to a reasonable default
+  return 8000;
 }
 
 /**
  * Add thinking configuration with custom budget
+ *
+ * Now uses model-specific thinking budget when no custom budget is provided
  */
-export function addThinkingConfigurationWithBudget(params: any, budget?: number): any {
+export function addThinkingConfigurationWithBudget(params: any, customBudget?: number): any {
   if (!supportsAnthropicReasoning(params.model)) {
     return params;
   }
 
-  const thinkingBudget = budget || getThinkingBudget();
+  // Use custom budget if provided, otherwise get model-specific budget
+  const thinkingBudget = customBudget || getModelThinkingBudget(params.model);
+
+  // Only add thinking if budget > 0
+  if (thinkingBudget === 0) {
+    return params;
+  }
 
   return {
     ...params,
