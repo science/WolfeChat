@@ -1,6 +1,11 @@
 // Auto-generated test entry point
 export { runAllTests, formatSuiteResultsText, clearTests } from './src/tests/testHarness.js';
+import './src/tests/unit/anthropic-client-factory.test.ts';
 import './src/tests/unit/anthropic-conversion.test.ts';
+import './src/tests/unit/anthropic-reasoning-support.test.ts';
+import './src/tests/unit/anthropic-sdk-conversion.test.ts';
+import './src/tests/unit/anthropic-sdk-import.test.ts';
+import './src/tests/unit/anthropic-sdk-streaming.test.ts';
 import './src/tests/unit/anthropic-service-mock.test.ts';
 import './src/tests/unit/claude-integration.test.ts';
 import './src/tests/unit/codeRendererStreaming.unit.test.ts';

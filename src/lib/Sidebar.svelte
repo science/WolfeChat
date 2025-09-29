@@ -70,7 +70,7 @@
    let conv = $conversations.filter((value, index) => index !== i);
    console.log("Updated conversations list after deletion attempt:", conv);
    if (deleted?.id) {
-     drafts.deleteDraft(deleted.id);
+     draftsStore.deleteDraft(deleted.id);
      try { (window as any).conversationQuickSettings?.deleteSettings?.(deleted.id); } catch {}
    }
  

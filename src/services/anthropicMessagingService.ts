@@ -7,6 +7,10 @@ import {
 import {
   setHistory
 } from "../managers/conversationManager.js";
+import { sendAnthropicMessageSDK, streamAnthropicMessageSDK } from "./anthropicSDKMessaging.js";
+
+// Feature flag to control SDK vs fetch implementation
+const USE_ANTHROPIC_SDK = true;
 
 // Type definitions for Anthropic API
 type AnthropicMessage = {
@@ -99,6 +103,13 @@ export async function sendAnthropicMessage(
   convId: number,
   config: { model: string }
 ): Promise<void> {
+  // Use SDK implementation if feature flag is enabled
+  if (USE_ANTHROPIC_SDK) {
+    console.log("Using Anthropic SDK for non-streaming message");
+    return sendAnthropicMessageSDK(messages, convId, config);
+  }
+
+  // Legacy fetch implementation (kept for rollback capability)
   const apiKey = get(anthropicApiKey);
   if (!apiKey) {
     throw new Error("Anthropic API key is missing.");
@@ -122,7 +133,7 @@ export async function sendAnthropicMessage(
       (requestBody as any).system = systemMessage;
     }
 
-    console.log("Sending Anthropic message request:", { model: config.model, messageCount: anthropicMessages.length });
+    console.log("Sending Anthropic message request (fetch):", { model: config.model, messageCount: anthropicMessages.length });
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -156,7 +167,7 @@ export async function sendAnthropicMessage(
       .map(block => block.text)
       .join('');
 
-    console.log("Anthropic response received:", {
+    console.log("Anthropic response received (fetch):", {
       model: data.model,
       textLength: responseText.length,
       usage: data.usage
@@ -173,7 +184,7 @@ export async function sendAnthropicMessage(
     setHistory(updatedHistory, convId);
 
   } catch (error) {
-    console.error("Error in sendAnthropicMessage:", error);
+    console.error("Error in sendAnthropicMessage (fetch):", error);
     appendAnthropicErrorToHistory(error, currentHistory, convId);
     throw error;
   }
@@ -185,6 +196,22 @@ export async function streamAnthropicMessage(
   convId: number,
   config: { model: string }
 ): Promise<void> {
+  // Use SDK implementation if feature flag is enabled
+  if (USE_ANTHROPIC_SDK) {
+    console.log("Using Anthropic SDK for streaming message");
+    isAnthropicStreaming.set(true);
+    userRequestedAnthropicStreamClosure.set(false);
+
+    try {
+      await streamAnthropicMessageSDK(messages, convId, config);
+    } finally {
+      isAnthropicStreaming.set(false);
+      userRequestedAnthropicStreamClosure.set(false);
+    }
+    return;
+  }
+
+  // Legacy fetch implementation (kept for rollback capability)
   const apiKey = get(anthropicApiKey);
   if (!apiKey) {
     throw new Error("Anthropic API key is missing.");

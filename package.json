@@ -35,6 +35,7 @@
     "vite": "^4.1.0"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.64.0",
     "idb": "^8.0.0",
     "openai": "^3.2.1",
     "prismjs": "^1.30.0",
