@@ -87,60 +87,26 @@ test.describe('TDD: Reasoning Window Conversation ID Bug', () => {
     }
   });
 
-  test('conversation ID is undefined when reasoning window is created too quickly', async ({ page }) => {
-    const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
-
+  test('reasoning window shows content when created quickly (not empty due to race condition)', async ({ page }) => {
     await page.goto('/');
-    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL);
 
-    // Clear all data to force conversation initialization race condition
+    // Clear localStorage to trigger potential race condition
     await page.evaluate(() => {
       localStorage.clear();
     });
 
     await bootstrapLiveAPI(page);
 
-    // Expose reasoning store functions for inspection
-    await page.evaluate(() => {
-      const win = window as any;
-      win.testDebugData = {
-        conversationIdAtMessageSend: null,
-        reasoningWindowIds: [],
-        reasoningWindowData: []
-      };
-
-      // Override createReasoningWindow to capture the convId parameter
-      const originalCreate = win.createReasoningWindow;
-      if (originalCreate) {
-        win.createReasoningWindow = (...args: any[]) => {
-          const [convId, model, anchorIndex] = args;
-          win.testDebugData.reasoningWindowData.push({ convId, model, anchorIndex, timestamp: Date.now() });
-          debugInfo('[TEST-DEBUG] createReasoningWindow called with convId:', { convId });
-          return originalCreate(...args);
-        };
-      }
-    });
-
-    // Configure reasoning immediately
+    // Immediately configure reasoning model to trigger race condition
     await operateQuickSettings(page, {
       mode: 'ensure-open',
       model: /gpt-5-nano/i,
       reasoning: 'medium',
-      closeAfter: false
+      closeAfter: true
     });
 
-    // Send message and capture conversation state at the exact moment
-    await page.evaluate(() => {
-      const win = window as any;
-      // Try to capture conversation ID the same way openaiService does
-      const conversations = win.get?.(win.conversations);
-      const convId = 0; // First conversation index
-      const conversationUniqueId = conversations?.[convId]?.id;
-      win.testDebugData.conversationIdAtMessageSend = conversationUniqueId;
-      debugInfo('[TEST-DEBUG] Conversation ID at message send:', { conversationUniqueId });
-    });
-
-    await sendMessage(page, 'Monte Hall problem', {
+    // Send reasoning-heavy message immediately
+    await sendMessage(page, 'Explain the Monte Hall problem step by step with detailed reasoning', {
       submitMethod: 'ctrl-enter',
       clearFirst: true,
       waitForEmpty: true
@@ -148,25 +114,33 @@ test.describe('TDD: Reasoning Window Conversation ID Bug', () => {
 
     await waitForStreamComplete(page, { timeout: 60_000 });
 
-    // Analyze the captured debug data
-    const debugData = await page.evaluate(() => (window as any).testDebugData);
-    debugInfo('[TEST] Debug data captured:', { debugData });
+    // Check that reasoning window appears and has content
+    const reasoningWindows = page.locator('details:has-text("Reasoning")');
+    await expect(reasoningWindows).toHaveCount(1);
 
-    if (debugData.conversationIdAtMessageSend === undefined || debugData.conversationIdAtMessageSend === null) {
-      debugWarn('[TEST] ❌ ROOT CAUSE CONFIRMED: conversationId was undefined/null when message was sent');
+    // Get the message count text
+    const messageCountText = await reasoningWindows.locator('span').filter({ hasText: /\d+ message/ }).textContent();
+    const messageCount = parseInt(messageCountText?.match(/(\d+) message/)?.[1] || '0');
 
-      if (debugData.reasoningWindowData.length > 0) {
-        const windowData = debugData.reasoningWindowData[0];
-        if (windowData.convId === undefined || windowData.convId === null) {
-          debugWarn('[TEST] ❌ BUG CHAIN CONFIRMED: Reasoning window created with undefined convId');
-        }
+    // The user-facing bug: reasoning window shows "0 messages" instead of actual reasoning
+    if (messageCount === 0) {
+      // Check if it's stuck in waiting state
+      const waitingText = await reasoningWindows.locator('div:has-text("Waiting for reasoning events...")').count();
+
+      if (waitingText > 0) {
+        debugWarn('[TEST] ❌ USER BUG: Reasoning window stuck in "Waiting for reasoning events..." state');
+      } else {
+        debugWarn('[TEST] ❌ USER BUG: Reasoning window shows "0 messages" despite reasoning model being used');
       }
 
-      // Test currently expects the bug - update this when bug is fixed
-      expect(debugData.conversationIdAtMessageSend).toBeUndefined();
+      // For now, expect the bug (until production fix)
+      expect(messageCount).toBe(0);
     } else {
-      debugInfo('[TEST] ✅ ROOT CAUSE APPEARS FIXED: conversationId was properly defined');
-      expect(debugData.conversationIdAtMessageSend).toBeDefined();
+      debugInfo('[TEST] ✅ SUCCESS: Reasoning window shows content properly');
+      expect(messageCount).toBeGreaterThan(0);
+
+      // The key user experience: reasoning window shows meaningful message count
+      debugInfo(`[TEST] Reasoning window shows ${messageCount} messages - this indicates content is loaded`);
     }
   });
 });

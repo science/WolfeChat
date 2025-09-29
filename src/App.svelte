@@ -166,6 +166,9 @@ function clearFiles() {
       const { modelsStore } = await import('./stores/modelStore.js');
       const { openaiApiKey, anthropicApiKey, selectedProvider } = await import('./stores/providerStore.js');
       const { selectedModel, selectedMode } = await import('./stores/stores.js');
+      const { get } = await import('svelte/store');
+      const { createResponseViaResponsesAPI, streamResponseViaResponsesAPI, supportsReasoning } = await import('./services/openaiService.js');
+      const { bindToCallbacks } = await import('./tests/helpers/TestSSEEvents.js');
 
       window.stores = {
         modelsStore,
@@ -175,6 +178,11 @@ function clearFiles() {
         selectedModel,
         selectedMode
       };
+      window.get = get;
+      window.createResponseViaResponsesAPI = createResponseViaResponsesAPI;
+      window.streamResponseViaResponsesAPI = streamResponseViaResponsesAPI;
+      window.supportsReasoning = supportsReasoning;
+      window.bindToCallbacks = bindToCallbacks;
     }
 
     // Attach scroll memory to chat container and initialize for current conversation

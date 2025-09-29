@@ -10,16 +10,17 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173';
 // Removed legacy configureApiKeyAndModel implementation in favor of helpers
 
 async function bindWrapper(page: Page) {
-  await page.addScriptTag({ type: 'module', content: `
-    import { bindToCallbacks } from '/src/tests/helpers/TestSSEEvents.ts';
-    import { streamResponseViaResponsesAPI } from '/src/services/openaiService.ts';
+  await page.addScriptTag({ content: `
     window.__runBoundStream = async function(prompt) {
+      const win = window;
+      const bindToCallbacks = win.bindToCallbacks;
+      const streamResponseViaResponsesAPI = win.streamResponseViaResponsesAPI;
       const { callbacks, bus } = bindToCallbacks();
       const outP = bus.waitForOutputCompleted(60000);
       const doneP = bus.waitForAllDone(60000);
       // Propagate stream errors to the bus so tests never hang
       streamResponseViaResponsesAPI(prompt, undefined, callbacks).catch(err => {
-        try { if ((window as any).__DEBUG_E2E >= 1) console.error('[TEST] stream error in __runBoundStream', err); } catch {}
+        try { if ((window).__DEBUG_E2E >= 1) console.error('[TEST] stream error in __runBoundStream', err); } catch {}
         try { callbacks?.onError?.(err); } catch {}
         try { callbacks?.onCompleted?.('', { type: 'error', synthetic: true, error: String(err) }); } catch {}
       });
@@ -42,25 +43,20 @@ async function bindWrapper(page: Page) {
       // Wire debug level from Node env via a window flag if set by the test
       window.__runHookedStream = async function(prompt) {
         try {
-          // Dynamic imports within async function
-          const modHelpers = await import('/src/tests/helpers/TestSSEEvents.ts');
-          const modSvc = await import('/src/services/openaiService.ts');
+          // Use window-exposed functions instead of dynamic imports
+          const win = window as any;
+          const get = win.get;
+          const supportsReasoning = win.supportsReasoning;
+          const bindToCallbacks = win.bindToCallbacks;
+          const streamResponseViaResponsesAPI = win.streamResponseViaResponsesAPI;
 
-          // Try to read model from store; fall back to DOM if import fails
-          let get, selectedModel, modelFromStore = null;
+          // Get model from store
+          let modelFromStore = null;
           try {
-            const sStore = await import('svelte/store');
-            const modelStore = await import('/src/stores/modelStore');
-            get = sStore.get;
-            selectedModel = modelStore.selectedModel;
-            modelFromStore = get(selectedModel);
+            modelFromStore = get(win.stores.selectedModel);
           } catch (e) {
-            try { if ((window as any).__DEBUG_E2E >= 2) console.warn('[TEST] Failed to import svelte/store or modelStore, will use DOM fallback:', e); } catch {}
+            try { if ((window as any).__DEBUG_E2E >= 2) console.warn('[TEST] Failed to get model from store, will use DOM fallback:', e); } catch {}
           }
-
-          const supportsReasoning = modSvc.supportsReasoning;
-          const bindToCallbacks = modHelpers.bindToCallbacks;
-          const streamResponseViaResponsesAPI = modSvc.streamResponseViaResponsesAPI;
 
           // DOM fallback for model
           let model = modelFromStore || (document.querySelector('#current-model-select')?.value || '');

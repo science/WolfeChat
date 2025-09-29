@@ -16,30 +16,42 @@ test.describe('Live API: Responses API non-streaming', () => {
     // Select a reasoning model
     await selectReasoningModelInQuickSettings(page);
 
-    // Inject and run the test using the actual testResponsesAPI function
-    await page.addScriptTag({ type: 'module', content: `
-      import { testResponsesAPI } from '/src/utils/debugUtils.ts';
-      
-      window.__testResponsesAPI = async function() {
-        try {
-          const result = await testResponsesAPI();
-          try { if ((window as any).__DEBUG_E2E >= 2) console.log('[TEST] testResponsesAPI result:', result); } catch {}
-          return result;
-        } catch (e) {
-          try { if ((window as any).__DEBUG_E2E >= 1) console.error('[TEST] testResponsesAPI error:', e); } catch {}
-          return { success: false, error: String(e) };
-        }
-      };
-    `});
-    
-    // Wait for function to be available
-    await page.waitForFunction(() => typeof (window as any).__testResponsesAPI === 'function');
-    
-    // Execute the test
+    // Execute the test directly using the API call
     const result = await page.evaluate(async () => {
-      return await (window as any).__testResponsesAPI();
+      try {
+        // Inline the testResponsesAPI logic directly
+        const win = window as any;
+        const apiKey = win.get(win.stores.openaiApiKey);
+        const selectedModel = win.get(win.stores.selectedModel);
+
+        if (!apiKey) {
+          console.error('No API key configured');
+          return { success: false, error: 'No API key configured' };
+        }
+
+        const prompt = "Say 'double bubble bath' five times fast.";
+        const model = selectedModel;
+
+        // Call createResponseViaResponsesAPI directly
+        const data = await win.createResponseViaResponsesAPI(prompt, model);
+        const outputText =
+          data?.output_text ??
+          data?.output?.[0]?.content?.map((c: any) => c?.text).join('') ??
+          data?.response?.output_text ??
+          JSON.stringify(data);
+
+        console.log('Responses API result:', data);
+        console.log('Responses API output_text:', outputText);
+        return { success: true, raw: data, outputText, model };
+      } catch (e) {
+        console.error('Responses API error:', e);
+        return { success: false, error: e };
+      }
     });
     
+    // Debug the result first
+    debugInfo('[TEST] Response result:', result);
+
     // Assert results
     expect(result).toBeTruthy();
     expect(result.success).toBe(true);
