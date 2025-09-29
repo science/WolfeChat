@@ -10,6 +10,7 @@ import {
   getRecentModelsFromQuickSettings,
   getModelDropdownState
 } from './helpers';
+import { debugInfo } from '../debug-utils';
 
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
 const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
@@ -151,7 +152,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
         const hasRecentClaude = recentModels.some(m => m.toLowerCase().includes('claude'));
 
         expect(hasRecentGpt || hasRecentClaude).toBe(true);
-        console.log('Recent models found:', recentModels);
+        debugInfo('Recent models found:', { recentModels });
       }
     }
   });

@@ -1,4 +1,5 @@
 import { expect, Page, Locator } from '@playwright/test';
+import { debugLog, debugErr, debugWarn, debugInfo, DEBUG_LEVELS, isDebugLevel } from '../debug-utils';
 
 // ==================== MODEL DROPDOWN HELPER INTERFACES ====================
 
@@ -55,7 +56,7 @@ interface ModelDropdownState {
  */
 export async function mockOpenAIAPI(page: Page) {
   await page.route('**/v1/models', async route => {
-    console.log('[MOCK] Intercepting OpenAI models API call');
+    debugInfo('[MOCK] Intercepting OpenAI models API call');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -396,12 +397,12 @@ export async function setProviderApiKey(page: Page, provider: 'OpenAI' | 'Anthro
  * @param page - Playwright page
  */
 export async function ensureSettingsClosed(page: Page): Promise<void> {
-  console.log('[Helper Debug] Checking if Settings modal is open...');
+  debugInfo('[Helper Debug] Checking if Settings modal is open...');
   const settingsHeading = page.getByRole('heading', { name: /settings/i });
   const isSettingsOpen = await settingsHeading.isVisible().catch(() => false);
 
   if (isSettingsOpen) {
-    console.log('[Helper Debug] Settings is open, closing it...');
+    debugInfo('[Helper Debug] Settings is open, closing it...');
     const saveBtn = page.getByRole('button', { name: /^save$/i });
     if (await saveBtn.isVisible().catch(() => false)) {
       await saveBtn.click();
@@ -416,9 +417,9 @@ export async function ensureSettingsClosed(page: Page): Promise<void> {
     // Wait for Settings to close completely
     await expect(settingsHeading).toBeHidden({ timeout: 5000 });
     await page.waitForTimeout(500); // Wait for dialog animations to complete
-    console.log('[Helper Debug] Settings closed successfully');
+    debugInfo('[Helper Debug] Settings closed successfully');
   } else {
-    console.log('[Helper Debug] Settings is not open, no action needed');
+    debugInfo('[Helper Debug] Settings is not open, no action needed');
   }
 }
 
@@ -430,7 +431,7 @@ export async function ensureSettingsClosed(page: Page): Promise<void> {
  * @returns SettingsHandle with methods to operate on Settings
  */
 export async function withSettingsOpen(page: Page) {
-  console.log('[Helper Debug] Opening Settings modal...');
+  debugInfo('[Helper Debug] Opening Settings modal...');
   await openSettings(page);
 
   return {
@@ -438,7 +439,7 @@ export async function withSettingsOpen(page: Page) {
      * Safely closes the Settings modal
      */
     close: async () => {
-      console.log('[Helper Debug] Closing Settings via handle...');
+      debugInfo('[Helper Debug] Closing Settings via handle...');
       await saveAndCloseSettings(page);
     },
 
@@ -456,7 +457,7 @@ export async function withSettingsOpen(page: Page) {
      * Gets visible models from the open Settings modal
      */
     getModels: async (): Promise<string[]> => {
-      console.log('[Helper Debug] Getting models from Settings...');
+      debugInfo('[Helper Debug] Getting models from Settings...');
       return getSettingsModels(page);
     }
   };
@@ -583,13 +584,14 @@ export async function waitForModelsToLoad(
         // Look for options with real values (not empty, not disabled)
         const realOptions = select.querySelectorAll('option[value]:not([value=""]):not(:disabled)');
 
-        console.log('DOM Check - Real options found:', realOptions.length);
-        console.log('DOM Check - Option values:', Array.from(realOptions).map(opt => opt.getAttribute('value')));
-
         return realOptions.length > 0;
       },
       { timeout: 10000 }
     );
+
+    // Debug after the function completes (in Node context)
+    const optionCount = await page.locator('#model-selection option[value]:not([value=""]):not(:disabled)').count();
+    debugInfo('DOM Check - Real options found after waitForFunction:', { count: optionCount });
   } else if (context === 'quick-settings') {
     // Original QuickSettings logic - keep unchanged
     const quickSettingsButton = page.locator('button').filter({ hasText: 'Quick Settings' }).first();
@@ -687,7 +689,7 @@ export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-op
   const { mode = 'ensure-open', model, reasoningEffort, verbosity, summary, closeAfter = false } = opts;
 
   // Automatic conflict resolution: Close Settings if open
-  console.log('[operateQuickSettings] Ensuring Settings is closed to prevent conflicts...');
+  debugInfo('[operateQuickSettings] Ensuring Settings is closed to prevent conflicts...');
   await ensureSettingsClosed(page);
 
   const toggle = page.locator('button[aria-controls="quick-settings-body"]');
@@ -861,7 +863,6 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
   } = opts;
 
   const startTime = Date.now();
-  const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
 
   // Phase 1: Inject stream monitoring helper into page context
   // This gives us direct access to SSE events
@@ -1036,18 +1037,16 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
     ]);
 
     // Log results if debugging
-    if (DEBUG_LVL >= 2) {
-      console.log('[WAIT-ASSISTANT] Completion signals:', {
-        assistantAppeared: results[0].status === 'fulfilled',
-        streamComplete: results[1].status === 'fulfilled',
-        uiComplete: results[2].status === 'fulfilled',
-        sseReceived: results[3].status === 'fulfilled'
-      });
-    }
+    debugInfo('[WAIT-ASSISTANT] Completion signals:', {
+      assistantAppeared: results[0].status === 'fulfilled',
+      streamComplete: results[1].status === 'fulfilled',
+      uiComplete: results[2].status === 'fulfilled',
+      sseReceived: results[3].status === 'fulfilled'
+    });
 
     // Enhanced logging for debugging reasoning events issue
-    if (DEBUG_LVL >= 1 || results[0].status !== 'fulfilled' || results[2].status !== 'fulfilled') {
-      console.log('[WAIT-ASSISTANT] Detailed completion status:', {
+    if (results[0].status !== 'fulfilled' || results[2].status !== 'fulfilled') {
+      debugWarn('[WAIT-ASSISTANT] Detailed completion status:', {
         assistantAppeared: results[0].status === 'fulfilled' ? 'OK' : `FAILED: ${results[0].reason}`,
         streamComplete: results[1].status === 'fulfilled' ? 'OK' : `FAILED: ${results[1].reason}`,
         uiComplete: results[2].status === 'fulfilled' ? 'OK' : `FAILED: ${results[2].reason}`,
@@ -1069,8 +1068,8 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
       throw new Error('Neither UI completion nor stream completion succeeded - possible reasoning events issue');
     }
 
-    if (!uiOk && DEBUG_LVL >= 1) {
-      console.log('[WAIT-ASSISTANT] WARNING: UI completion failed but stream completion succeeded - likely reasoning events bug');
+    if (!uiOk) {
+      debugWarn('[WAIT-ASSISTANT] UI completion failed but stream completion succeeded - likely reasoning events bug');
     }
 
     // Additional stabilization if needed
@@ -1078,43 +1077,41 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
       await page.waitForTimeout(stabilizationTime);
     }
 
-    if (DEBUG_LVL >= 2) {
-      console.log(`[WAIT-ASSISTANT] Stream complete after ${Date.now() - startTime}ms`);
-    }
+    debugInfo(`[WAIT-ASSISTANT] Stream complete after ${Date.now() - startTime}ms`);
 
   } catch (error) {
     // Enhanced error diagnostics
-    if (DEBUG_LVL >= 1) {
-      try {
-        // Check if page is still accessible before attempting evaluation
-        if (!page.isClosed()) {
-          const diagnostics = await page.evaluate(() => {
-            const win = window as any;
-            const monitor = win.__streamMonitor || {};
-            const assistants = document.querySelectorAll('[role="listitem"][data-message-role="assistant"]');
-            const sendBtn = document.querySelector('button[aria-label="Send"]') as HTMLButtonElement;
-            
-            return {
-              streamMonitor: {
-                isStreaming: monitor.isStreaming,
-                lastCompletedAt: monitor.lastCompletedAt,
-                timeSinceComplete: monitor.lastCompletedAt ? Date.now() - monitor.lastCompletedAt : null
-              },
-              assistantCount: assistants.length,
-              lastAssistantLength: assistants.length > 0 ? assistants[assistants.length - 1].textContent?.length : 0,
-              sendButtonDisabled: sendBtn?.disabled,
-              hasWaitIcon: !!document.querySelector('img[alt="Wait"]:not([style*="display: none"])')
-            };
-          });
-          
-          console.error('[WAIT-ASSISTANT] Timeout diagnostics:', diagnostics);
-        } else {
-          console.error('[WAIT-ASSISTANT] Page closed - cannot collect diagnostics. Error:', error?.message || error);
-        }
-      } catch (diagError) {
-        console.error('[WAIT-ASSISTANT] Failed to collect diagnostics:', diagError?.message || diagError);
-        console.error('[WAIT-ASSISTANT] Original error:', error?.message || error);
+    try {
+      // Check if page is still accessible before attempting evaluation
+      if (!page.isClosed()) {
+        const diagnostics = await page.evaluate(() => {
+          const win = window as any;
+          const monitor = win.__streamMonitor || {};
+          const assistants = document.querySelectorAll('[role="listitem"][data-message-role="assistant"]');
+          const sendBtn = document.querySelector('button[aria-label="Send"]') as HTMLButtonElement;
+
+          return {
+            streamMonitor: {
+              isStreaming: monitor.isStreaming,
+              lastCompletedAt: monitor.lastCompletedAt,
+              timeSinceComplete: monitor.lastCompletedAt ? Date.now() - monitor.lastCompletedAt : null
+            },
+            assistantCount: assistants.length,
+            lastAssistantLength: assistants.length > 0 ? assistants[assistants.length - 1].textContent?.length : 0,
+            sendButtonDisabled: sendBtn?.disabled,
+            hasWaitIcon: !!document.querySelector('img[alt="Wait"]:not([style*="display: none"])')
+          };
+        });
+
+        debugErr('[WAIT-ASSISTANT] Timeout diagnostics:', { diagnostics });
+      } else {
+        debugErr('[WAIT-ASSISTANT] Page closed - cannot collect diagnostics', { error: error?.message || error });
       }
+    } catch (diagError) {
+      debugErr('[WAIT-ASSISTANT] Failed to collect diagnostics', {
+        diagError: diagError?.message || diagError,
+        originalError: error?.message || error
+      });
     }
     
     throw error;
@@ -1623,7 +1620,7 @@ export async function getModelDropdownState(
     }
 
   } catch (error) {
-    console.error('[getModelDropdownState] Error:', error);
+    debugErr('[getModelDropdownState] Error:', { error });
     // Return partial result on error
   }
 

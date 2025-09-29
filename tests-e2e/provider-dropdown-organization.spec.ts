@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI, bootstrapBothProviders, withSettingsOpen, openSettings, mockOpenAIAPI } from './live/helpers';
+import { debugInfo } from './debug-utils';
 
 test.describe('Provider Dropdown Organization Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -27,7 +28,7 @@ test.describe('Provider Dropdown Organization Tests', () => {
     expect(optgroupLabels).not.toContain('All models');
 
     // "Recently used" only appears if there are recent models (not in fresh tests)
-    console.log('Optgroup labels found:', optgroupLabels);
+    debugInfo('Optgroup labels found:', { optgroupLabels });
 
     // Verify OpenAI models are in OpenAI section
     const openAIModels = await page.locator('#model-selection optgroup[label="OpenAI"] option').evaluateAll(
@@ -73,7 +74,7 @@ test.describe('Provider Dropdown Organization Tests', () => {
     expect(optgroupLabels).not.toContain('Anthropic');
     expect(optgroupLabels).not.toContain('All models');
 
-    console.log('OpenAI only - Optgroup labels found:', optgroupLabels);
+    debugInfo('OpenAI only - Optgroup labels found:', { optgroupLabels });
   });
 
   test('dropdown should only show Anthropic section when only Anthropic key is set', async ({ page }) => {
@@ -96,7 +97,7 @@ test.describe('Provider Dropdown Organization Tests', () => {
     expect(optgroupLabels).not.toContain('OpenAI');
     expect(optgroupLabels).not.toContain('All models');
 
-    console.log('Anthropic only - Optgroup labels found:', optgroupLabels);
+    debugInfo('Anthropic only - Optgroup labels found:', { optgroupLabels });
   });
 
   test('models should be alphabetically sorted within each provider section', async ({ page }) => {

@@ -5,16 +5,17 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { debugInfo, debugWarn, debugErr } from '../debug-utils';
 
 test.describe('Debug QuickSettings Click', () => {
   test('should examine DOM changes when clicking QuickSettings', async ({ page }) => {
-    console.log('=== Debugging QuickSettings Click ===');
+    debugInfo('=== Debugging QuickSettings Click ===');
 
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Check initial DOM state
-    console.log('STEP 1: Initial DOM state');
+    debugInfo('STEP 1: Initial DOM state');
     const initialDOM = await page.evaluate(() => {
       return {
         allSelects: Array.from(document.querySelectorAll('select')).map(s => ({
@@ -42,10 +43,10 @@ test.describe('Debug QuickSettings Click', () => {
       };
     });
 
-    console.log('Initial DOM:', JSON.stringify(initialDOM, null, 2));
+    debugInfo('Initial DOM:', { initialDOM });
 
     // Click the QuickSettings button
-    console.log('STEP 2: Click QuickSettings button');
+    debugInfo('STEP 2: Click QuickSettings button');
     const quickSettingsButton = await page.locator('button').filter({ hasText: 'Quick Settings' }).first();
     await quickSettingsButton.click();
 
@@ -53,7 +54,7 @@ test.describe('Debug QuickSettings Click', () => {
     await page.waitForTimeout(1000);
 
     // Check DOM state after click
-    console.log('STEP 3: DOM state after click');
+    debugInfo('STEP 3: DOM state after click');
     const afterClickDOM = await page.evaluate(() => {
       return {
         allSelects: Array.from(document.querySelectorAll('select')).map(s => ({
@@ -90,7 +91,7 @@ test.describe('Debug QuickSettings Click', () => {
       };
     });
 
-    console.log('After click DOM:', JSON.stringify(afterClickDOM, null, 2));
+    debugInfo('After click DOM:', { afterClickDOM });
 
     // Compare the two states
     const selectCountBefore = initialDOM.allSelects.length;
@@ -98,13 +99,13 @@ test.describe('Debug QuickSettings Click', () => {
     const inputCountBefore = initialDOM.allInputs.length;
     const inputCountAfter = afterClickDOM.allInputs.length;
 
-    console.log(`Select elements: ${selectCountBefore} → ${selectCountAfter}`);
-    console.log(`Input elements: ${inputCountBefore} → ${inputCountAfter}`);
+    debugInfo(`Select elements: ${selectCountBefore} → ${selectCountAfter}`);
+    debugInfo(`Input elements: ${inputCountBefore} → ${inputCountAfter}`);
 
     if (selectCountAfter > selectCountBefore) {
-      console.log('✅ New select elements appeared after click');
+      debugInfo('✅ New select elements appeared after click');
     } else if (selectCountAfter === selectCountBefore && selectCountBefore === 0) {
-      console.log('🚨 ISSUE: Still no select elements after clicking QuickSettings');
+      debugWarn('🚨 ISSUE: Still no select elements after clicking QuickSettings');
     }
 
     // Check if button text changed (might indicate expansion state)
@@ -112,18 +113,18 @@ test.describe('Debug QuickSettings Click', () => {
     const buttonTextAfter = afterClickDOM.quickSettingsArea.text;
 
     if (buttonTextBefore !== buttonTextAfter) {
-      console.log(`Button text changed: "${buttonTextBefore}" → "${buttonTextAfter}"`);
+      debugInfo(`Button text changed: "${buttonTextBefore}" → "${buttonTextAfter}"`);
     } else {
-      console.log('Button text unchanged - might not be expanding properly');
+      debugWarn('Button text unchanged - might not be expanding properly');
     }
 
     // Take screenshot after click for visual debugging
     await page.screenshot({ path: 'quicksettings-after-click.png', fullPage: true });
-    console.log('Screenshot saved as quicksettings-after-click.png');
+    debugInfo('Screenshot saved as quicksettings-after-click.png');
   });
 
   test('should examine QuickSettings component source', async ({ page }) => {
-    console.log('=== Examining QuickSettings Component ===');
+    debugInfo('=== Examining QuickSettings Component ===');
 
     await page.goto('/');
     await page.waitForLoadState('networkidle');
@@ -167,6 +168,6 @@ test.describe('Debug QuickSettings Click', () => {
       };
     });
 
-    console.log('Component structure:', JSON.stringify(componentStructure, null, 2));
+    debugInfo('Component structure:', { componentStructure });
   });
 });

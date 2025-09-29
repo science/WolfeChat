@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { bootstrapLiveAPI, selectReasoningModelInQuickSettings } from './helpers';
+import { debugInfo, debugWarn } from '../debug-utils';
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173';
 
@@ -18,7 +19,7 @@ async function bindWrapper(page: Page) {
       const doneP = bus.waitForAllDone(60000);
       // Propagate stream errors to the bus so tests never hang
       streamResponseViaResponsesAPI(prompt, undefined, callbacks).catch(err => {
-        console.error('[TEST] stream error in __runBoundStream', err);
+        try { if ((window as any).__DEBUG_E2E >= 1) console.error('[TEST] stream error in __runBoundStream', err); } catch {}
         try { callbacks?.onError?.(err); } catch {}
         try { callbacks?.onCompleted?.('', { type: 'error', synthetic: true, error: String(err) }); } catch {}
       });
@@ -54,7 +55,7 @@ async function bindWrapper(page: Page) {
             selectedModel = modelStore.selectedModel;
             modelFromStore = get(selectedModel);
           } catch (e) {
-            console.warn('[TEST] Failed to import svelte/store or modelStore, will use DOM fallback:', e);
+            try { if ((window as any).__DEBUG_E2E >= 2) console.warn('[TEST] Failed to import svelte/store or modelStore, will use DOM fallback:', e); } catch {}
           }
 
           const supportsReasoning = modSvc.supportsReasoning;
@@ -78,7 +79,7 @@ async function bindWrapper(page: Page) {
           // Start stream with explicit model if available (stabilizes behavior when stores aren't imported)
           const chosenModel = model || undefined;
           streamResponseViaResponsesAPI(prompt, chosenModel, callbacks).catch(err => {
-            console.error('[TEST] stream error in __runHookedStream', err);
+            try { if ((window as any).__DEBUG_E2E >= 1) console.error('[TEST] stream error in __runHookedStream', err); } catch {}
             try { callbacks?.onError?.(err); } catch {}
             try { callbacks?.onCompleted?.('', { type: 'error', synthetic: true, error: String(err) }); } catch {}
           });
@@ -88,14 +89,14 @@ async function bindWrapper(page: Page) {
           try {
             completed = await completedP;
           } catch (e) {
-            console.error('[TEST] Timeout waiting for output completion. Summary/text states:', { summaryLen: (summary||'')?.length || 0, textLen: (text||'')?.length || 0 });
+            try { if ((window as any).__DEBUG_E2E >= 1) console.error('[TEST] Timeout waiting for output completion. Summary/text states:', { summaryLen: (summary||'')?.length || 0, textLen: (text||'')?.length || 0 }); } catch {}
             try { await allDoneP; } catch {}
             return { summary, reasoning: text, completed: null };
           }
           try { await allDoneP; } catch {}
           return { summary, reasoning: text, completed };
         } catch (e) {
-          console.error('[TEST] Error in __runHookedStream', e);
+          try { if ((window as any).__DEBUG_E2E >= 1) console.error('[TEST] Error in __runHookedStream', e); } catch {}
           throw e;
         }
       };
@@ -173,11 +174,11 @@ test('Live SSE: hook-based waits for reasoning and completion', async ({ page })
   if (DEBUG_LVL_3 >= 2) {
     page.on('console', msg => {
       const text = msg.text();
-      if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(text) || msg.type() === 'error') console.log(`[BROWSER-${msg.type()}] ${text}`);
+      if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(text) || msg.type() === 'error') debugInfo(`[BROWSER-${msg.type()}] ${text}`);
     });
-    page.on('pageerror', err => console.log('[BROWSER-PAGEERROR]', err.message));
-    page.on('request', req => { if (req.url().includes('api.openai.com')) console.log('[NET-REQ]', req.method(), req.url()); });
-    page.on('response', res => { if (res.url().includes('api.openai.com')) console.log('[NET-RES]', res.status(), res.url()); });
+    page.on('pageerror', err => debugWarn('[BROWSER-PAGEERROR]', { error: err.message }));
+    page.on('request', req => { if (req.url().includes('api.openai.com')) debugInfo('[NET-REQ]', { method: req.method(), url: req.url() }); });
+    page.on('response', res => { if (res.url().includes('api.openai.com')) debugInfo('[NET-RES]', { status: res.status(), url: res.url() }); });
   }
 
   await page.goto(APP_URL);
@@ -205,7 +206,7 @@ test('Live SSE: hook-based waits for reasoning and completion', async ({ page })
     }
     return v;
   });
-  if (DEBUG_LVL_3 >= 2) console.log('[DIAG] Pre-flight:', JSON.stringify(validation));
+  if (DEBUG_LVL_3 >= 2) debugInfo('[DIAG] Pre-flight:', { validation });
 
   const result = await page.evaluate(async () => {
     return await (window as any).__runHookedStream('Briefly explain what an API is.');

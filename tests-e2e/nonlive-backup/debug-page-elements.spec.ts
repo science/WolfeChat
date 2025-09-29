@@ -5,10 +5,11 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { debugInfo, debugWarn, debugErr } from '../debug-utils';
 
 test.describe('Debug Page Elements', () => {
   test('should find what elements exist on page', async ({ page }) => {
-    console.log('=== Checking what exists on the page ===');
+    debugInfo('=== Checking what exists on the page ===');
 
     await page.goto('/');
 
@@ -32,7 +33,7 @@ test.describe('Debug Page Elements', () => {
       }));
     });
 
-    console.log('All select elements found:', JSON.stringify(allSelects, null, 2));
+    debugInfo('All select elements found:', { allSelects });
 
     // Find all buttons
     const allButtons = await page.evaluate(() => {
@@ -48,7 +49,7 @@ test.describe('Debug Page Elements', () => {
       }));
     });
 
-    console.log('All button elements found:', JSON.stringify(allButtons, null, 2));
+    debugInfo('All button elements found:', { allButtons });
 
     // Check for Quick Settings component
     const quickSettingsInfo = await page.evaluate(() => {
@@ -78,7 +79,7 @@ test.describe('Debug Page Elements', () => {
       return results;
     });
 
-    console.log('Quick Settings selectors check:', JSON.stringify(quickSettingsInfo, null, 2));
+    debugInfo('Quick Settings selectors check:', { quickSettingsInfo });
 
     // Check for Settings button
     const settingsButtonInfo = await page.evaluate(() => {
@@ -107,7 +108,7 @@ test.describe('Debug Page Elements', () => {
       return results;
     });
 
-    console.log('Settings button selectors check:', JSON.stringify(settingsButtonInfo, null, 2));
+    debugInfo('Settings button selectors check:', { settingsButtonInfo });
 
     // Check if stores are accessible
     const storeInfo = await page.evaluate(() => {
@@ -117,17 +118,17 @@ test.describe('Debug Page Elements', () => {
       };
     });
 
-    console.log('Store info:', storeInfo);
+    debugInfo('Store info:', { storeInfo });
 
     // Screenshot for visual debugging
     await page.screenshot({ path: 'debug-page-state.png', fullPage: true });
-    console.log('Screenshot saved as debug-page-state.png');
+    debugInfo('Screenshot saved as debug-page-state.png');
 
     // Don't assert anything, just investigate
   });
 
   test('should find model selection in Quick Settings area', async ({ page }) => {
-    console.log('=== Looking specifically for Quick Settings ===');
+    debugInfo('=== Looking specifically for Quick Settings ===');
 
     await page.goto('/');
     await page.waitForLoadState('networkidle');
@@ -181,6 +182,6 @@ test.describe('Debug Page Elements', () => {
       };
     });
 
-    console.log('Quick Settings investigation:', JSON.stringify(quickSettingsArea, null, 2));
+    debugInfo('Quick Settings investigation:', { quickSettingsArea });
   });
 });

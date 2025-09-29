@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { debugInfo } from './debug-utils';
 
 test('Debug: which textarea is selected', async ({ page }) => {
   await page.goto('/');
@@ -15,17 +16,17 @@ test('Debug: which textarea is selected', async ({ page }) => {
       className: ta.className
     }));
   });
-  console.log('All textareas:', JSON.stringify(allTextareas, null, 2));
+  debugInfo('All textareas:', { textareas: allTextareas });
   
   // Now find the one with our placeholder
   const chatInput = page.locator('textarea[placeholder="Type your message..."]');
   const count = await chatInput.count();
-  console.log('Textareas with "Type your message..." placeholder:', count);
+  debugInfo('Textareas with "Type your message..." placeholder:', { count });
   
   if (count > 0) {
     await chatInput.fill('Test text');
     const value = await chatInput.inputValue();
-    console.log('After filling, value is:', value);
+    debugInfo('After filling, value is:', { value });
   }
   
   // Check what the test actually selects
@@ -33,5 +34,5 @@ test('Debug: which textarea is selected', async ({ page }) => {
     const ta = document.querySelector('textarea[placeholder="Type your message..."]') as HTMLTextAreaElement;
     return ta ? { value: ta.value, exists: true } : { exists: false };
   });
-  console.log('Selected textarea:', selectedValue);
+  debugInfo('Selected textarea:', { selectedValue });
 });

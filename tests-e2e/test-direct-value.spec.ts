@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { debugInfo } from './debug-utils';
 
 test('Test direct value manipulation', async ({ page }) => {
   await page.goto('/');
@@ -23,10 +24,10 @@ test('Test direct value manipulation', async ({ page }) => {
     };
   });
   
-  console.log('Result:', result);
-  
+  debugInfo('Result:', { result });
+
   // Check if the value stuck
   const textarea = page.locator('textarea[placeholder="Type your message..."]');
   const finalValue = await textarea.inputValue();
-  console.log('Final value from locator:', finalValue);
+  debugInfo('Final value from locator:', { finalValue });
 });

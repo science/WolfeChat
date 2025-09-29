@@ -6,10 +6,11 @@
 
 import { test, expect } from '@playwright/test';
 import { mockOpenAIAPI, getVisibleModels, setProviderApiKey, operateQuickSettings } from '../live/helpers.js';
+import { debugInfo, debugWarn, debugErr } from '../debug-utils';
 
 test.describe('Verify E2E Fixes', () => {
   test('should verify that fixed helpers work with API mocking', async ({ page }) => {
-    console.log('=== Verifying E2E Fixes ===');
+    debugInfo('=== Verifying E2E Fixes ===');
 
     // CRITICAL FIX: Add API mocking for nonlive tests
     await mockOpenAIAPI(page);
@@ -17,7 +18,7 @@ test.describe('Verify E2E Fixes', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    console.log('STEP 1: Set up API key to trigger model fetch');
+    debugInfo('STEP 1: Set up API key to trigger model fetch');
 
     // Open Settings
     await page.click('button:has-text("Settings")');
@@ -31,7 +32,7 @@ test.describe('Verify E2E Fixes', () => {
     // Wait for API call to complete
     await page.waitForTimeout(2000);
 
-    console.log('STEP 2: Test fixed getVisibleModels helper');
+    debugInfo('STEP 2: Test fixed getVisibleModels helper');
 
     try {
       // Close Settings first (try different approaches)
@@ -46,11 +47,11 @@ test.describe('Verify E2E Fixes', () => {
       // CRITICAL TEST: Use updated getVisibleModels with correct selector and QuickSettings expansion
       const visibleModels = await getVisibleModels(page);
 
-      console.log('Visible models:', visibleModels);
-      console.log('Model count:', visibleModels.length);
+      debugInfo('Visible models:', { visibleModels });
+      debugInfo('Model count:', { count: visibleModels.length });
 
       if (visibleModels.length === 0) {
-        console.log('🚨 ISSUE: Updated helper still returns 0 models');
+        debugWarn('🚨 ISSUE: Updated helper still returns 0 models');
 
         // Debug what went wrong
         const debugInfo = await page.evaluate(() => {
@@ -62,10 +63,10 @@ test.describe('Verify E2E Fixes', () => {
           };
         });
 
-        console.log('Debug info:', debugInfo);
+        debugInfo('Debug info:', { debugInfo });
 
       } else {
-        console.log(`✅ SUCCESS: Found ${visibleModels.length} models with updated helper`);
+        debugInfo(`✅ SUCCESS: Found ${visibleModels.length} models with updated helper`);
 
         // Verify we have expected models
         const expectedModels = ['gpt-4', 'gpt-3.5-turbo'];
@@ -74,22 +75,22 @@ test.describe('Verify E2E Fixes', () => {
         );
 
         if (hasExpectedModels) {
-          console.log('✅ COMPLETE SUCCESS: All expected models found');
+          debugInfo('✅ COMPLETE SUCCESS: All expected models found');
         } else {
-          console.log('⚠️ Models found but not the expected ones');
-          console.log('Expected:', expectedModels);
-          console.log('Found:', visibleModels);
+          debugWarn('⚠️ Models found but not the expected ones');
+          debugInfo('Expected:', { expectedModels });
+          debugInfo('Found:', { visibleModels });
         }
       }
 
     } catch (error) {
-      console.log('❌ Error testing updated helper:', error.message);
+      debugErr('❌ Error testing updated helper:', { error: error.message });
       throw error;
     }
   });
 
   test('should verify original E2E test pattern works', async ({ page }) => {
-    console.log('=== Testing Original E2E Pattern ===');
+    debugInfo('=== Testing Original E2E Pattern ===');
 
     // Mock API
     await mockOpenAIAPI(page);
@@ -109,14 +110,14 @@ test.describe('Verify E2E Fixes', () => {
 
     // First try the old broken way (should fail)
     const oldSelectorExists = await page.locator('#model-selection').isVisible().catch(() => false);
-    console.log('Old selector (#model-selection) exists:', oldSelectorExists);
+    debugInfo('Old selector (#model-selection) exists:', { oldSelectorExists });
 
     // Now try the new fixed way
-    console.log('Expanding QuickSettings...');
+    debugInfo('Expanding QuickSettings...');
     await operateQuickSettings(page, { mode: 'ensure-open' });
 
     const newSelectorExists = await page.locator('#current-model-select').isVisible().catch(() => false);
-    console.log('New selector (#current-model-select) exists after expansion:', newSelectorExists);
+    debugInfo('New selector (#current-model-select) exists after expansion:', { newSelectorExists });
 
     if (newSelectorExists) {
       const modelOptions = await page.locator('#current-model-select option').allTextContents();
@@ -124,16 +125,16 @@ test.describe('Verify E2E Fixes', () => {
         text && text !== 'Select a model...' && text !== 'No models loaded' && text.trim() !== ''
       );
 
-      console.log('Model options found:', realModels);
-      console.log('Real model count:', realModels.length);
+      debugInfo('Model options found:', { realModels });
+      debugInfo('Real model count:', { count: realModels.length });
 
       if (realModels.length > 0) {
-        console.log('✅ ULTIMATE SUCCESS: Original E2E pattern now works with fixes');
+        debugInfo('✅ ULTIMATE SUCCESS: Original E2E pattern now works with fixes');
       } else {
-        console.log('🚨 Dropdown exists but no real models');
+        debugWarn('🚨 Dropdown exists but no real models');
       }
     } else {
-      console.log('🚨 New selector still not working');
+        debugWarn('🚨 New selector still not working');
     }
   });
 });

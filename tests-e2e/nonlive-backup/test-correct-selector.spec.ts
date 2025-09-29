@@ -5,26 +5,27 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { debugInfo, debugWarn, debugErr } from '../debug-utils';
 
 test.describe('Test Correct QuickSettings Selector', () => {
   test('should use correct selector and debug model population', async ({ page }) => {
-    console.log('=== Testing with Correct Selector ===');
+    debugInfo('=== Testing with Correct Selector ===');
 
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Step 1: Expand QuickSettings
-    console.log('STEP 1: Expand QuickSettings');
+    debugInfo('STEP 1: Expand QuickSettings');
     const quickSettingsButton = await page.locator('button').filter({ hasText: 'Quick Settings' }).first();
     await quickSettingsButton.click();
 
     // Step 2: Use correct selector
-    console.log('STEP 2: Check dropdown with correct selector');
+    debugInfo('STEP 2: Check dropdown with correct selector');
     const modelSelect = page.locator('#current-model-select');
     await modelSelect.waitFor({ timeout: 5000 });
 
     const options = await modelSelect.locator('option').allTextContents();
-    console.log('Dropdown options:', options);
+    debugInfo('Dropdown options:', { options });
 
     const optionDetails = await page.evaluate(() => {
       const select = document.querySelector('#current-model-select') as HTMLSelectElement;
@@ -41,10 +42,10 @@ test.describe('Test Correct QuickSettings Selector', () => {
       };
     });
 
-    console.log('Option details:', JSON.stringify(optionDetails, null, 2));
+    debugInfo('Option details:', { optionDetails });
 
     // Step 3: Check store state when dropdown is visible
-    console.log('STEP 3: Check store state with dropdown expanded');
+    debugInfo('STEP 3: Check store state with dropdown expanded');
     const storeState = await page.evaluate(() => {
       if (!window.stores) return { error: 'No window.stores' };
 
@@ -82,11 +83,11 @@ test.describe('Test Correct QuickSettings Selector', () => {
       };
     });
 
-    console.log('Store state:', JSON.stringify(storeState, null, 2));
+    debugInfo('Store state:', { storeState });
 
     // Step 4: If no models, try setting up API key
     if (optionDetails.optionCount <= 1) {
-      console.log('STEP 4: No models found, setting up API key');
+      debugInfo('STEP 4: No models found, setting up API key');
 
       // Close QuickSettings first
       await quickSettingsButton.click();
@@ -131,19 +132,19 @@ test.describe('Test Correct QuickSettings Selector', () => {
         };
       });
 
-      console.log('Store after API setup:', JSON.stringify(storeAfterAPI, null, 2));
+      debugInfo('Store after API setup:', { storeAfterAPI });
 
       // Re-expand QuickSettings to check dropdown
       await quickSettingsButton.click();
 
       const optionsAfterAPI = await modelSelect.locator('option').allTextContents();
-      console.log('Dropdown options after API setup:', optionsAfterAPI);
+      debugInfo('Dropdown options after API setup:', { optionsAfterAPI });
 
       const realOptionsAfterAPI = await modelSelect.locator('option').filter({ hasText: /^gpt-|^claude-/ }).count();
-      console.log('Real model options after API setup:', realOptionsAfterAPI);
+      debugInfo('Real model options after API setup:', { realOptionsAfterAPI });
 
       if (realOptionsAfterAPI === 0) {
-        console.log('🚨 ISSUE: Even after API setup, no models in dropdown');
+        debugWarn('🚨 ISSUE: Even after API setup, no models in dropdown');
 
         // Check if there's a disconnect between store and component
         const disconnect = await page.evaluate(() => {
@@ -156,9 +157,9 @@ test.describe('Test Correct QuickSettings Selector', () => {
           };
         });
 
-        console.log('Component disconnect debug:', JSON.stringify(disconnect, null, 2));
+        debugInfo('Component disconnect debug:', { disconnect });
       } else {
-        console.log(`✅ SUCCESS: Found ${realOptionsAfterAPI} models after API setup`);
+        debugInfo(`✅ SUCCESS: Found ${realOptionsAfterAPI} models after API setup`);
       }
     }
   });

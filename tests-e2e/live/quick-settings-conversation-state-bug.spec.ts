@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI, operateQuickSettings, waitForStreamComplete, sendMessage } from './helpers';
+import { debugInfo, debugErr, debugWarn } from '../debug-utils';
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173';
 
@@ -15,11 +16,11 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
         const t = msg.text();
-        if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(t) || msg.type() === 'error') console.log(`[BROWSER-${msg.type()}] ${t}`);
+        if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(t) || msg.type() === 'error') debugInfo(`[BROWSER-${msg.type()}] ${t}`);
       });
-      page.on('pageerror', err => console.log('[BROWSER-PAGEERROR]', err.message));
-      page.on('request', req => { if (req.url().includes('api.openai.com')) console.log('[NET-REQ]', req.method(), req.url()); });
-      page.on('response', res => { if (res.url().includes('api.openai.com')) console.log('[NET-RES]', res.status(), res.url()); });
+      page.on('pageerror', err => debugErr('[BROWSER-PAGEERROR]', { message: err.message }));
+      page.on('request', req => { if (req.url().includes('api.openai.com')) debugInfo('[NET-REQ]', { method: req.method(), url: req.url() }); });
+      page.on('response', res => { if (res.url().includes('api.openai.com')) debugInfo('[NET-RES]', { status: res.status(), url: res.url() }); });
     }
 
     await page.goto(APP_URL);
@@ -29,7 +30,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
 
     // Generate unique session ID for this test
     const sessionId = `test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    console.log(`[TEST] SSE Debug Session ID: ${sessionId}`);
+    debugInfo(`[TEST] SSE Debug Session ID: ${sessionId}`);
 
     // Add browser-side monitoring for reasoning events and UI state
     await page.addInitScript((sessionId) => {
@@ -170,13 +171,13 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
 
     // Capture request payloads
     await page.route('**/api.openai.com/**', async (route, req) => {
-      if (DEBUG_LVL >= 2) console.log('[TEST] route hit', req.method(), req.url());
+      if (DEBUG_LVL >= 2) debugInfo('[TEST] route hit', { method: req.method(), url: req.url() });
 
       if (req.method() === 'POST') {
-        if (DEBUG_LVL >= 2) console.log('[TEST] POST body sniff attempt');
+        if (DEBUG_LVL >= 2) debugInfo('[TEST] POST body sniff attempt');
         try {
           const body = req.postDataJSON();
-          if (DEBUG_LVL >= 2) console.log('[TEST] captured POST', { url: req.url(), body });
+          if (DEBUG_LVL >= 2) debugInfo('[TEST] captured POST', { url: req.url(), body });
           captured.push({ url: req.url(), body, when: Date.now() });
         } catch {}
       }
@@ -191,7 +192,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
           const contentType = response.headers()['content-type'] || '';
           if (contentType.includes('text/plain') || contentType.includes('text/event-stream')) {
             const responseText = await response.text();
-            if (DEBUG_LVL >= 1) console.log('[TEST-SSE] Response captured, length:', responseText.length);
+            if (DEBUG_LVL >= 1) debugInfo('[TEST-SSE] Response captured, length:', { length: responseText.length });
 
             // Parse SSE events from response
             const sseBlocks = responseText.split('\n\n').filter(block => block.trim());
@@ -225,13 +226,13 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
                 });
 
                 if (DEBUG_LVL >= 1) {
-                  console.log('[TEST-SSE] Event:', { type: eventType, hasData: !!parsedData, raw: dataStr.slice(0, 100) });
+                  debugInfo('[TEST-SSE] Event:', { type: eventType, hasData: !!parsedData, raw: dataStr.slice(0, 100) });
                 }
               }
             }
           }
         } catch (e) {
-          if (DEBUG_LVL >= 1) console.log('[TEST-SSE] Failed to capture response:', e);
+          if (DEBUG_LVL >= 1) debugErr('[TEST-SSE] Failed to capture response:', { error: e });
         }
       }
     });
@@ -248,7 +249,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     // Helper to send and assert
     const sendAndAssert = async (idx: number, label: string, expectModelRe: RegExp, expectEffort: string, expectVerbosity: string, expectSummary: string) => {
       captured.length = 0;
-      if (DEBUG_LVL >= 2) console.log('[TEST] sendAndAssert start', { idx, label, expectModelRe: String(expectModelRe), expectEffort, expectVerbosity, expectSummary });
+      if (DEBUG_LVL >= 2) debugInfo('[TEST] sendAndAssert start', { idx, label, expectModelRe: String(expectModelRe), expectEffort, expectVerbosity, expectSummary });
       await rows.nth(idx).click();
       
       // Wait for conversation to actually switch
@@ -271,12 +272,12 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
             // If we have messages, verify we're in the right conversation
             const topText = await userItems.last().innerText().catch(() => '');
             if (topText && topText.includes(expectedTop)) {
-              if (DEBUG_LVL >= 2) console.log('[TEST] Found expected message in conversation', { idx, label });
+              if (DEBUG_LVL >= 2) debugInfo('[TEST] Found expected message in conversation', { idx, label });
               break;
             }
           } else {
             // No messages yet - this is fine for new conversations
-            if (DEBUG_LVL >= 2) console.log('[TEST] Empty conversation (new)', { idx, label });
+            if (DEBUG_LVL >= 2) debugInfo('[TEST] Empty conversation (new)', { idx, label });
             break;
           }
           await page.waitForTimeout(150);
@@ -287,11 +288,11 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
           const topText = await userItems.last().innerText().catch(() => '');
           if (!topText || !topText.includes(expectedTop)) {
             if (DEBUG_LVL >= 2) {
-              console.log('[TEST] Wrong conversation detected, retrying click', { 
-                idx, 
+              debugWarn('[TEST] Wrong conversation detected, retrying click', {
+                idx,
                 label,
-                expectedTop, 
-                actualText: (topText || '').slice(0, 120) 
+                expectedTop,
+                actualText: (topText || '').slice(0, 120)
               });
             }
             await rows.nth(idx).click();
@@ -299,13 +300,13 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
           }
         }
       } catch (e) {
-        if (DEBUG_LVL >= 2) console.log('[TEST] Error during conversation verification:', e);
+        if (DEBUG_LVL >= 2) debugErr('[TEST] Error during conversation verification:', { error: e });
       }
 
       // Assert UI shows the expected quick settings prior to send
       await operateQuickSettings(page, { mode: 'ensure-open' });
       const curModel = await page.locator('#current-model-select').inputValue();
-      if (DEBUG_LVL >= 2) console.log('[TEST] UI model before send', { label, curModel });
+      if (DEBUG_LVL >= 2) debugInfo('[TEST] UI model before send', { label, curModel });
       await expect(page.locator('#current-model-select')).toHaveValue(expectModelRe);
       await expect(page.locator('#reasoning-effort')).toHaveValue(expectEffort);
       await expect(page.locator('#verbosity')).toHaveValue(expectVerbosity);
@@ -316,7 +317,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
       if (DEBUG_LVL >= 2) {
         const activeConv = await page.locator('.conversation.title-container.bg-hover2').count().catch(() => -1);
         const allConvs = await rows.count().catch(() => 0);
-        console.log('[TEST] Before sending message', { idx, label, activeConv, allConvs });
+        debugInfo('[TEST] Before sending message', { idx, label, activeConv, allConvs });
       }
       
       const msg = `Explain the Monte Hall 3 door problem using logic (for ${label})`;
@@ -325,7 +326,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
       // Pre-wait diagnostics
       if (DEBUG_LVL >= 2) {
         const preCount = await page.locator('[role="listitem"][data-message-role="assistant"]').count().catch(() => 0);
-        console.log('[TEST] Pre-wait assistant count:', preCount);
+        debugInfo('[TEST] Pre-wait assistant count:', { preCount });
       }
 
       // Wait for assistant response to complete streaming
@@ -336,12 +337,12 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
       if (DEBUG_LVL >= 2) {
         const assistants = page.locator('[role="listitem"][data-message-role="assistant"]').filter({ hasText: /(Monte Hall|\bAI Response\b|\w{3,})/i });
         const count = await assistants.count().catch(() => 0);
-        console.log('[TEST] Post-wait assistant count (filtered):', count);
+        debugInfo('[TEST] Post-wait assistant count (filtered):', { count });
         for (let i = 0; i < Math.min(count, 3); i++) {
           const item = assistants.nth(i);
           const header = await item.locator('.profile-picture .font-bold').innerText().catch(() => '');
           const text = await item.innerText().catch(() => '');
-          console.log(`[TEST] Assistant ${i}: header="${header}" text="${(text||'').slice(0,150)}"`);
+          debugInfo(`[TEST] Assistant ${i}:`, { header, text: (text||'').slice(0,150) });
         }
       }
 
@@ -367,18 +368,18 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
       });
       expect(pick, 'expected to capture a chat send request').toBeTruthy();
       const req = pick!;
-      if (DEBUG_LVL >= 2) console.log('[TEST] first captured req', JSON.stringify(req, null, 2));
+      if (DEBUG_LVL >= 2) debugInfo('[TEST] first captured req', { req: JSON.stringify(req, null, 2) });
 
       // Model may be under body.model for Responses API
       const modelStr: string = req.body?.model || '';
-      if (DEBUG_LVL >= 2) console.log('[TEST] extracted modelStr', modelStr);
+      if (DEBUG_LVL >= 2) debugInfo('[TEST] extracted modelStr', { modelStr });
       expect(modelStr).toMatch(expectModelRe);
 
       // Capture comprehensive debug data before final assertions
       if (DEBUG_LVL >= 1) {
-        console.log('\n=== COMPREHENSIVE DEBUG DATA ANALYSIS ===');
-        console.log(`[TEST-SUMMARY] Network SSE events captured: ${sseEvents.length}`);
-        console.log('[TEST-SUMMARY] Network SSE event types:', sseEvents.map(e => e.type));
+        debugInfo('\n=== COMPREHENSIVE DEBUG DATA ANALYSIS ===');
+        debugInfo(`[TEST-SUMMARY] Network SSE events captured: ${sseEvents.length}`);
+        debugInfo('[TEST-SUMMARY] Network SSE event types:', { types: sseEvents.map(e => e.type) });
 
         try {
           // Get comprehensive debug data from our new layer system
@@ -402,19 +403,19 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
             };
           });
 
-          console.log(`[TEST-SUMMARY] Debug mode enabled: ${comprehensiveDebugData.debugMode}`);
-          console.log(`[TEST-SUMMARY] Has getDebugData function: ${comprehensiveDebugData.hasGetDebugData}`);
+          debugInfo(`[TEST-SUMMARY] Debug mode enabled: ${comprehensiveDebugData.debugMode}`);
+          debugInfo(`[TEST-SUMMARY] Has getDebugData function: ${comprehensiveDebugData.hasGetDebugData}`);
 
           if (comprehensiveDebugData.layerDebugData) {
             const layers = comprehensiveDebugData.layerDebugData.layers;
             const timeline = comprehensiveDebugData.layerDebugData.timeline;
 
-            console.log('[TEST-SUMMARY] === LAYER-BY-LAYER DEBUG ANALYSIS ===');
-            console.log(`[TEST-SUMMARY] SSE Parser events: ${layers.sseParser?.length || 0}`);
-            console.log(`[TEST-SUMMARY] Message Assembly events: ${layers.messageAssembly?.length || 0}`);
-            console.log(`[TEST-SUMMARY] Store Update events: ${layers.storeUpdates?.length || 0}`);
-            console.log(`[TEST-SUMMARY] Reasoning Store events: ${layers.reasoning?.length || 0}`);
-            console.log(`[TEST-SUMMARY] Total timeline events: ${timeline?.length || 0}`);
+            debugInfo('[TEST-SUMMARY] === LAYER-BY-LAYER DEBUG ANALYSIS ===');
+            debugInfo(`[TEST-SUMMARY] SSE Parser events: ${layers.sseParser?.length || 0}`);
+            debugInfo(`[TEST-SUMMARY] Message Assembly events: ${layers.messageAssembly?.length || 0}`);
+            debugInfo(`[TEST-SUMMARY] Store Update events: ${layers.storeUpdates?.length || 0}`);
+            debugInfo(`[TEST-SUMMARY] Reasoning Store events: ${layers.reasoning?.length || 0}`);
+            debugInfo(`[TEST-SUMMARY] Total timeline events: ${timeline?.length || 0}`);
 
             // Analyze critical checkpoints
             const sseEvents = layers.sseParser || [];
@@ -422,54 +423,54 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
             const storeEvents = layers.storeUpdates || [];
             const reasoningEvents = layers.reasoning || [];
 
-            console.log('[TEST-SUMMARY] === CRITICAL CHECKPOINT ANALYSIS ===');
+            debugInfo('[TEST-SUMMARY] === CRITICAL CHECKPOINT ANALYSIS ===');
 
             // Check if SSE events arrived
             const sseChunks = sseEvents.filter(e => e.event === 'raw_chunk_received');
             const sseCompleted = sseEvents.filter(e => e.event === 'sse_stream_done');
-            console.log(`[TEST-SUMMARY] ✓ SSE chunks received: ${sseChunks.length}`);
-            console.log(`[TEST-SUMMARY] ✓ SSE streams completed: ${sseCompleted.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ SSE chunks received: ${sseChunks.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ SSE streams completed: ${sseCompleted.length}`);
 
             // Check if messages were assembled
             const textDeltas = msgEvents.filter(e => e.event === 'text_delta_received');
             const messagesCreated = msgEvents.filter(e => e.event === 'assistant_message_creating');
             const setHistoryCalls = msgEvents.filter(e => e.event.includes('setHistory_called'));
-            console.log(`[TEST-SUMMARY] ✓ Text deltas received: ${textDeltas.length}`);
-            console.log(`[TEST-SUMMARY] ✓ Assistant messages created: ${messagesCreated.length}`);
-            console.log(`[TEST-SUMMARY] ✓ SetHistory calls from msg assembly: ${setHistoryCalls.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ Text deltas received: ${textDeltas.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ Assistant messages created: ${messagesCreated.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ SetHistory calls from msg assembly: ${setHistoryCalls.length}`);
 
             // Check if store was updated
             const storeUpdates = storeEvents.filter(e => e.event === 'conversations_store_set');
             const storeCompleted = storeEvents.filter(e => e.event === 'setHistory_completed');
-            console.log(`[TEST-SUMMARY] ✓ Store updates executed: ${storeUpdates.length}`);
-            console.log(`[TEST-SUMMARY] ✓ Store updates completed: ${storeCompleted.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ Store updates executed: ${storeUpdates.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ Store updates completed: ${storeCompleted.length}`);
 
             // Check reasoning events
             const windowsCreated = reasoningEvents.filter(e => e.event === 'window_creation_completed');
             const panelsCreated = reasoningEvents.filter(e => e.event === 'panel_creation_completed');
             const textUpdates = reasoningEvents.filter(e => e.event === 'text_content_updated');
             const panelsCompleted = reasoningEvents.filter(e => e.event === 'panel_completion_completed');
-            console.log(`[TEST-SUMMARY] ✓ Reasoning windows created: ${windowsCreated.length}`);
-            console.log(`[TEST-SUMMARY] ✓ Reasoning panels created: ${panelsCreated.length}`);
-            console.log(`[TEST-SUMMARY] ✓ Reasoning text updates: ${textUpdates.length}`);
-            console.log(`[TEST-SUMMARY] ✓ Reasoning panels completed: ${panelsCompleted.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ Reasoning windows created: ${windowsCreated.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ Reasoning panels created: ${panelsCreated.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ Reasoning text updates: ${textUpdates.length}`);
+            debugInfo(`[TEST-SUMMARY] ✓ Reasoning panels completed: ${panelsCompleted.length}`);
 
             // Identify where the flow breaks
-            console.log('[TEST-SUMMARY] === FAILURE POINT ANALYSIS ===');
+            debugInfo('[TEST-SUMMARY] === FAILURE POINT ANALYSIS ===');
             if (sseChunks.length === 0) {
-              console.log('[TEST-CRITICAL] 🚨 SSE events never arrived - network issue');
+              debugErr('[TEST-CRITICAL] 🚨 SSE events never arrived - network issue');
             } else if (textDeltas.length === 0) {
-              console.log('[TEST-CRITICAL] 🚨 SSE events arrived but text deltas not created - SSE parsing issue');
+              debugErr('[TEST-CRITICAL] 🚨 SSE events arrived but text deltas not created - SSE parsing issue');
             } else if (messagesCreated.length === 0) {
-              console.log('[TEST-CRITICAL] 🚨 Text deltas created but assistant messages not assembled - message assembly issue');
+              debugErr('[TEST-CRITICAL] 🚨 Text deltas created but assistant messages not assembled - message assembly issue');
             } else if (storeUpdates.length === 0) {
-              console.log('[TEST-CRITICAL] 🚨 Messages assembled but store not updated - store update issue');
+              debugErr('[TEST-CRITICAL] 🚨 Messages assembled but store not updated - store update issue');
             } else if (windowsCreated.length === 0 && panelsCreated.length === 0) {
-              console.log('[TEST-CRITICAL] 🚨 Store updated but reasoning windows/panels not created - reasoning store issue');
+              debugErr('[TEST-CRITICAL] 🚨 Store updated but reasoning windows/panels not created - reasoning store issue');
             } else if (textUpdates.length === 0 && panelsCreated.length > 0) {
-              console.log('[TEST-CRITICAL] 🚨 Reasoning panels created but never received text content - reasoning text flow issue');
+              debugErr('[TEST-CRITICAL] 🚨 Reasoning panels created but never received text content - reasoning text flow issue');
             } else {
-              console.log('[TEST-SUCCESS] ✅ All layers functioning - issue may be in DOM reactivity or component rendering');
+              debugInfo('[TEST-SUCCESS] ✅ All layers functioning - issue may be in DOM reactivity or component rendering');
             }
 
             // Show conversation context correlation
@@ -480,45 +481,45 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
               return acc;
             }, {}) : {};
 
-            console.log('[TEST-SUMMARY] === CONVERSATION CONTEXT TRACKING ===');
+            debugInfo('[TEST-SUMMARY] === CONVERSATION CONTEXT TRACKING ===');
             Object.entries(timelineByConv).forEach(([convId, events]) => {
-              console.log(`[TEST-SUMMARY] Conv ${convId}: ${(events as string[]).length} events - ${(events as string[]).slice(0, 5).join(', ')}${(events as string[]).length > 5 ? '...' : ''}`);
+              debugInfo(`[TEST-SUMMARY] Conv ${convId}: ${(events as string[]).length} events - ${(events as string[]).slice(0, 5).join(', ')}${(events as string[]).length > 5 ? '...' : ''}`);
             });
 
           } else {
-            console.log('[TEST-WARNING] ⚠️  Layer debug data not available - debug infrastructure may not be loaded');
+            debugWarn('[TEST-WARNING] ⚠️  Layer debug data not available - debug infrastructure may not be loaded');
           }
 
           const browserDebugData = comprehensiveDebugData.browserDebugData;
           if (browserDebugData) {
-            console.log('[TEST-SUMMARY] === BROWSER-SPECIFIC DEBUG DATA ===');
-            console.log(`[TEST-SUMMARY] Browser reasoning events: ${browserDebugData.reasoningEvents?.length || 0}`);
-            console.log(`[TEST-SUMMARY] Browser assistant messages: ${browserDebugData.assistantMessages?.length || 0}`);
-            console.log(`[TEST-SUMMARY] Browser stream state: ${browserDebugData.streamState?.length || 0}`);
+            debugInfo('[TEST-SUMMARY] === BROWSER-SPECIFIC DEBUG DATA ===');
+            debugInfo(`[TEST-SUMMARY] Browser reasoning events: ${browserDebugData.reasoningEvents?.length || 0}`);
+            debugInfo(`[TEST-SUMMARY] Browser assistant messages: ${browserDebugData.assistantMessages?.length || 0}`);
+            debugInfo(`[TEST-SUMMARY] Browser stream state: ${browserDebugData.streamState?.length || 0}`);
 
             if (browserDebugData.reasoningEvents?.length > 0) {
-              console.log('[TEST-SUMMARY] Browser reasoning event types:', browserDebugData.reasoningEvents.map((e: any) => e.type));
+              debugInfo('[TEST-SUMMARY] Browser reasoning event types:', { types: browserDebugData.reasoningEvents.map((e: any) => e.type) });
             }
           }
         } catch (e) {
-          console.log('[TEST-ERROR] ❌ Failed to get comprehensive debug data:', e);
+          debugErr('[TEST-ERROR] ❌ Failed to get comprehensive debug data:', { error: e });
         }
 
         // Check reasoning window state in DOM
         const reasoningWindow = page.locator('[role="region"][aria-label*="Reasoning"], details:has-text("Reasoning")');
         const reasoningVisible = await reasoningWindow.isVisible().catch(() => false);
         const reasoningText = await reasoningWindow.innerText().catch(() => '');
-        console.log(`[TEST-SUMMARY] === DOM REASONING WINDOW STATE ===`);
-        console.log(`[TEST-SUMMARY] Reasoning window visible: ${reasoningVisible}`);
-        console.log(`[TEST-SUMMARY] Reasoning window text length: ${reasoningText.length}`);
-        console.log(`[TEST-SUMMARY] Reasoning window preview: ${reasoningText.slice(0, 200)}`);
+        debugInfo(`[TEST-SUMMARY] === DOM REASONING WINDOW STATE ===`);
+        debugInfo(`[TEST-SUMMARY] Reasoning window visible: ${reasoningVisible}`);
+        debugInfo(`[TEST-SUMMARY] Reasoning window text length: ${reasoningText.length}`);
+        debugInfo(`[TEST-SUMMARY] Reasoning window preview: ${reasoningText.slice(0, 200)}`);
 
         // Check for "0 messages" issue
         if (reasoningVisible && reasoningText.includes('0 messages')) {
-          console.log(`[TEST-CRITICAL] 🚨 CONFIRMED BUG: Reasoning window shows "0 messages" despite potential data`);
+          debugErr(`[TEST-CRITICAL] 🚨 CONFIRMED BUG: Reasoning window shows "0 messages" despite potential data`);
         }
 
-        console.log('=== END COMPREHENSIVE DEBUG ANALYSIS ===\n');
+        debugInfo('=== END COMPREHENSIVE DEBUG ANALYSIS ===\n');
       }
 
       // The assistant response should already be visible from waitForAssistantDone
@@ -565,13 +566,13 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
         : undefined;
 
       if (DEBUG_LVL >= 2) {
-        console.log('[TEST] body keys', Object.keys(body||{}));
-        console.log('[TEST] meta keys', Object.keys(meta||{}));
-        console.log('[TEST] reasoning obj', reasonObj);
-        console.log('[TEST] text obj', textObj);
-        console.log('[TEST] fields', { reasonEffort, metaEff1, metaEff2, bodyEff1, bodyEff2, chosenEffort });
-        console.log('[TEST] verbosity fields', { bodyVerbosity, metaVerbosity, topVerbosity, chosenVerbosity });
-        console.log('[TEST] summary fields', { reasonSummary, metaSummary, bodySummary, rawSummary });
+        debugInfo('[TEST] body keys', { keys: Object.keys(body||{}) });
+        debugInfo('[TEST] meta keys', { keys: Object.keys(meta||{}) });
+        debugInfo('[TEST] reasoning obj', { reasonObj });
+        debugInfo('[TEST] text obj', { textObj });
+        debugInfo('[TEST] fields', { reasonEffort, metaEff1, metaEff2, bodyEff1, bodyEff2, chosenEffort });
+        debugInfo('[TEST] verbosity fields', { bodyVerbosity, metaVerbosity, topVerbosity, chosenVerbosity });
+        debugInfo('[TEST] summary fields', { reasonSummary, metaSummary, bodySummary, rawSummary });
       }
 
       const effort = chosenEffort;
@@ -589,7 +590,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     await sendAndAssert(2, 'conv1', /gpt-5-nano/i, 'medium', 'medium', 'null');
 
     // Extract SSE debug data after test completion
-    console.log(`[TEST] Extracting SSE debug data for session: ${sessionId}`);
+    debugInfo(`[TEST] Extracting SSE debug data for session: ${sessionId}`);
     const sessionData = await page.evaluate((sessionId) => {
       const win = window as any;
       return win.__SSE_LOGS?.[sessionId] || null;
@@ -599,8 +600,8 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
       const fs = require('fs').promises;
       const debugFile = `/tmp/sse-debug-${sessionId}.json`;
       await fs.writeFile(debugFile, JSON.stringify(sessionData, null, 2));
-      console.log(`[TEST] SSE debug data saved to: ${debugFile}`);
-      console.log(`[TEST] API calls captured: ${sessionData.apiCalls?.length || 0}`);
+      debugInfo(`[TEST] SSE debug data saved to: ${debugFile}`);
+      debugInfo(`[TEST] API calls captured: ${sessionData.apiCalls?.length || 0}`);
 
       // Quick analysis
       const reasoningEventCalls = sessionData.apiCalls?.filter((call: any) =>
@@ -608,9 +609,9 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
           evt.parsed?.type?.includes('reasoning')
         )
       ) || [];
-      console.log(`[TEST] API calls with reasoning events: ${reasoningEventCalls.length}`);
+      debugInfo(`[TEST] API calls with reasoning events: ${reasoningEventCalls.length}`);
     } else {
-      console.log(`[TEST] No SSE debug data found for session: ${sessionId}`);
+      debugWarn(`[TEST] No SSE debug data found for session: ${sessionId}`);
     }
 
     // Clean up the session to avoid memory leaks

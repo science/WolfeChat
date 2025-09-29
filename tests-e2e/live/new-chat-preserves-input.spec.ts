@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI } from './helpers';
+import { debugInfo, debugErr, debugWarn } from '../debug-utils';
 
 const hasKey = !!process.env.OPENAI_API_KEY;
 
@@ -95,7 +96,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Add error handling and logging
       const convs = (window as any).conversations;
       if (!convs) {
-        console.warn('conversations not exposed to window');
+        debugWarn('conversations not exposed to window');
         return 0;
       }
       return Array.isArray(convs) ? convs.length : 0;
@@ -104,49 +105,49 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
   test.describe('Basic New Chat Functionality', () => {
     test('TEST 1: Basic New Chat Button Preserves Input ', async ({ page }) => {
-      console.log('Starting Test 1: Basic New Chat Button Input Preservation');
+      debugInfo('Starting Test 1: Basic New Chat Button Input Preservation');
 
       // Arrange: Type text in the current conversation's input
       const input = await getChatInput(page);
       const testMessage = 'Important message XYZ that should be preserved';
       await input.fill(testMessage);
       await expect(input).toHaveValue(testMessage);
-      console.log('✓ Typed test message into input');
+      debugInfo('✓ Typed test message into input');
 
       // Wait for draft to be saved (300ms + buffer)
       await page.waitForTimeout(500);
 
       // Get the current conversation ID before creating new chat
       const originalConversationId = await getCurrentConversationId(page);
-      console.log('✓ Original conversation ID:', originalConversationId);
+      debugInfo('✓ Original conversation ID:', { originalConversationId });
 
       // Act: Click the "New Chat" button in sidebar
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
       await expect(newChatButton).toBeVisible();
       await newChatButton.click();
-      console.log('✓ Clicked New Chat button');
+      debugInfo('✓ Clicked New Chat button');
 
       // Wait for new conversation to be created
       await page.waitForTimeout(500);
 
       // Navigate back to the original conversation
       await selectConversation(page, 1); // Original conversation should be at index 1 now
-      console.log('✓ Navigated back to original conversation');
+      debugInfo('✓ Navigated back to original conversation');
 
       // Assert: The input should still contain the original message
       // The input should contain the original message
       const currentInputValue = await input.inputValue();
-      console.log('Current input value:', `"${currentInputValue}"`);
-      console.log('Expected input value:', `"${testMessage}"`);
+      debugInfo('Current input value:', { currentInputValue });
+      debugInfo('Expected input value:', { testMessage });
 
       // Verify the message was preserved
       await expect(input).toHaveValue(testMessage);
 
-      console.log('✓ Input preservation verified');
+      debugInfo('✓ Input preservation verified');
     });
 
     test('TEST 2: Multiple Conversations Input Preservation ', async ({ page }) => {
-      console.log('Starting Test 2: Multiple Conversations Input Preservation');
+      debugInfo('Starting Test 2: Multiple Conversations Input Preservation');
 
       // Create multiple conversations
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
@@ -155,7 +156,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       await newChatButton.click();
       await newChatButton.click();
 
-      console.log('✓ Created 3 conversations total');
+      debugInfo('✓ Created 3 conversations total');
 
       // Navigate to middle conversation (index 1)
       await selectConversation(page, 1);
@@ -164,7 +165,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       const input = await getChatInput(page);
       const middleMessage = 'Middle conversation text';
       await input.fill(middleMessage);
-      console.log('✓ Added text to middle conversation');
+      debugInfo('✓ Added text to middle conversation');
 
       // Navigate to first conversation (index 2, due to reverse order)
       await selectConversation(page, 2);
@@ -172,35 +173,35 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Type in first conversation
       const firstMessage = 'First conversation text';
       await input.fill(firstMessage);
-      console.log('✓ Added text to first conversation');
+      debugInfo('✓ Added text to first conversation');
 
       // With first conversation active, click "New Chat"
       await newChatButton.click();
-      console.log('✓ Created new chat while first conversation was active');
+      debugInfo('✓ Created new chat while first conversation was active');
 
       // Check all original conversations
       // First conversation (now at index 3) should have its text preserved but won't due to bug
       await selectConversation(page, 3);
       const firstConvInput = await input.inputValue();
-      console.log('First conversation input after new chat:', `"${firstConvInput}"`);
+      debugInfo('First conversation input after new chat:', { firstConvInput });
 
       // first conversation text should be preserved
       expect(firstConvInput).toBe(firstMessage);
 
-      console.log('✓ First conversation text preserved');
+      debugInfo('✓ First conversation text preserved');
     });
   });
 
   test.describe('New Chat vs Clear Chat Behavior', () => {
     test('TEST 3: New Chat vs Clear Chat Behavior Difference ', async ({ page }) => {
-      console.log('Starting Test 3: New Chat vs Clear Chat Behavior Comparison');
+      debugInfo('Starting Test 3: New Chat vs Clear Chat Behavior Comparison');
 
       const input = await getChatInput(page);
 
       // Test Clear Chat behavior first (this should work correctly)
       const clearTestMessage = 'Test message for clear chat - should be cleared';
       await input.fill(clearTestMessage);
-      console.log('✓ Added text for clear chat test');
+      debugInfo('✓ Added text for clear chat test');
 
       // Click Clear Chat button
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
@@ -210,13 +211,13 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Verify clear chat correctly cleared the input
       const clearedInput = await input.inputValue();
       expect(clearedInput).toBe('');
-      console.log('✓ Clear Chat correctly cleared input');
+      debugInfo('✓ Clear Chat correctly cleared input');
 
       // Now test New Chat behavior
       // Add text to a conversation
       const newChatTestMessage = 'Test message for new chat - should be preserved';
       await input.fill(newChatTestMessage);
-      console.log('✓ Added text for new chat test');
+      debugInfo('✓ Added text for new chat test');
 
       // Click New Chat button
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
@@ -227,19 +228,19 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Check if text is preserved (it won't be due to the bug)
       const preservedInput = await input.inputValue();
-      console.log('Input after new chat:', `"${preservedInput}"`);
-      console.log('Expected input:', `"${newChatTestMessage}"`);
+      debugInfo('Input after new chat:', { preservedInput });
+      debugInfo('Expected input:', { newChatTestMessage });
 
       // new chat should preserve input unlike clear chat
       expect(preservedInput).toBe(newChatTestMessage);
 
-      console.log('✓ New Chat correctly preserves input');
+      debugInfo('✓ New Chat correctly preserves input');
     });
   });
 
   test.describe('Draft System Integration', () => {
     test('TEST 4: Draft Persistence Through New Chat ', async ({ page }) => {
-      console.log('Starting Test 4: Draft Persistence Through New Chat');
+      debugInfo('Starting Test 4: Draft Persistence Through New Chat');
 
       // Wait for app to initialize and ensure we have a conversation
       await page.waitForTimeout(500);
@@ -260,22 +261,22 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Type message and ensure draft is saved
       await input.fill(draftMessage);
       await page.waitForTimeout(600); // Wait longer for draft save
-      console.log('✓ Typed message and waited for draft save');
+      debugInfo('✓ Typed message and waited for draft save');
 
       // Get current conversation ID for draft checking (refresh it)
       conversationId = await getCurrentConversationId(page);
-      console.log('✓ Current conversation ID:', conversationId);
+      debugInfo('✓ Current conversation ID:', { conversationId });
 
       // Verify draft was saved
       const savedDraft = await getDraftForConversation(page, conversationId);
       expect(savedDraft).toBe(draftMessage);
-      console.log('✓ Draft was correctly saved');
+      debugInfo('✓ Draft was correctly saved');
 
       // Click "New Chat"
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
       await newChatButton.click();
       await page.waitForTimeout(500);
-      console.log('✓ Clicked New Chat button');
+      debugInfo('✓ Clicked New Chat button');
 
       // Return to original conversation
       await selectConversation(page, 1);
@@ -283,24 +284,24 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Check if draft is still preserved
       const remainingDraft = await getDraftForConversation(page, conversationId);
-      console.log('Draft after new chat:', `"${remainingDraft}"`);
-      console.log('Expected draft:', `"${draftMessage}"`);
+      debugInfo('Draft after new chat:', { remainingDraft });
+      debugInfo('Expected draft:', { draftMessage });
 
       // Check both UI and internal draft store
       const uiInput = await input.inputValue();
-      console.log('UI input after return:', `"${uiInput}"`);
+      debugInfo('UI input after return:', { uiInput });
 
       // Both should contain the original message
       expect(remainingDraft).toBe(draftMessage);
       expect(uiInput).toBe(draftMessage);
 
-      console.log('✓ Draft was correctly preserved');
+      debugInfo('✓ Draft was correctly preserved');
     });
   });
 
   test.describe('Edge Cases', () => {
     test('TEST 5: Rapid New Chat Clicking ', async ({ page }) => {
-      console.log('Starting Test 5: Rapid New Chat Clicking');
+      debugInfo('Starting Test 5: Rapid New Chat Clicking');
 
       const input = await getChatInput(page);
       const rapidTestMessage = 'Message before rapid clicking';
@@ -308,11 +309,11 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Type text in current conversation
       await input.fill(rapidTestMessage);
       await page.waitForTimeout(500);
-      console.log('✓ Added text before rapid clicking');
+      debugInfo('✓ Added text before rapid clicking');
 
       // Get initial conversation count
       const initialCount = await getConversationCount(page);
-      console.log('✓ Initial conversation count:', initialCount);
+      debugInfo('✓ Initial conversation count:', { initialCount });
 
       // Click "New Chat" multiple times rapidly
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
@@ -320,12 +321,12 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       await newChatButton.click();
       await newChatButton.click();
       await page.waitForTimeout(1000); // Wait for all operations to complete
-      console.log('✓ Clicked New Chat 3 times rapidly');
+      debugInfo('✓ Clicked New Chat 3 times rapidly');
 
       // Verify multiple conversations were created
       const finalCount = await getConversationCount(page);
       expect(finalCount).toBe(initialCount + 3);
-      console.log('✓ Confirmed 3 new conversations were created');
+      debugInfo('✓ Confirmed 3 new conversations were created');
 
       // Navigate back to original conversation (should be at index 3 now)
       await selectConversation(page, 3);
@@ -333,17 +334,17 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Verify original text is preserved
       const finalInput = await input.inputValue();
-      console.log('Input after rapid clicking:', `"${finalInput}"`);
-      console.log('Expected input:', `"${rapidTestMessage}"`);
+      debugInfo('Input after rapid clicking:', { finalInput });
+      debugInfo('Expected input:', { rapidTestMessage });
 
       // rapid clicking should still preserve the first conversation's text
       expect(finalInput).toBe(rapidTestMessage);
 
-      console.log('✓ Rapid clicking preserved original text');
+      debugInfo('✓ Rapid clicking preserved original text');
     });
 
     test('TEST 6: Complex Text Preservation ', async ({ page }) => {
-      console.log('Starting Test 6: Complex Text Preservation');
+      debugInfo('Starting Test 6: Complex Text Preservation');
 
       const input = await getChatInput(page);
       const complexMessage = `Multi-line message with:
@@ -357,7 +358,7 @@ This should all be preserved when creating a new chat.`;
       // Type complex message
       await input.fill(complexMessage);
       await page.waitForTimeout(500);
-      console.log('✓ Added complex multi-line message');
+      debugInfo('✓ Added complex multi-line message');
 
       // Create new chat
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
@@ -370,19 +371,19 @@ This should all be preserved when creating a new chat.`;
 
       // Check preservation of complex text
       const preservedText = await input.inputValue();
-      console.log('Preserved text length:', preservedText.length);
-      console.log('Original text length:', complexMessage.length);
+      debugInfo('Preserved text length:', { length: preservedText.length });
+      debugInfo('Original text length:', { length: complexMessage.length });
 
       // complex text should be preserved
       expect(preservedText).toBe(complexMessage);
 
-      console.log('✓ Complex text was preserved');
+      debugInfo('✓ Complex text was preserved');
     });
   });
 
   test.describe('Cross-Platform New Chat Buttons', () => {
     test('TEST 7: Topbar New Chat Button ', async ({ page }) => {
-      console.log('Starting Test 7: Topbar New Chat Button');
+      debugInfo('Starting Test 7: Topbar New Chat Button');
 
       const input = await getChatInput(page);
       const topbarTestMessage = 'Message for topbar new chat test';
@@ -390,18 +391,18 @@ This should all be preserved when creating a new chat.`;
       // Type message
       await input.fill(topbarTestMessage);
       await page.waitForTimeout(500);
-      console.log('✓ Added text for topbar test');
+      debugInfo('✓ Added text for topbar test');
 
       // Click New Chat button in topbar (if visible)
       const topbarNewChat = page.locator('button:has(img[alt="+"])').first();
       if (await topbarNewChat.isVisible().catch(() => false)) {
         await topbarNewChat.click();
-        console.log('✓ Clicked topbar New Chat button');
+        debugInfo('✓ Clicked topbar New Chat button');
       } else {
         // Fallback to sidebar button
         const sidebarNewChat = page.getByRole('button', { name: /new conversation/i });
         await sidebarNewChat.click();
-        console.log('✓ Clicked sidebar New Chat button (topbar not visible)');
+        debugInfo('✓ Clicked sidebar New Chat button (topbar not visible)');
       }
 
       await page.waitForTimeout(500);
@@ -412,12 +413,12 @@ This should all be preserved when creating a new chat.`;
 
       // Check preservation
       const preservedText = await input.inputValue();
-      console.log('Input after topbar new chat:', `"${preservedText}"`);
+      debugInfo('Input after topbar new chat:', { preservedText });
 
       // Text should be preserved
       expect(preservedText).toBe(topbarTestMessage);
 
-      console.log('✓ Topbar new chat preserved text');
+      debugInfo('✓ Topbar new chat preserved text');
     });
   });
 });

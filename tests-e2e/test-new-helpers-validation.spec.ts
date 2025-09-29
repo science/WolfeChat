@@ -5,6 +5,7 @@ import {
   operateQuickSettings,
   mockOpenAIAPI
 } from './live/helpers';
+import { debugInfo } from './debug-utils';
 
 test.describe('New Helper Functions Validation', () => {
   test.beforeEach(async ({ page }) => {
@@ -14,84 +15,84 @@ test.describe('New Helper Functions Validation', () => {
   });
 
   test('ensureSettingsClosed() should safely close Settings if open', async ({ page }) => {
-    console.log('=== Testing ensureSettingsClosed() ===');
+    debugInfo('=== Testing ensureSettingsClosed() ===');
 
     // First, manually open Settings
-    console.log('Manually opening Settings...');
+    debugInfo('Manually opening Settings...');
     const settingsButton = page.getByRole('button', { name: /^settings/i });
     await settingsButton.click();
 
     // Verify Settings is open
     const settingsHeading = page.getByRole('heading', { name: /settings/i });
     await expect(settingsHeading).toBeVisible();
-    console.log('✅ Settings is open');
+    debugInfo('✅ Settings is open');
 
     // Use ensureSettingsClosed to close it
-    console.log('Calling ensureSettingsClosed()...');
+    debugInfo('Calling ensureSettingsClosed()...');
     await ensureSettingsClosed(page);
 
     // Verify Settings is closed
     await expect(settingsHeading).toBeHidden();
-    console.log('✅ Settings is now closed');
+    debugInfo('✅ Settings is now closed');
   });
 
   test('withSettingsOpen() should open Settings and provide handle', async ({ page }) => {
-    console.log('=== Testing withSettingsOpen() ===');
+    debugInfo('=== Testing withSettingsOpen() ===');
 
     // Use withSettingsOpen
-    console.log('Calling withSettingsOpen()...');
+    debugInfo('Calling withSettingsOpen()...');
     const settingsHandle = await withSettingsOpen(page);
 
     // Verify Settings is open
     const settingsHeading = page.getByRole('heading', { name: /settings/i });
     await expect(settingsHeading).toBeVisible();
-    console.log('✅ Settings opened via withSettingsOpen()');
+    debugInfo('✅ Settings opened via withSettingsOpen()');
 
     // Use handle to close
-    console.log('Closing via handle...');
+    debugInfo('Closing via handle...');
     await settingsHandle.close();
 
     // Verify Settings is closed
     await expect(settingsHeading).toBeHidden();
-    console.log('✅ Settings closed via handle');
+    debugInfo('✅ Settings closed via handle');
   });
 
   test('operateQuickSettings() should auto-resolve Settings conflicts', async ({ page }) => {
-    console.log('=== Testing operateQuickSettings() conflict resolution ===');
+    debugInfo('=== Testing operateQuickSettings() conflict resolution ===');
 
     // First, manually open Settings to create a conflict
-    console.log('Creating Settings conflict...');
+    debugInfo('Creating Settings conflict...');
     const settingsButton = page.getByRole('button', { name: /^settings/i });
     await settingsButton.click();
 
     const settingsHeading = page.getByRole('heading', { name: /settings/i });
     await expect(settingsHeading).toBeVisible();
-    console.log('✅ Settings conflict created');
+    debugInfo('✅ Settings conflict created');
 
     // Now try to use operateQuickSettings - should auto-resolve conflict
-    console.log('Calling operateQuickSettings() - should auto-resolve...');
+    debugInfo('Calling operateQuickSettings() - should auto-resolve...');
     await operateQuickSettings(page, { mode: 'ensure-open' });
 
     // Verify Settings is closed and QuickSettings is open
     await expect(settingsHeading).toBeHidden();
-    console.log('✅ Settings auto-closed');
+    debugInfo('✅ Settings auto-closed');
 
     const quickSettingsBody = page.locator('#quick-settings-body');
     await expect(quickSettingsBody).toBeVisible();
-    console.log('✅ QuickSettings opened successfully');
+    debugInfo('✅ QuickSettings opened successfully');
 
     // Clean up
     await operateQuickSettings(page, { mode: 'ensure-closed' });
   });
 
   test('Settings and QuickSettings should not be open simultaneously', async ({ page }) => {
-    console.log('=== Testing mutual exclusion ===');
+    debugInfo('=== Testing mutual exclusion ===');
 
     // Open Settings first
     const settingsHandle = await withSettingsOpen(page);
     const settingsHeading = page.getByRole('heading', { name: /settings/i });
     await expect(settingsHeading).toBeVisible();
-    console.log('✅ Settings opened');
+    debugInfo('✅ Settings opened');
 
     // Try to open QuickSettings - should auto-close Settings
     await operateQuickSettings(page, { mode: 'ensure-open' });
@@ -100,7 +101,7 @@ test.describe('New Helper Functions Validation', () => {
     await expect(settingsHeading).toBeHidden();
     const quickSettingsBody = page.locator('#quick-settings-body');
     await expect(quickSettingsBody).toBeVisible();
-    console.log('✅ Mutual exclusion working - Settings closed, QuickSettings open');
+    debugInfo('✅ Mutual exclusion working - Settings closed, QuickSettings open');
 
     // Clean up
     await operateQuickSettings(page, { mode: 'ensure-closed' });

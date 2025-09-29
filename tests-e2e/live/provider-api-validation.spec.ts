@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { openSettings } from './helpers';
+import { debugInfo } from '../debug-utils';
 
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
 const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
@@ -96,7 +97,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     if (errorMessages.length > 0) {
       for (const msg of errorMessages) {
         const text = await msg.textContent();
-        console.log('Found error message:', text);
+        debugInfo('Found error message:', { text });
       }
     }
 
@@ -277,6 +278,6 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     // Both should show some form of error indication
     // The exact error message format may vary, but there should be some error state
-    console.log('API validation error handling tested for both providers');
+    debugInfo('API validation error handling tested for both providers');
   });
 });

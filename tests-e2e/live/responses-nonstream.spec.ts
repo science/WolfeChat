@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI, selectReasoningModelInQuickSettings } from './helpers';
+import { debugInfo, debugErr } from '../debug-utils';
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173';
 
@@ -22,10 +23,10 @@ test.describe('Live API: Responses API non-streaming', () => {
       window.__testResponsesAPI = async function() {
         try {
           const result = await testResponsesAPI();
-          console.log('[TEST] testResponsesAPI result:', result);
+          try { if ((window as any).__DEBUG_E2E >= 2) console.log('[TEST] testResponsesAPI result:', result); } catch {}
           return result;
         } catch (e) {
-          console.error('[TEST] testResponsesAPI error:', e);
+          try { if ((window as any).__DEBUG_E2E >= 1) console.error('[TEST] testResponsesAPI error:', e); } catch {}
           return { success: false, error: String(e) };
         }
       };
@@ -46,10 +47,7 @@ test.describe('Live API: Responses API non-streaming', () => {
     expect(result.outputText.trim()).not.toBe('');
 
     // Optional debug output gated by DEBUG_E2E>=2
-    const debugLevel = Number(process.env.DEBUG_E2E || '0');
-    if (debugLevel >= 2) {
-      console.log('[TEST] Non-streaming API test succeeded');
-      console.log('[TEST] Output text:', typeof result.outputText === 'string' ? result.outputText : JSON.stringify(result.outputText));
-    }
+    debugInfo('[TEST] Non-streaming API test succeeded');
+    debugInfo('[TEST] Output text:', { outputText: typeof result.outputText === 'string' ? result.outputText : result.outputText });
   });
 });

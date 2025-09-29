@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI, selectReasoningModelInQuickSettings, sendMessage, waitForAssistantDone } from './helpers';
+import { debugInfo } from '../debug-utils';
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173';
 
@@ -117,9 +118,9 @@ test.describe('Live API: Title Update', () => {
     // Optional debug output
     const debugLevel = Number(process.env.DEBUG_E2E || '0');
     if (debugLevel >= 2) {
-      console.log('[TEST] Title update test succeeded');
-      console.log('[TEST] Initial title:', initialTitle || '(empty)');
-      console.log('[TEST] Updated title:', updatedTitle);
+      debugInfo('[TEST] Title update test succeeded');
+      debugInfo('[TEST] Initial title:', { initialTitle: initialTitle || '(empty)' });
+      debugInfo('[TEST] Updated title:', { updatedTitle });
     }
   });
 });

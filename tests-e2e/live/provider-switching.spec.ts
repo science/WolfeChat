@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { openSettings } from './helpers';
+import { debugInfo } from '../debug-utils';
 
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
 const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
@@ -166,6 +167,6 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     await expect(providerSelect).toHaveValue(initialProvider);
 
     // This test mainly verifies that provider switching doesn't crash or break the UI
-    console.log('Provider switching completed without errors');
+    debugInfo('Provider switching completed without errors');
   });
 });

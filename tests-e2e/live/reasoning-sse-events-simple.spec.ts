@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI, operateQuickSettings, sendMessage } from './helpers';
+import { debugInfo, debugErr, debugWarn } from '../debug-utils';
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173';
 
@@ -7,7 +8,7 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
   test.setTimeout(60_000);
 
   test('Capture exact SSE events for gpt-5-nano reasoning model', async ({ page }) => {
-    console.log('[TEST] Starting simple SSE event capture for gpt-5-nano');
+    debugInfo('[TEST] Starting simple SSE event capture for gpt-5-nano');
 
     // Capture ALL SSE events directly
     const sseEvents: string[] = [];
@@ -18,7 +19,7 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
       if (response.url().includes('api.openai.com/v1/responses') && response.status() === 200) {
         try {
           const responseText = await response.text();
-          console.log('[TEST] Got SSE response, length:', responseText.length);
+          debugInfo('[TEST] Got SSE response, length:', { length: responseText.length });
 
           // Parse SSE blocks
           const blocks = responseText.split('\n\n').filter(b => b.trim());
@@ -43,22 +44,22 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
                 // Extract response ID if present
                 if (data.response_id && !responseId) {
                   responseId = data.response_id;
-                  console.log('[TEST] Response ID:', responseId);
+                  debugInfo('[TEST] Response ID:', { responseId });
                 }
 
-                console.log(`[TEST] SSE Event: ${eventType}`);
+                debugInfo(`[TEST] SSE Event: ${eventType}`);
 
                 // Log first few chars of data for debugging
                 if (eventType.includes('reasoning')) {
-                  console.log(`[TEST]   Data preview: ${JSON.stringify(data).substring(0, 200)}`);
+                  debugInfo(`[TEST]   Data preview:`, { preview: JSON.stringify(data).substring(0, 200) });
                 }
               } catch (e) {
-                console.log('[TEST] Failed to parse SSE data:', e);
+                debugErr('[TEST] Failed to parse SSE data:', { error: e });
               }
             }
           }
         } catch (e) {
-          console.log('[TEST] Failed to capture SSE response:', e);
+          debugErr('[TEST] Failed to capture SSE response:', { error: e });
         }
       }
     });
@@ -73,7 +74,7 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
         if (match) {
           const eventType = match[1];
           sseEvents.push(eventType);
-          console.log(`[CAPTURED] SSE Event Type: ${eventType}`);
+          debugInfo(`[CAPTURED] SSE Event Type: ${eventType}`);
         } else {
           // Try to parse the JSON object
           const jsonMatch = text.match(/\{.*\}/);
@@ -82,7 +83,7 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
               const data = JSON.parse(jsonMatch[0]);
               if (data.data?.resolvedType) {
                 sseEvents.push(data.data.resolvedType);
-                console.log(`[CAPTURED] SSE Event Type: ${data.data.resolvedType}`);
+                debugInfo(`[CAPTURED] SSE Event Type: ${data.data.resolvedType}`);
               }
             } catch {}
           }
@@ -95,8 +96,8 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
     // Enable debug logging
     await page.evaluate(() => {
       (window as any).__DEBUG_E2E = 2;
-      console.log('[TEST] Debug logging enabled');
     });
+    debugInfo('[TEST] Debug logging enabled');
 
     await bootstrapLiveAPI(page);
 
@@ -118,11 +119,11 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
     const verbosity = await page.locator('#verbosity').inputValue();
     const summary = await page.locator('#summary').inputValue();
 
-    console.log('[TEST] Settings confirmed:');
-    console.log(`  Model: ${model}`);
-    console.log(`  Reasoning Effort: ${effort}`);
-    console.log(`  Verbosity: ${verbosity}`);
-    console.log(`  Summary: ${summary}`);
+    debugInfo('[TEST] Settings confirmed:');
+    debugInfo(`  Model: ${model}`);
+    debugInfo(`  Reasoning Effort: ${effort}`);
+    debugInfo(`  Verbosity: ${verbosity}`);
+    debugInfo(`  Summary: ${summary}`);
 
     await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
 
@@ -131,7 +132,7 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
 
     // Send EXACT message from failing test
     const message = 'Explain the Monte Hall 3 door problem';
-    console.log(`[TEST] Sending message: "${message}"`);
+    debugInfo(`[TEST] Sending message:`, { message });
 
     await sendMessage(page, message, {
       submitMethod: 'ctrl-enter',
@@ -143,8 +144,8 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
     await page.waitForTimeout(10_000); // Give it 10 seconds to receive events
 
     // Analyze captured events
-    console.log('\n[TEST] === SSE EVENT ANALYSIS ===');
-    console.log(`[TEST] Total SSE events captured: ${sseEvents.length}`);
+    debugInfo('\n[TEST] === SSE EVENT ANALYSIS ===');
+    debugInfo(`[TEST] Total SSE events captured: ${sseEvents.length}`);
 
     // Group events by type
     const eventCounts: { [key: string]: number } = {};
@@ -152,29 +153,29 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
       eventCounts[event] = (eventCounts[event] || 0) + 1;
     });
 
-    console.log('[TEST] Event type counts:');
+    debugInfo('[TEST] Event type counts:');
     Object.entries(eventCounts).forEach(([type, count]) => {
-      console.log(`  ${type}: ${count}`);
+      debugInfo(`  ${type}: ${count}`);
     });
 
     // Check for reasoning events
     const reasoningEvents = sseEvents.filter(e => e.includes('reasoning'));
-    console.log(`\n[TEST] Reasoning events: ${reasoningEvents.length}`);
+    debugInfo(`\n[TEST] Reasoning events: ${reasoningEvents.length}`);
     if (reasoningEvents.length > 0) {
-      console.log('[TEST] Reasoning event types found:');
+      debugInfo('[TEST] Reasoning event types found:');
       const uniqueReasoningEvents = [...new Set(reasoningEvents)];
-      uniqueReasoningEvents.forEach(e => console.log(`  - ${e}`));
+      uniqueReasoningEvents.forEach(e => debugInfo(`  - ${e}`));
     } else {
-      console.log('[TEST] ❌ NO reasoning events found!');
+      debugErr('[TEST] ❌ NO reasoning events found!');
     }
 
     // Check for output text events
     const outputTextEvents = sseEvents.filter(e => e.includes('output_text'));
-    console.log(`\n[TEST] Output text events: ${outputTextEvents.length}`);
+    debugInfo(`\n[TEST] Output text events: ${outputTextEvents.length}`);
     if (outputTextEvents.length > 0) {
-      console.log('[TEST] Output text event types found:');
+      debugInfo('[TEST] Output text event types found:');
       const uniqueOutputEvents = [...new Set(outputTextEvents)];
-      uniqueOutputEvents.forEach(e => console.log(`  - ${e}`));
+      uniqueOutputEvents.forEach(e => debugInfo(`  - ${e}`));
     }
 
     // Check reasoning window in DOM
@@ -188,29 +189,29 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
       const messageMatch = windowText.match(/(\d+)\s+messages?/);
       const messageCount = messageMatch ? parseInt(messageMatch[1]) : -1;
 
-      console.log('\n[TEST] === DOM STATE ===');
-      console.log(`[TEST] Reasoning window visible: true`);
-      console.log(`[TEST] Reasoning window shows: ${messageCount} messages`);
+      debugInfo('\n[TEST] === DOM STATE ===');
+      debugInfo(`[TEST] Reasoning window visible: true`);
+      debugInfo(`[TEST] Reasoning window shows: ${messageCount} messages`);
 
       if (messageCount === 0 && reasoningEvents.length === 0) {
-        console.log('[TEST] ✅ CONFIRMED: No reasoning events from API, window correctly shows 0 messages');
+        debugInfo('[TEST] ✅ CONFIRMED: No reasoning events from API, window correctly shows 0 messages');
       } else if (messageCount === 0 && reasoningEvents.length > 0) {
-        console.log('[TEST] 🐛 BUG: Reasoning events received but window shows 0 messages');
+        debugErr('[TEST] 🐛 BUG: Reasoning events received but window shows 0 messages');
       } else if (messageCount > 0 && reasoningEvents.length > 0) {
-        console.log('[TEST] ✅ Working correctly: Reasoning events received and displayed');
+        debugInfo('[TEST] ✅ Working correctly: Reasoning events received and displayed');
       }
     } else {
-      console.log('\n[TEST] Reasoning window not visible');
+      debugInfo('\n[TEST] Reasoning window not visible');
     }
 
     // Final verdict
-    console.log('\n[TEST] === FINAL VERDICT ===');
+    debugInfo('\n[TEST] === FINAL VERDICT ===');
     if (reasoningEvents.length === 0) {
-      console.log('[TEST] The API is NOT sending reasoning events for this configuration');
-      console.log('[TEST] It appears to be sending output_text events instead');
+      debugInfo('[TEST] The API is NOT sending reasoning events for this configuration');
+      debugInfo('[TEST] It appears to be sending output_text events instead');
     } else {
-      console.log('[TEST] The API IS sending reasoning events');
-      console.log('[TEST] The bug must be in the client-side handling');
+      debugInfo('[TEST] The API IS sending reasoning events');
+      debugInfo('[TEST] The bug must be in the client-side handling');
     }
   });
 });

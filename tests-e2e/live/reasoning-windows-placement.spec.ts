@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { operateQuickSettings, bootstrapLiveAPI, sendMessage, waitForAssistantDone } from './helpers';
+import { debugInfo } from '../debug-utils';
 
 /**
  * Live Reasoning Windows (RW) behavior tests.
@@ -32,7 +33,7 @@ async function waitForReasoningWithContent(page: import('@playwright/test').Page
       }
 
       if (allHaveContent) {
-        console.log(`✅ Found ${count} reasoning windows with content`);
+        debugInfo(`✅ Found ${count} reasoning windows with content`);
         return count;
       }
     }
@@ -51,7 +52,7 @@ test.describe('Reasoning Windows Placement', () => {
   });
 
   test('RW appear with reasoning content and bind to correct message', async ({ page }) => {
-    console.log('=== Testing reasoning windows with Monte Hall prompt ===');
+    debugInfo('=== Testing reasoning windows with Monte Hall prompt ===');
 
     // Send first message with non-reasoning model to establish baseline
     await sendMessage(page, 'Hello');
@@ -69,7 +70,7 @@ test.describe('Reasoning Windows Placement', () => {
       closeAfter: true
     });
 
-    console.log('Sending Monte Hall prompt...');
+    debugInfo('Sending Monte Hall prompt...');
 
     // Send reasoning-generating prompt
     await sendMessage(page, REASONING_PROMPT);
@@ -83,18 +84,18 @@ test.describe('Reasoning Windows Placement', () => {
     const totalText = reasoningContent.join(' ').trim();
     expect(totalText.length).toBeGreaterThan(50); // Require substantial reasoning content
 
-    console.log(`Reasoning content preview: ${totalText.substring(0, 100)}...`);
+    debugInfo(`Reasoning content preview: ${totalText.substring(0, 100)}...`);
 
     // Verify the main response also appears
     const messages = page.locator('.message');
     const messageCount = await messages.count();
     expect(messageCount).toBeGreaterThanOrEqual(3); // User hello + AI response + User reasoning prompt + AI reasoning response
 
-    console.log('✅ Reasoning windows appear with content and bind to correct message');
+    debugInfo('✅ Reasoning windows appear with content and bind to correct message');
   });
 
   test('RW placement remains stable when new messages are added', async ({ page }) => {
-    console.log('=== Testing reasoning window placement stability ===');
+    debugInfo('=== Testing reasoning window placement stability ===');
 
     // Set up reasoning model
     await operateQuickSettings(page, {
@@ -105,7 +106,7 @@ test.describe('Reasoning Windows Placement', () => {
     });
 
     // Send reasoning prompt and wait for reasoning to complete
-    console.log('Sending Monte Hall prompt for stability test...');
+    debugInfo('Sending Monte Hall prompt for stability test...');
     await sendMessage(page, REASONING_PROMPT);
 
     // Wait for reasoning windows with content
@@ -127,7 +128,7 @@ test.describe('Reasoning Windows Placement', () => {
     });
 
     expect(initialPosition).not.toBeNull();
-    console.log(`Initial reasoning window position: ${JSON.stringify(initialPosition)}`);
+    debugInfo(`Initial reasoning window position: ${JSON.stringify(initialPosition)}`);
 
     // Add more messages to test stability
     await sendMessage(page, 'Can you elaborate more?');
@@ -157,14 +158,14 @@ test.describe('Reasoning Windows Placement', () => {
     const adjustedFinal = finalPosition!.relativeTop + finalPosition!.scrollTop;
     const positionDrift = Math.abs(adjustedFinal - adjustedInitial);
 
-    console.log(`Position drift: ${positionDrift}px (should be < 30px)`);
+    debugInfo(`Position drift: ${positionDrift}px (should be < 30px)`);
     expect(positionDrift).toBeLessThan(30); // Allow minor layout shifts
 
-    console.log('✅ Reasoning window placement remains stable');
+    debugInfo('✅ Reasoning window placement remains stable');
   });
 
   test('Non-reasoning model shows no RW, reasoning model shows RW', async ({ page }) => {
-    console.log('=== Testing reasoning vs non-reasoning model behavior ===');
+    debugInfo('=== Testing reasoning vs non-reasoning model behavior ===');
 
     // Start with non-reasoning model
     await operateQuickSettings(page, {
@@ -173,14 +174,14 @@ test.describe('Reasoning Windows Placement', () => {
       closeAfter: true
     });
 
-    console.log('Sending Monte Hall prompt to non-reasoning model...');
+    debugInfo('Sending Monte Hall prompt to non-reasoning model...');
     await sendMessage(page, REASONING_PROMPT);
     await waitForAssistantDone(page);
 
     // Verify no reasoning windows appear
     const reasoningWindows = page.locator('details:has-text("Reasoning")');
     await expect(reasoningWindows).toHaveCount(0);
-    console.log('✅ Non-reasoning model produces no reasoning windows');
+    debugInfo('✅ Non-reasoning model produces no reasoning windows');
 
     // Switch to reasoning model
     await operateQuickSettings(page, {
@@ -190,7 +191,7 @@ test.describe('Reasoning Windows Placement', () => {
       closeAfter: true
     });
 
-    console.log('Sending Monte Hall prompt to reasoning model...');
+    debugInfo('Sending Monte Hall prompt to reasoning model...');
     await sendMessage(page, REASONING_PROMPT);
 
     // Wait for reasoning windows to appear with content
@@ -202,7 +203,7 @@ test.describe('Reasoning Windows Placement', () => {
     const totalText = reasoningContent.join(' ').trim();
     expect(totalText.length).toBeGreaterThan(50);
 
-    console.log('✅ Reasoning model produces reasoning windows with content');
+    debugInfo('✅ Reasoning model produces reasoning windows with content');
 
     // Send another non-reasoning message to verify no additional reasoning appears
     await operateQuickSettings(page, {
@@ -218,6 +219,6 @@ test.describe('Reasoning Windows Placement', () => {
     const finalReasoningCount = await reasoningWindows.count();
     expect(finalReasoningCount).toBe(reasoningCount);
 
-    console.log('✅ Non-reasoning follow-up does not create additional reasoning windows');
+    debugInfo('✅ Non-reasoning follow-up does not create additional reasoning windows');
   });
 });

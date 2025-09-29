@@ -5,14 +5,15 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { debugInfo, debugWarn, debugErr } from '../debug-utils';
 
 test.describe('API Mocking for Nonlive Tests', () => {
   test('should mock OpenAI API and verify complete model flow', async ({ page }) => {
-    console.log('=== Testing with Proper API Mocking ===');
+    debugInfo('=== Testing with Proper API Mocking ===');
 
     // Mock the OpenAI models API with proper response
     await page.route('**/v1/models', async route => {
-      console.log('[MOCK] Intercepting OpenAI models API call');
+      debugInfo('[MOCK] Intercepting OpenAI models API call');
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -55,7 +56,7 @@ test.describe('API Mocking for Nonlive Tests', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    console.log('STEP 1: Set up API key and trigger fetch');
+    debugInfo('STEP 1: Set up API key and trigger fetch');
 
     // Open Settings
     const settingsButton = await page.locator('button').filter({ hasText: 'Settings' }).first();
@@ -69,7 +70,7 @@ test.describe('API Mocking for Nonlive Tests', () => {
     await checkAPIButton.click();
 
     // Wait for the API call to complete
-    console.log('STEP 2: Wait for mocked API call to complete');
+    debugInfo('STEP 2: Wait for mocked API call to complete');
     await page.waitForTimeout(2000);
 
     // Check if models were stored
@@ -102,24 +103,24 @@ test.describe('API Mocking for Nonlive Tests', () => {
       };
     });
 
-    console.log('Store state after mocked API:', JSON.stringify(storeStateAfterAPI, null, 2));
+    debugInfo('Store state after mocked API:', { storeStateAfterAPI });
 
     if (storeStateAfterAPI.modelsCount === 0) {
-      console.log('🚨 ISSUE: Models not stored even with successful mock API');
+      debugWarn('🚨 ISSUE: Models not stored even with successful mock API');
 
       // Check what went wrong
-      console.log('Checking localStorage directly...');
+      debugInfo('Checking localStorage directly...');
       const localStorage = await page.evaluate(() => ({
         models: localStorage.getItem('models'),
         openaiKey: localStorage.getItem('openai_api_key')
       }));
-      console.log('Direct localStorage:', localStorage);
+      debugInfo('Direct localStorage:', { localStorage });
 
     } else {
-      console.log(`✅ SUCCESS: ${storeStateAfterAPI.modelsCount} models stored after mock API`);
+      debugInfo(`✅ SUCCESS: ${storeStateAfterAPI.modelsCount} models stored after mock API`);
     }
 
-    console.log('STEP 3: Test QuickSettings with correct selector');
+    debugInfo('STEP 3: Test QuickSettings with correct selector');
 
     // Close Settings modal properly using Save button
     const saveBtn = page.getByRole('button', { name: /^save$/i });
@@ -150,14 +151,14 @@ test.describe('API Mocking for Nonlive Tests', () => {
       };
     });
 
-    console.log('QuickSettings dropdown after mock:', JSON.stringify(optionsAfterMock, null, 2));
+    debugInfo('QuickSettings dropdown after mock:', { optionsAfterMock });
 
     // Count real model options (not placeholders)
     const realModelOptions = await modelSelect.locator('option').filter({ hasText: /^gpt-|^claude-/ }).count();
-    console.log(`Real model options in dropdown: ${realModelOptions}`);
+    debugInfo(`Real model options in dropdown: ${realModelOptions}`);
 
     if (realModelOptions === 0) {
-      console.log('🚨 DISCONNECT: Models in store but not in dropdown');
+      debugWarn('🚨 DISCONNECT: Models in store but not in dropdown');
 
       // Debug the component state
       const componentDebug = await page.evaluate(() => {
@@ -171,26 +172,26 @@ test.describe('API Mocking for Nonlive Tests', () => {
         };
       });
 
-      console.log('Component debug:', JSON.stringify(componentDebug, null, 2));
+      debugInfo('Component debug:', { componentDebug });
 
     } else {
-      console.log(`✅ COMPLETE SUCCESS: Models flow from API → store → dropdown (${realModelOptions} models)`);
+      debugInfo(`✅ COMPLETE SUCCESS: Models flow from API → store → dropdown (${realModelOptions} models)`);
     }
 
     // Final verification: can we select a model?
     if (realModelOptions > 0) {
-      console.log('STEP 4: Test model selection');
+      debugInfo('STEP 4: Test model selection');
 
       // Try to select gpt-4
       await modelSelect.selectOption('gpt-4');
 
       const selectedValue = await modelSelect.inputValue();
-      console.log(`Selected model: ${selectedValue}`);
+      debugInfo(`Selected model: ${selectedValue}`);
 
       if (selectedValue === 'gpt-4') {
-        console.log('✅ Model selection works correctly');
+        debugInfo('✅ Model selection works correctly');
       } else {
-        console.log('🚨 Model selection not working');
+        debugWarn('🚨 Model selection not working');
       }
     }
   });

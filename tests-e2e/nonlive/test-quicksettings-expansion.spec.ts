@@ -5,51 +5,52 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { debugInfo, debugWarn, debugErr } from '../debug-utils';
 
 test.describe('QuickSettings Expansion', () => {
   test('should expand QuickSettings and find model dropdown', async ({ page }) => {
-    console.log('=== Testing QuickSettings Expansion ===');
+    debugInfo('=== Testing QuickSettings Expansion ===');
 
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Find the QuickSettings button (collapsed state)
-    console.log('STEP 1: Find collapsed QuickSettings');
+    debugInfo('STEP 1: Find collapsed QuickSettings');
     const quickSettingsButton = await page.locator('button').filter({ hasText: 'Quick Settings' }).first();
 
     const buttonText = await quickSettingsButton.textContent();
-    console.log('QuickSettings button text:', buttonText);
+    debugInfo('QuickSettings button text:', { buttonText });
 
     // Verify it shows model in collapsed form
     expect(buttonText).toContain('gpt-3.5-turbo');
-    console.log('✅ Collapsed QuickSettings shows gpt-3.5-turbo');
+    debugInfo('✅ Collapsed QuickSettings shows gpt-3.5-turbo');
 
     // Check that model dropdown doesn't exist yet
-    console.log('STEP 2: Verify dropdown not visible before expansion');
+    debugInfo('STEP 2: Verify dropdown not visible before expansion');
     const modelSelectBefore = page.locator('#model-selection');
     const visibleBefore = await modelSelectBefore.isVisible().catch(() => false);
-    console.log('Model dropdown visible before expansion:', visibleBefore);
+    debugInfo('Model dropdown visible before expansion:', { visibleBefore });
 
     // Click to expand QuickSettings
-    console.log('STEP 3: Expand QuickSettings');
+    debugInfo('STEP 3: Expand QuickSettings');
     await quickSettingsButton.click();
 
     // Wait for expansion animation and dropdown to appear
     await page.waitForSelector('#current-model-select', { timeout: 5000 });
-    console.log('✅ Model dropdown appeared after expansion');
+    debugInfo('✅ Model dropdown appeared after expansion');
 
     // Check the dropdown content
-    console.log('STEP 4: Check dropdown content');
+    debugInfo('STEP 4: Check dropdown content');
     const modelSelect = page.locator('#current-model-select');
     const options = await modelSelect.locator('option').allTextContents();
-    console.log('Model options:', options);
+    debugInfo('Model options:', { options });
 
     // Count real model options (excluding placeholder)
     const realOptions = await modelSelect.locator('option').filter({ hasText: /^gpt-|^claude-/ }).count();
-    console.log('Real model options count:', realOptions);
+    debugInfo('Real model options count:', { realOptions });
 
     if (realOptions === 0) {
-      console.log('🚨 ISSUE: No real model options in expanded dropdown');
+      debugWarn('🚨 ISSUE: No real model options in expanded dropdown');
 
       // Debug store state when expanded
       const storeState = await page.evaluate(() => {
@@ -69,14 +70,14 @@ test.describe('QuickSettings Expansion', () => {
         return { hasStore: false };
       });
 
-      console.log('Store state when expanded:', JSON.stringify(storeState, null, 2));
+      debugInfo('Store state when expanded:', { storeState });
     } else {
-      console.log('✅ Found real model options in expanded dropdown');
+      debugInfo('✅ Found real model options in expanded dropdown');
     }
   });
 
   test('should test the complete E2E flow with proper expansion', async ({ page }) => {
-    console.log('=== Testing Complete Flow with Expansion ===');
+    debugInfo('=== Testing Complete Flow with Expansion ===');
 
     await page.goto('/');
     await page.waitForLoadState('networkidle');
@@ -89,10 +90,10 @@ test.describe('QuickSettings Expansion', () => {
     // Step 2: Check current model dropdown state
     const modelSelect = page.locator('#current-model-select');
     const initialOptions = await modelSelect.locator('option').allTextContents();
-    console.log('Initial model options:', initialOptions);
+    debugInfo('Initial model options:', { initialOptions });
 
     // Step 3: Set up API key via Settings
-    console.log('Setting up API key...');
+    debugInfo('Setting up API key...');
 
     // Click settings button (from our debug we know the text)
     const settingsButton = await page.locator('button').filter({ hasText: 'Settings' }).first();
@@ -109,16 +110,16 @@ test.describe('QuickSettings Expansion', () => {
 
     // Step 4: Check if models appeared in dropdown
     const finalOptions = await modelSelect.locator('option').allTextContents();
-    console.log('Final model options:', finalOptions);
+    debugInfo('Final model options:', { finalOptions });
 
     const realModelCount = await modelSelect.locator('option').filter({ hasText: /^gpt-|^claude-/ }).count();
-    console.log('Real model count after API setup:', realModelCount);
+    debugInfo('Real model count after API setup:', { realModelCount });
 
     if (realModelCount === 0) {
-      console.log('🚨 STILL NO MODELS: Even after API setup, no models in dropdown');
+      debugWarn('🚨 STILL NO MODELS: Even after API setup, no models in dropdown');
 
       // Additional debugging
-      const debugInfo = await page.evaluate(() => {
+      const debugData = await page.evaluate(() => {
         return {
           localStorage: {
             models: localStorage.getItem('models'),
@@ -126,9 +127,9 @@ test.describe('QuickSettings Expansion', () => {
           }
         };
       });
-      console.log('Debug localStorage:', debugInfo);
+      debugInfo('Debug localStorage:', { debugData });
     } else {
-      console.log(`✅ SUCCESS: Found ${realModelCount} models after API setup`);
+      debugInfo(`✅ SUCCESS: Found ${realModelCount} models after API setup`);
     }
   });
 });
