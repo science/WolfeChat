@@ -176,9 +176,9 @@ let editingTitleId = null;
         <p class="text-xs text-gray-400 z-20">System Role:</p>
       </div>
       {#if $conversations[$chosenConversationId]}
-      <textarea bind:value={$conversations[$chosenConversationId].assistantRole} {placeholder} class="bg-primary px-2 pt-1 pb-3 resize-none rounded focus:outline-none focus:outline-primary z-20"></textarea>
+      <textarea id="conversation-system-role" aria-label="Conversation system role" bind:value={$conversations[$chosenConversationId].assistantRole} {placeholder} class="bg-primary px-2 pt-1 pb-3 resize-none rounded focus:outline-none focus:outline-primary z-20"></textarea>
       {:else}
-      <textarea placeholder="Select a conversation or start a new one..." class="bg-primary px-2 pt-1 pb-3 resize-none rounded focus:outline-none focus:outline-primary z-20"></textarea>
+      <textarea id="conversation-system-role" aria-label="Conversation system role" placeholder="Select a conversation or start a new one..." class="bg-primary px-2 pt-1 pb-3 resize-none rounded focus:outline-none focus:outline-primary z-20"></textarea>
       {/if}
       
         <div class="flex flex-col h-40 my-2 flex-grow overflow-y-auto convo-container">
