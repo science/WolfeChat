@@ -67,13 +67,15 @@ export interface ReasoningCallbacks {
 export class AnthropicReasoningSupport {
   private convId: string;
   private model: string;
+  private anchorIndex?: number;
   private windowId: string | null = null;
   private panelId: string | null = null;
   private callbacks: ReasoningCallbacks;
 
-  constructor(convId: string, model: string, callbacks: ReasoningCallbacks = {}) {
+  constructor(convId: string, model: string, anchorIndex?: number, callbacks: ReasoningCallbacks = {}) {
     this.convId = convId;
     this.model = model;
+    this.anchorIndex = anchorIndex;
     this.callbacks = callbacks;
   }
 
@@ -88,7 +90,7 @@ export class AnthropicReasoningSupport {
 
     // Create reasoning window if not exists
     if (!this.windowId) {
-      this.windowId = createReasoningWindow(this.convId, this.model);
+      this.windowId = createReasoningWindow(this.convId, this.model, this.anchorIndex);
     }
 
     // Create reasoning panel
@@ -160,11 +162,13 @@ export class AnthropicReasoningSupport {
 export function createAnthropicReasoningSupport(options: {
   convId: string;
   model: string;
+  anchorIndex?: number;
   callbacks?: ReasoningCallbacks;
 }): AnthropicReasoningSupport {
   return new AnthropicReasoningSupport(
     options.convId,
     options.model,
+    options.anchorIndex,
     options.callbacks || {}
   );
 }

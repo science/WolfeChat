@@ -111,11 +111,15 @@ export async function streamAnthropicMessageSDK(
   convId: number,
   config: { model: string }
 ): Promise<void> {
+  console.log('[DEBUG] streamAnthropicMessageSDK CALLED with model:', config.model);
+
   const apiKey = get(anthropicApiKey);
   if (!apiKey) {
+    console.error('[DEBUG] API key missing!');
     throw new Error("Anthropic API key is missing.");
   }
 
+  console.log('[DEBUG] API key present, continuing with stream setup');
   let currentHistory = get(conversations)[convId].history;
 
   // Buffer for batching history updates
@@ -151,12 +155,28 @@ export async function streamAnthropicMessageSDK(
 
     // Add thinking configuration for reasoning models
     const configuredParams = addThinkingConfigurationWithBudget(requestParams);
-
-    // Create reasoning support for this conversation
-    const reasoningSupport = createAnthropicReasoningSupport({
-      convId: String(convId),
-      model: config.model
+    console.log('[DEBUG] Request params after thinking config:', {
+      model: configuredParams.model,
+      hasThinking: !!configuredParams.thinking,
+      thinkingConfig: configuredParams.thinking
     });
+
+    // Get the actual conversation ID (not the index)
+    const actualConvId = get(conversations)[convId]?.id;
+    console.log('[DEBUG] Conversation index:', convId, '→ Actual ID:', actualConvId);
+
+    // Calculate anchorIndex: index of the last user message in history
+    // ReasoningInline is rendered after each user message with that index
+    const userMessageIndex = currentHistory.filter(m => m.role === 'user').length - 1;
+    console.log('[DEBUG] Anchor index (last user message):', userMessageIndex);
+
+    // Create reasoning support for this conversation with anchorIndex
+    const reasoningSupport = createAnthropicReasoningSupport({
+      convId: actualConvId,
+      model: config.model,
+      anchorIndex: userMessageIndex
+    });
+    console.log('[DEBUG] Reasoning support created for conversation ID:', actualConvId, 'anchorIndex:', userMessageIndex);
 
     // Helper function to update history with batching
     const updateHistoryBatched = (force: boolean = false) => {
@@ -176,33 +196,54 @@ export async function streamAnthropicMessageSDK(
     };
 
     // Create stream using SDK with configured parameters
+    console.log('[DEBUG] Creating Anthropic SDK stream with params:', {
+      model: configuredParams.model,
+      hasThinking: !!configuredParams.thinking,
+      thinkingBudget: configuredParams.thinking?.budget_tokens
+    });
     const stream = client.messages.stream(configuredParams);
+
+    console.log('[DEBUG] SDK stream created, registering event handlers');
 
     // Handle streaming events
     stream.on('text', (text) => {
+      console.log('[DEBUG] text event fired, length:', text.length);
       accumulatedText += text;
       updateHistoryBatched();
     });
 
-    stream.on('content_block_start', (block) => {
-      if (block.type === 'thinking') {
+    // Track if reasoning has started
+    let reasoningStarted = false;
+
+    // Listen for thinking event (correct SDK event name)
+    stream.on('thinking', (thinkingDelta, thinkingSnapshot) => {
+      console.log('[DEBUG] thinking event fired!');
+      console.log('Anthropic reasoning delta:', thinkingDelta);
+
+      // Start reasoning on first thinking event
+      if (!reasoningStarted) {
         console.log('Starting Anthropic reasoning block');
         reasoningSupport.startReasoning();
+        reasoningStarted = true;
       }
+
+      reasoningSupport.updateReasoning(thinkingDelta || '');
     });
 
-    stream.on('content_block_delta', (delta) => {
-      if (delta.type === 'text_delta') {
-        // Regular text content is handled by 'text' event
-      } else if (delta.type === 'thinking_delta') {
-        console.log('Anthropic reasoning delta:', delta.text);
-        reasoningSupport.updateReasoning(delta.text || '');
-      }
+    // Also add signature handler for thinking verification
+    stream.on('signature', (signature) => {
+      console.log('[DEBUG] signature event fired');
+      console.log('Anthropic reasoning signature:', signature);
+      // Optional: Store signature for verification if needed
     });
 
-    stream.on('content_block_stop', (block) => {
-      if (block.type === 'thinking') {
-        console.log('Anthropic reasoning block completed');
+    // Listen for contentBlock to detect when thinking completes
+    stream.on('contentBlock', (block) => {
+      console.log('[DEBUG] contentBlock event fired, type:', block.type);
+
+      // When we get a text content block, thinking must be complete
+      if (block.type === 'text' && reasoningStarted) {
+        console.log('Anthropic reasoning block completed (text block started)');
         reasoningSupport.completeReasoning();
       }
     });
@@ -211,6 +252,8 @@ export async function streamAnthropicMessageSDK(
       console.error("Anthropic SDK stream error:", error);
       throw error;
     });
+
+    console.log('[DEBUG] All event handlers registered');
 
     // Wait for stream to complete
     const finalMessage = await stream.finalMessage();
