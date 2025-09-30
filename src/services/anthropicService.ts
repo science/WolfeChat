@@ -1,3 +1,5 @@
+import { log } from '../lib/logger.js';
+
 // Anthropic Claude API service
 export async function fetchAnthropicModels(apiKey: string): Promise<any[]> {
   if (!apiKey) {
@@ -34,7 +36,7 @@ export async function fetchAnthropicModels(apiKey: string): Promise<any[]> {
       display_name: model.display_name
     }));
   } catch (error) {
-    console.error("Failed to fetch Anthropic models:", error);
+    log.error("Failed to fetch Anthropic models:", error);
     throw error;
   }
 }

@@ -14,6 +14,7 @@ import { createAnthropicClient } from './anthropicClientFactory.js';
 import { convertToSDKFormatWithSystem } from './anthropicSDKConverter.js';
 import { addThinkingConfigurationWithBudget, createAnthropicReasoningSupport } from './anthropicReasoning.js';
 import { getMaxOutputTokens } from './anthropicModelConfig.js';
+import { log } from '../lib/logger.js';
 
 /**
  * Send non-streaming message to Anthropic API using SDK
@@ -35,7 +36,7 @@ export async function sendAnthropicMessageSDK(
     // Convert messages to SDK format
     const { messages: sdkMessages, system } = convertToSDKFormatWithSystem(messages);
 
-    console.log("Sending Anthropic SDK message request:", {
+    log.debug("Sending Anthropic SDK message request:", {
       model: config.model,
       messageCount: sdkMessages.length,
       hasSystem: !!system
@@ -66,7 +67,7 @@ export async function sendAnthropicMessageSDK(
       .map(block => (block as any).text) // Cast to any since SDK types may vary
       .join('');
 
-    console.log("Anthropic SDK response received:", {
+    log.debug("Anthropic SDK response received:", {
       model: response.model,
       textLength: responseText.length,
       usage: response.usage
@@ -84,7 +85,7 @@ export async function sendAnthropicMessageSDK(
     setHistory(updatedHistory, convId);
 
   } catch (error) {
-    console.error("Error in sendAnthropicMessageSDK:", error);
+    log.error("Error in sendAnthropicMessageSDK:", error);
 
     // Create user-friendly error message
     const errorMessage = error?.message || 'An error occurred while processing your request.';
@@ -111,19 +112,19 @@ export async function streamAnthropicMessageSDK(
   convId: number,
   config: { model: string }
 ): Promise<void> {
-  console.log('[DEBUG] streamAnthropicMessageSDK CALLED with model:', config.model);
+  log.debug('[DEBUG] streamAnthropicMessageSDK CALLED with model:', config.model);
 
   const apiKey = get(anthropicApiKey);
   if (!apiKey) {
-    console.error('[DEBUG] API key missing!');
+    log.error('[DEBUG] API key missing!');
     throw new Error("Anthropic API key is missing.");
   }
 
-  console.log('[DEBUG] API key present, continuing with stream setup');
+  log.debug('[DEBUG] API key present, continuing with stream setup');
   let currentHistory = get(conversations)[convId].history;
 
   // DEBUG: Log history state at stream start
-  console.log('[DEBUG] History at stream start:', {
+  log.debug('[DEBUG] History at stream start:', {
     historyLength: currentHistory.length,
     lastMessage: currentHistory[currentHistory.length - 1],
     userMessageCount: currentHistory.filter(m => m.role === 'user').length,
@@ -140,7 +141,7 @@ export async function streamAnthropicMessageSDK(
     // Convert messages to SDK format
     const { messages: sdkMessages, system } = convertToSDKFormatWithSystem(messages);
 
-    console.log("Starting Anthropic SDK stream:", {
+    log.debug("Starting Anthropic SDK stream:", {
       model: config.model,
       messageCount: sdkMessages.length,
       hasSystem: !!system
@@ -161,7 +162,7 @@ export async function streamAnthropicMessageSDK(
 
     // Add thinking configuration for reasoning models
     const configuredParams = addThinkingConfigurationWithBudget(requestParams);
-    console.log('[DEBUG] Request params after thinking config:', {
+    log.debug('[DEBUG] Request params after thinking config:', {
       model: configuredParams.model,
       hasThinking: !!configuredParams.thinking,
       thinkingConfig: configuredParams.thinking
@@ -169,13 +170,13 @@ export async function streamAnthropicMessageSDK(
 
     // Get the actual conversation ID (not the index)
     const actualConvId = get(conversations)[convId]?.id;
-    console.log('[DEBUG] Conversation index:', convId, '→ Actual ID:', actualConvId);
+    log.debug('[DEBUG] Conversation index:', convId, '→ Actual ID:', actualConvId);
 
     // Calculate anchorIndex: position in history array where user message was added
     // ReasoningInline is rendered after each user message at that history index
     // This matches how OpenAI does it: currentHistory.length - 1
     const anchorIndex = currentHistory.length - 1;
-    console.log('[DEBUG] Anchor index (last message position):', anchorIndex);
+    log.debug('[DEBUG] Anchor index (last message position):', anchorIndex);
 
     // Create reasoning support for this conversation with anchorIndex
     const reasoningSupport = createAnthropicReasoningSupport({
@@ -183,21 +184,21 @@ export async function streamAnthropicMessageSDK(
       model: config.model,
       anchorIndex: anchorIndex
     });
-    console.log('[DEBUG] Reasoning support created for conversation ID:', actualConvId, 'anchorIndex:', anchorIndex);
+    log.debug('[DEBUG] Reasoning support created for conversation ID:', actualConvId, 'anchorIndex:', anchorIndex);
 
     // Create stream using SDK with configured parameters
-    console.log('[DEBUG] Creating Anthropic SDK stream with params:', {
+    log.debug('[DEBUG] Creating Anthropic SDK stream with params:', {
       model: configuredParams.model,
       hasThinking: !!configuredParams.thinking,
       thinkingBudget: configuredParams.thinking?.budget_tokens
     });
     const stream = client.messages.stream(configuredParams);
 
-    console.log('[DEBUG] SDK stream created, registering event handlers');
+    log.debug('[DEBUG] SDK stream created, registering event handlers');
 
     // Handle streaming events
     stream.on('text', (text) => {
-      console.log('[DEBUG] text event fired, length:', text.length);
+      log.debug('[DEBUG] text event fired, length:', text.length);
     });
 
     // Track if reasoning has started
@@ -205,12 +206,12 @@ export async function streamAnthropicMessageSDK(
 
     // Listen for thinking event (correct SDK event name)
     stream.on('thinking', (thinkingDelta, _thinkingSnapshot) => {
-      console.log('[DEBUG] thinking event fired!');
-      console.log('Anthropic reasoning delta:', thinkingDelta);
+      log.debug('[DEBUG] thinking event fired!');
+      log.debug('Anthropic reasoning delta:', thinkingDelta);
 
       // Start reasoning on first thinking event
       if (!reasoningStarted) {
-        console.log('Starting Anthropic reasoning block');
+        log.debug('Starting Anthropic reasoning block');
         reasoningSupport.startReasoning();
         reasoningStarted = true;
       }
@@ -222,28 +223,28 @@ export async function streamAnthropicMessageSDK(
 
     // Also add signature handler for thinking verification
     stream.on('signature', (signature) => {
-      console.log('[DEBUG] signature event fired');
-      console.log('Anthropic reasoning signature:', signature);
+      log.debug('[DEBUG] signature event fired');
+      log.debug('Anthropic reasoning signature:', signature);
       // Optional: Store signature for verification if needed
     });
 
     // Listen for contentBlock to detect when thinking completes
     stream.on('contentBlock', (block) => {
-      console.log('[DEBUG] contentBlock event fired, type:', block.type);
+      log.debug('[DEBUG] contentBlock event fired, type:', block.type);
 
       // When we get a text content block, thinking must be complete
       if (block.type === 'text' && reasoningStarted) {
-        console.log('Anthropic reasoning block completed (text block started)');
+        log.debug('Anthropic reasoning block completed (text block started)');
         reasoningSupport.completeReasoning();
       }
     });
 
     stream.on('error', (error) => {
-      console.error("Anthropic SDK stream error:", error);
+      log.error("Anthropic SDK stream error:", error);
       throw error;
     });
 
-    console.log('[DEBUG] All event handlers registered');
+    log.debug('[DEBUG] All event handlers registered');
 
     // Wait for stream to complete
     const finalMessage = await stream.finalMessage();
@@ -254,7 +255,7 @@ export async function streamAnthropicMessageSDK(
       .map(block => (block as any).text)
       .join('');
 
-    console.log("Anthropic SDK stream completed:", {
+    log.debug("Anthropic SDK stream completed:", {
       model: finalMessage.model,
       textLength: responseText.length,
       usage: finalMessage.usage
@@ -269,7 +270,7 @@ export async function streamAnthropicMessageSDK(
 
     const freshHistory = get(conversations)[convId].history;
     const updatedHistory = [...freshHistory, assistantMessage];
-    console.log('[DEBUG] Final history update:', {
+    log.debug('[DEBUG] Final history update:', {
       convId,
       originalSnapshotLength: currentHistory.length,
       freshHistoryLength: freshHistory.length,
@@ -282,7 +283,7 @@ export async function streamAnthropicMessageSDK(
     setHistory(updatedHistory, convId);
 
   } catch (error) {
-    console.error("Error in streamAnthropicMessageSDK:", error);
+    log.error("Error in streamAnthropicMessageSDK:", error);
 
     // Create user-friendly error message
     const errorMessage = error?.message || 'An error occurred while processing your request.';

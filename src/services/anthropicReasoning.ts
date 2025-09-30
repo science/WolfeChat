@@ -15,6 +15,7 @@ import {
   supportsReasoning as modelSupportsReasoning,
   getThinkingBudget as getModelThinkingBudget
 } from './anthropicModelConfig.js';
+import { log } from '../lib/logger.js';
 
 /**
  * Check if a Claude model supports reasoning/extended thinking
@@ -84,7 +85,7 @@ export class AnthropicReasoningSupport {
    */
   startReasoning(): void {
     if (!supportsAnthropicReasoning(this.model)) {
-      console.warn('Model does not support reasoning:', this.model);
+      log.warn('Model does not support reasoning:', this.model);
       return;
     }
 
@@ -96,7 +97,7 @@ export class AnthropicReasoningSupport {
     // Create reasoning panel
     this.panelId = startReasoningPanel('text', this.convId, this.windowId);
 
-    console.log('Started Anthropic reasoning session:', {
+    log.debug('Started Anthropic reasoning session:', {
       convId: this.convId,
       model: this.model,
       windowId: this.windowId,
@@ -111,7 +112,7 @@ export class AnthropicReasoningSupport {
    */
   updateReasoning(text: string): void {
     if (!this.panelId) {
-      console.warn('No active reasoning panel to update');
+      log.warn('No active reasoning panel to update');
       return;
     }
 
@@ -124,13 +125,13 @@ export class AnthropicReasoningSupport {
    */
   completeReasoning(): void {
     if (!this.panelId) {
-      console.warn('No active reasoning panel to complete');
+      log.warn('No active reasoning panel to complete');
       return;
     }
 
     completeReasoningPanel(this.panelId);
 
-    console.log('Completed Anthropic reasoning session:', {
+    log.debug('Completed Anthropic reasoning session:', {
       convId: this.convId,
       panelId: this.panelId
     });

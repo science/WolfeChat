@@ -154,6 +154,38 @@ The app expects an OpenAI API key to be configured in Settings. It supports:
 
 SSE streaming is handled via fetch with proper abort controller management for safe stream termination.
 
+### Logging Architecture
+
+**Browser Console Logging** - The application uses a tree-shaking logger to eliminate debug logs from production builds:
+
+- **Logger Module** (`src/lib/logger.ts`): Centralized logging utility that uses `import.meta.env.DEV` for automatic dead-code elimination
+  - `log.debug()` - Development/test only, stripped from production builds
+  - `log.info()` - Development/test only, stripped from production builds
+  - `log.warn()` - Always included in builds
+  - `log.error()` - Always included in builds
+
+**Usage Pattern:**
+```typescript
+import { log } from '../lib/logger.js';
+
+// Debug logs (stripped in production)
+log.debug('Starting API request:', { model, messageCount });
+log.info('Configuration loaded successfully');
+
+// Production logs (always included)
+log.warn('Rate limit approaching threshold');
+log.error('API request failed:', error);
+```
+
+**Build-Time Tree-Shaking:** Vite automatically removes `log.debug()` and `log.info()` calls during production builds, resulting in zero runtime overhead. The logger checks `import.meta.env.DEV` which Vite statically evaluates during bundling.
+
+**E2E Test Logging:** For E2E tests, set `VITE_E2E_TEST=true` environment variable to enable debug logs in the browser context. E2E test runner code uses the separate `debugLog()` system from `tests-e2e/debug-utils.ts` controlled by `DEBUG_E2E` environment variable.
+
+**Migration from console.log:** All production service code should use the logger instead of direct `console.*` calls. This has been implemented in:
+- All service files (`src/services/`)
+- Manager modules (`src/managers/`)
+- Main entry point (`src/main.ts`)
+
 ## Important Notes
 
 - Always preserve exact indentation when editing files

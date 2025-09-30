@@ -30,6 +30,7 @@ import { onSendVisionMessageComplete } from "../managers/imageManager.js";
 import { countTicks } from "../utils/generalUtils.js";
 import { saveAudioBlob, getAudioBlob } from "../idb.js";
 import { debugLog } from "../utils/debugLayerLogger.js";
+import { log } from '../lib/logger.js';
 
 // Type definitions for legacy OpenAI SDK compatibility
 type ChatCompletionRequestMessage = ChatMessage;
@@ -67,7 +68,7 @@ export function closeStream() {
       ctrl.abort();
     }
   } catch (e) {
-    console.warn('closeStream abort failed:', e);
+    log.warn('closeStream abort failed:', e);
   } finally {
     globalAbortController = null;
     isStreaming.set(false);
@@ -92,13 +93,13 @@ const errorMessage: ChatMessage[] = [
 // Legacy functions removed - using Responses API only
 
 export function isConfigured(): boolean {
-  console.log("Checking if OpenAI API is configured.");
+  log.debug("Checking if OpenAI API is configured.");
   return get(openaiApiKey) !== null;
 }
 
 export function reloadConfig(): void {
   // No-op: using direct fetch calls now 
-  console.log("Configuration reloaded.");
+  log.debug("Configuration reloaded.");
 }
 
 export async function sendRequest(msg: ChatCompletionRequestMessage[], model: string = get(selectedModel), opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }): Promise<any> {
@@ -139,7 +140,7 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
 
     return data;
   } catch (error) {
-    console.error("Error in sendRequest:", error);
+    log.error("Error in sendRequest:", error);
     configuration = null;
 
     // Get the current conversation history and ID to preserve existing messages
@@ -156,14 +157,14 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
 function parseJSONChunks(rawData) {
   try {
     // First, let's log the raw data to see what we're getting
-    console.log('Raw SSE data:', rawData);
+    log.debug('Raw SSE data:', rawData);
     
     // Handle the case where data might be a single JSON object
     if (rawData.trim().startsWith('{') && rawData.trim().endsWith('}')) {
       try {
         return [JSON.parse(rawData)];
       } catch (e) {
-        console.error('Failed to parse single JSON object:', e);
+        log.error('Failed to parse single JSON object:', e);
       }
     }
     
@@ -176,7 +177,7 @@ function parseJSONChunks(rawData) {
         try {
           return JSON.parse(chunk);
         } catch (e) {
-          console.error('Failed to parse JSON chunk:', chunk, e);
+          log.error('Failed to parse JSON chunk:', chunk, e);
           return null;
         }
       }).filter(Boolean);
@@ -187,18 +188,18 @@ function parseJSONChunks(rawData) {
       const parsed = JSON.parse(rawData);
       return [parsed];
     } catch (e) {
-      console.error('Failed to parse raw data as JSON:', e);
+      log.error('Failed to parse raw data as JSON:', e);
       return [];
     }
   } catch (error) {
-    console.error("Error parsing JSON chunk:", error);
-    console.error("Raw data was:", rawData);
+    log.error("Error parsing JSON chunk:", error);
+    log.error("Raw data was:", rawData);
     return [];
   }
 }
 
 export async function sendTTSMessage(text: string, model: string, voice: string, conversationId: number) {
-  console.log("Sending TTS message.");
+  log.debug("Sending TTS message.");
 
   const payload = {
     model: model,
@@ -222,29 +223,29 @@ export async function sendTTSMessage(text: string, model: string, voice: string,
     const uniqueID = `audio-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
 saveAudioBlob(uniqueID, blob).then(() => {
-console.log('Audio blob saved to IndexedDB with ID:', uniqueID);
-}).catch(console.error);
+log.debug('Audio blob saved to IndexedDB with ID:', uniqueID);
+}).catch(log.error);
 
 getAudioBlob(uniqueID).then(blob => {  
-console.log(uniqueID); // Check the object
-console.log(blob); // Check the object
+log.debug(uniqueID);
+log.debug(blob);
 if (blob instanceof Blob) {
   if (blob) {
 const audioUrl = URL.createObjectURL(blob);
 displayAudioMessage(audioUrl);
 } else {
-console.error('Blob is null or undefined');
+log.error('Blob is null or undefined');
 }
 
 } else {
-  console.error('Retrieved object is not a Blob:', blob);
+  log.error('Retrieved object is not a Blob:', blob);
 }
-}).catch(error => console.error('Error retrieving audio blob:', error));
+}).catch(error => log.error('Error retrieving audio blob:', error));
 
 
 
   } catch (error) {
-    console.error("TTS request error:", error);
+    log.error("TTS request error:", error);
   }
 
 }
@@ -255,7 +256,7 @@ export async function sendVisionMessage(
   convId: number,
   config: { model: string; reasoningEffort?: string; verbosity?: string; summary?: string }
 ) {
-  console.log("Sending vision message.");
+  log.debug("Sending vision message.");
   userRequestedStreamClosure.set(false);
 
   let tickCounter = 0;
@@ -384,7 +385,7 @@ export async function sendVisionMessage(
     );
   } catch (error) {
     // Handle errors from streamResponseViaResponsesAPI itself
-    console.error("Error in sendVisionMessage:", error);
+    log.error("Error in sendVisionMessage:", error);
     appendErrorToHistory(error, currentHistory, convId);
     onSendVisionMessageComplete();
   } finally {
@@ -569,7 +570,7 @@ export async function sendVisionMessage(
     );
   } catch (error) {
     // Handle errors from streamResponseViaResponsesAPI itself
-    console.error("Error in sendRegularMessage:", error);
+    log.error("Error in sendRegularMessage:", error);
     appendErrorToHistory(error, currentHistory, conversationIndex);
   } finally {
     isStreaming.set(false);
@@ -625,7 +626,7 @@ export async function sendVisionMessage(
       }], convId);
   
     } catch (error) {
-      console.error("Error generating image:", error);
+      log.error("Error generating image:", error);
       hasEncounteredError = true;
     } finally {
       isStreaming.set(false);  // Notify that the image generation is complete
@@ -847,7 +848,7 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
 
     // Defensive check: ensure res is a proper Response object
     if (!res || typeof res.json !== 'function') {
-      console.warn('Title generation: Invalid response object received from fetch');
+      log.warn('Title generation: Invalid response object received from fetch');
       return;
     }
 
@@ -872,7 +873,7 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
       return copy;
     });
   } catch (err) {
-    console.warn('Title generation failed:', err);
+    log.warn('Title generation failed:', err);
   }
 }
 
@@ -941,7 +942,7 @@ export async function streamResponseViaResponsesAPI(
   try {
     const win = typeof window !== 'undefined' ? (window as any) : null;
     const sessionId = win?.__SSE_DEBUG_SESSION;
-    console.log('[SSE-DEBUG-CHECK] Session ID:', sessionId, 'Available:', !!win?.__SSE_LOGS?.[sessionId]);
+    log.debug('[SSE-DEBUG-CHECK] Session ID:', sessionId, 'Available:', !!win?.__SSE_LOGS?.[sessionId]);
     if (sessionId && win.__SSE_LOGS?.[sessionId]) {
       apiCallLog = {
         callId: `call-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -965,10 +966,10 @@ export async function streamResponseViaResponsesAPI(
         }
       };
       win.__SSE_LOGS[sessionId].apiCalls.push(apiCallLog);
-      console.log(`[SSE-DEBUG] Started logging API call: ${apiCallLog.callId}`);
+      log.debug(`[SSE-DEBUG] Started logging API call: ${apiCallLog.callId}`);
     }
   } catch (e) {
-    console.warn('[SSE-DEBUG] Failed to set up logging:', e);
+    log.warn('[SSE-DEBUG] Failed to set up logging:', e);
   }
 
   let completedEmitted = false;
@@ -1039,7 +1040,7 @@ export async function streamResponseViaResponsesAPI(
         error: String(e)
       }, convIdCtx);
 
-      console.warn('[SSE] Failed to parse SSE JSON block', { blockSnippet: (dataStr || '').slice(0, 200), error: String(e) });
+      log.warn('[SSE] Failed to parse SSE JSON block', { blockSnippet: (dataStr || '').slice(0, 200), error: String(e) });
       callbacks?.onError?.(new Error(`Failed to parse SSE data JSON: ${e}`));
       // Also emit synthetic completion to avoid hangs
       if (!completedEmitted) {
@@ -1217,11 +1218,11 @@ export async function streamResponseViaResponsesAPI(
       completedEmitted = true;
       if (responseWindowId) collapseReasoningWindow(responseWindowId);
     } else if (resolvedType === 'error') {
-      console.warn('[SSE] error event received from stream', obj);
+      log.warn('[SSE] error event received from stream', obj);
       callbacks?.onError?.(obj);
       if (!completedEmitted) {
         // Emit synthetic completion to unblock waits
-        console.warn('[SSE] emitting synthetic completion after error');
+        log.warn('[SSE] emitting synthetic completion after error');
         // Finalize panels
         for (const [k, panelId] of panelTracker.entries()) {
           completeReasoningPanel(panelId);
@@ -1275,7 +1276,7 @@ export async function streamResponseViaResponsesAPI(
 
   // If the stream ended without explicit completion, emit a synthetic completion
   if (!completedEmitted) {
-    console.warn('[SSE] Stream ended without response.completed or [DONE]. Emitting synthetic completion.', {
+    log.warn('[SSE] Stream ended without response.completed or [DONE]. Emitting synthetic completion.', {
       model: resolvedModel,
       payloadShape: Object.keys(payload || {}),
       partialFinalTextLen: finalText.length

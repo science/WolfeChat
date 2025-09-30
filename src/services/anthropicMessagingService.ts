@@ -8,6 +8,7 @@ import {
   setHistory
 } from "../managers/conversationManager.js";
 import { sendAnthropicMessageSDK, streamAnthropicMessageSDK } from "./anthropicSDKMessaging.js";
+import { log } from '../lib/logger.js';
 
 // Feature flag to control SDK vs fetch implementation
 const USE_ANTHROPIC_SDK = true;
@@ -90,7 +91,7 @@ export function closeAnthropicStream() {
       ctrl.abort();
     }
   } catch (e) {
-    console.warn('closeAnthropicStream abort failed:', e);
+    log.warn('closeAnthropicStream abort failed:', e);
   } finally {
     globalAnthropicAbortController = null;
     isAnthropicStreaming.set(false);
@@ -105,7 +106,7 @@ export async function sendAnthropicMessage(
 ): Promise<void> {
   // Use SDK implementation if feature flag is enabled
   if (USE_ANTHROPIC_SDK) {
-    console.log("Using Anthropic SDK for non-streaming message");
+    log.debug("Using Anthropic SDK for non-streaming message");
     return sendAnthropicMessageSDK(messages, convId, config);
   }
 
@@ -133,7 +134,7 @@ export async function sendAnthropicMessage(
       (requestBody as any).system = systemMessage;
     }
 
-    console.log("Sending Anthropic message request (fetch):", { model: config.model, messageCount: anthropicMessages.length });
+    log.debug("Sending Anthropic message request (fetch):", { model: config.model, messageCount: anthropicMessages.length });
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -148,7 +149,7 @@ export async function sendAnthropicMessage(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Anthropic API error:', response.status, errorText);
+      log.error('Anthropic API error:', response.status, errorText);
 
       if (response.status === 401) {
         throw new Error("Invalid Anthropic API key");
@@ -167,7 +168,7 @@ export async function sendAnthropicMessage(
       .map(block => block.text)
       .join('');
 
-    console.log("Anthropic response received (fetch):", {
+    log.debug("Anthropic response received (fetch):", {
       model: data.model,
       textLength: responseText.length,
       usage: data.usage
@@ -184,7 +185,7 @@ export async function sendAnthropicMessage(
     setHistory(updatedHistory, convId);
 
   } catch (error) {
-    console.error("Error in sendAnthropicMessage (fetch):", error);
+    log.error("Error in sendAnthropicMessage (fetch):", error);
     appendAnthropicErrorToHistory(error, currentHistory, convId);
     throw error;
   }
@@ -198,7 +199,7 @@ export async function streamAnthropicMessage(
 ): Promise<void> {
   // Use SDK implementation if feature flag is enabled
   if (USE_ANTHROPIC_SDK) {
-    console.log("Using Anthropic SDK for streaming message");
+    log.debug("Using Anthropic SDK for streaming message");
     isAnthropicStreaming.set(true);
     userRequestedAnthropicStreamClosure.set(false);
 
@@ -246,7 +247,7 @@ export async function streamAnthropicMessage(
       (requestBody as any).system = systemMessage;
     }
 
-    console.log("Starting Anthropic stream:", { model: config.model, messageCount: anthropicMessages.length });
+    log.debug("Starting Anthropic stream:", { model: config.model, messageCount: anthropicMessages.length });
 
     const controller = new AbortController();
     globalAnthropicAbortController = controller;
@@ -305,7 +306,7 @@ export async function streamAnthropicMessage(
 
         // Check if user requested stream closure
         if (get(userRequestedAnthropicStreamClosure)) {
-          console.log('User requested stream closure');
+          log.debug('User requested stream closure');
           streamInterrupted = true;
           break;
         }
@@ -321,7 +322,7 @@ export async function streamAnthropicMessage(
             const data = line.slice(6);
 
             if (data === '[DONE]') {
-              console.log('Anthropic stream completed');
+              log.debug('Anthropic stream completed');
               break;
             }
 
@@ -343,7 +344,7 @@ export async function streamAnthropicMessage(
               }
 
             } catch (parseError) {
-              console.warn('Failed to parse Anthropic SSE event:', parseError, data);
+              log.warn('Failed to parse Anthropic SSE event:', parseError, data);
               // Continue processing other events
             }
           }
@@ -354,7 +355,7 @@ export async function streamAnthropicMessage(
       updateHistoryBatched(true);
 
     } catch (streamError) {
-      console.warn('Streaming interrupted:', streamError);
+      log.warn('Streaming interrupted:', streamError);
       streamInterrupted = true;
 
       // If we have accumulated text, save it as a partial response
@@ -376,14 +377,14 @@ export async function streamAnthropicMessage(
       // Save final message if we have content and stream was interrupted
       if (streamInterrupted && finalMessage && finalMessage.content.trim()) {
         setHistory([...currentHistory, finalMessage], convId);
-        console.log("Saved partial response due to stream interruption:", finalMessage.content.length, "characters");
+        log.debug("Saved partial response due to stream interruption:", finalMessage.content.length, "characters");
       }
 
-      console.log("Anthropic stream finished, final text length:", accumulatedText.length);
+      log.debug("Anthropic stream finished, final text length:", accumulatedText.length);
     }
 
   } catch (error) {
-    console.error("Error in streamAnthropicMessage:", error);
+    log.error("Error in streamAnthropicMessage:", error);
     isAnthropicStreaming.set(false);
     globalAnthropicAbortController = null;
     anthropicStreamContext.set({ streamText: '', convId: null });

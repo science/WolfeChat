@@ -7,6 +7,7 @@
 
 import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
 import type { ChatMessage } from '../stores/stores.js';
+import { log } from '../lib/logger.js';
 
 /**
  * Converts ChatMessage array to Anthropic SDK MessageParam format
@@ -108,7 +109,7 @@ export function validateSDKMessages(messages: MessageParam[]): void {
 
     // Warn about empty content as it can cause API errors
     if (msg.content.trim() === '') {
-      console.warn(`Message at index ${i} has empty content - this may cause API errors`);
+      log.warn(`Message at index ${i} has empty content - this may cause API errors`);
     }
   }
 }

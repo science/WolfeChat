@@ -8,6 +8,8 @@
  * thinking.budget_tokens to avoid 400 errors from the API.
  */
 
+import { log } from '../lib/logger.js';
+
 // Model configuration interface
 interface ModelConfig {
   maxOutputTokens: number;
@@ -82,7 +84,7 @@ export function getModelConfig(modelName: string): ModelConfig {
 
   // Default configuration for unknown models
   // Conservative defaults: small token limit, no reasoning
-  console.warn(`Unknown model: ${modelName}, using default configuration`);
+  log.warn(`Unknown model: ${modelName}, using default configuration`);
   return {
     maxOutputTokens: 4096,
     supportsReasoning: false,

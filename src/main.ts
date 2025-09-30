@@ -1,6 +1,7 @@
 import './app.css'
 import App from './App.svelte'
 import chatIcon from './assets/chat.svg';
+import { log } from './lib/logger.js';
 
 const app = new App({
   target: document.getElementById('app'),
@@ -18,7 +19,7 @@ window.addEventListener('load', () => {
   if (!testMode) return;
 
   const suite = params.get('suite') || 'browser-nonlive';
-  console.log('[testMode] activating; suite=', suite);
+  log.debug('[testMode] activating; suite=', suite);
 
   // Reduce motion to stabilize layout in tests
   const style = document.createElement('style');
@@ -27,59 +28,59 @@ window.addEventListener('load', () => {
 
   // Global error telemetry
   window.addEventListener('error', (e) => {
-    console.error('[testMode:onerror]', e.message, (e as any).error?.stack || '');
+    log.error('[testMode:onerror]', e.message, (e as any).error?.stack || '');
   });
   window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
-    console.error('[testMode:unhandledrejection]', (e.reason && (e.reason.message || String(e.reason))) || 'unknown', e.reason?.stack || '');
+    log.error('[testMode:unhandledrejection]', (e.reason && (e.reason.message || String(e.reason))) || 'unknown', e.reason?.stack || '');
   });
 
   // Dynamically import test modules for the chosen suite, guarded per-file to pinpoint failures
   try {
-    console.log('[testMode] importing test modules for suite:', suite);
+    log.debug('[testMode] importing test modules for suite:', suite);
     let mods: Record<string, () => Promise<unknown>> = {};
     if (suite === 'browser-nonlive') {
       mods = import.meta.glob('/src/tests/browser-nonlive/*.test.ts');
     } else if (suite === 'browser-live') {
       mods = import.meta.glob('/src/tests/browser-live/*.test.ts');
     } else {
-      console.error('[testMode] Unknown test suite:', suite);
+      log.error('[testMode] Unknown test suite:', suite);
     }
     let entries = Object.entries(mods);
     // Skip known-incompatible files for browser harness
     entries = entries.filter(([f]) => !f.includes('codeRendererStreaming.integration.test.ts'));
     const files = entries.map(([f]) => f);
-    console.log('[testMode] discovered test modules =', files);
+    log.debug('[testMode] discovered test modules =', files);
     let loaded = 0;
     for (const f of files) {
       try {
-        console.log('[testMode] loading module:', f);
+        log.debug('[testMode] loading module:', f);
         await mods[f]!();
         loaded++;
-        console.log('[testMode] loaded ok:', f);
+        log.debug('[testMode] loaded ok:', f);
       } catch (err) {
-        console.error('[testMode] failed to load module:', f, (err as any)?.message || String(err), (err as any)?.stack || '');
+        log.error('[testMode] failed to load module:', f, (err as any)?.message || String(err), (err as any)?.stack || '');
       }
     }
-    console.log('[testMode] total loaded modules =', loaded, 'of', files.length);
+    log.debug('[testMode] total loaded modules =', loaded, 'of', files.length);
   } catch (e) {
-    console.error('[testMode] Failed in glob/import loop', e);
+    log.error('[testMode] Failed in glob/import loop', e);
   }
 
   try {
-    console.log('[testMode] importing test harness...');
+    log.debug('[testMode] importing test harness...');
     const harness = await import('./tests/testHarness.js');
-    console.log('[testMode] harness loaded; exposing __wolfeRunTests');
+    log.debug('[testMode] harness loaded; exposing __wolfeRunTests');
     // Expose a stable API for Playwright
     // @ts-ignore
     (window as any).__wolfeRunTests = async () => {
       try {
-        console.log('[testMode] __wolfeRunTests invoked');
+        log.debug('[testMode] __wolfeRunTests invoked');
         const res = await harness.runAllTests();
-        console.log('[testMode] __wolfeRunTests finished; failed=', res.failed);
+        log.debug('[testMode] __wolfeRunTests finished; failed=', res.failed);
         // Normalize shape for Playwright check
         return { passed: res.failed === 0, ...res };
       } catch (err) {
-        console.error('[testMode] __wolfeRunTests error', err);
+        log.error('[testMode] __wolfeRunTests error', err);
         throw err;
       }
     };
@@ -93,10 +94,10 @@ window.addEventListener('load', () => {
         localStorage.setItem('api_key', key);
         const stores = await import('./stores/stores.js');
         if ((stores as any).apiKey) (stores as any).apiKey.set(key as any);
-        console.log('[testMode] api key set');
+        log.debug('[testMode] api key set');
         return true;
       } catch (e) {
-        console.error('[testMode] failed to set api key', e);
+        log.error('[testMode] failed to set api key', e);
         return false;
       }
     };
@@ -106,18 +107,18 @@ window.addEventListener('load', () => {
         const modelStore = await import('./stores/modelStore.js');
         if (typeof (modelStore as any).loadModels === 'function') {
           await (modelStore as any).loadModels();
-          console.log('[testMode] models preloaded');
+          log.debug('[testMode] models preloaded');
           return true;
         }
-        console.warn('[testMode] loadModels not available');
+        log.warn('[testMode] loadModels not available');
         return false;
       } catch (e) {
-        console.error('[testMode] preload models error', e);
+        log.error('[testMode] preload models error', e);
         return false;
       }
     };
   } catch (e) {
-    console.error('[testMode] Failed to initialize test harness', e);
+    log.error('[testMode] Failed to initialize test harness', e);
   }
 })();
 

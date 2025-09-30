@@ -10,6 +10,7 @@ import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sen
 import { streamAnthropicMessage } from "../services/anthropicMessagingService.js";
 import { isAnthropicModel } from "../services/anthropicService.js";
 import { debugLog } from "../utils/debugLayerLogger.js";
+import { log } from '../lib/logger.js';
 let streamText = "";
 
 
@@ -86,7 +87,7 @@ export function setHistory(msg: ChatCompletionRequestMessage[], convId: number =
             messageCount: msg?.length || 0
           });
 
-          console.error("Failed to update history", error);
+          log.error("Failed to update history", error);
           reject(error); // Propagate the error
       }
   });
@@ -229,7 +230,7 @@ export async function routeMessage(input: string, convId: string) {
         };
         const anthropicMessages = [systemMessage, ...outgoingMessage];
         const config = { model };
-        console.log(`Routing Claude model ${model} to Anthropic service`);
+        log.debug(`Routing Claude model ${model} to Anthropic service`);
         // For now, use streaming by default for Claude models
         await streamAnthropicMessage(anthropicMessages, conversationIndex, config);
       } else {
@@ -264,7 +265,7 @@ async function createTitle(currentInput: string, convId: number) {
         if (!clean) throw new Error('Sanitized title empty');
         setTitle(clean, convId);
     } catch (error) {
-        console.warn("Title generation: Invalid response structure", error);
+        log.warn("Title generation: Invalid response structure", error);
         setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''), convId);
     }
 }
@@ -287,7 +288,7 @@ export function countTokens(usage: { total_tokens: number }) {
       conv[get(chosenConversationId)].conversationTokens + usage.total_tokens;
     conversations.set(conv);
     combinedTokens.set(get(combinedTokens) + usage.total_tokens);
-    console.log("Counted tokens: " + usage.total_tokens);
+    log.debug("Counted tokens: " + usage.total_tokens);
   }
 
  
