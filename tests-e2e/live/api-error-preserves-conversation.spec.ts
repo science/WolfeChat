@@ -6,6 +6,7 @@ import {
   waitForAssistantDone,
   openSettings
 } from './helpers';
+import { debugInfo, debugWarn } from '../debug-utils';
 
 test.describe('API Error Handling', () => {
   test('Invalid API key preserves conversation history', async ({ page }) => {
@@ -19,8 +20,8 @@ test.describe('API Error Handling', () => {
 
     // Get the current conversation state
     const messagesBeforeError = await getVisibleMessages(page);
-    console.log(`Messages before error: ${messagesBeforeError.length}`);
-    console.log(`Message details:`, messagesBeforeError.map(m => `${m.role}: ${m.text.substring(0, 50)}...`));
+    debugInfo(`Messages before error: ${messagesBeforeError.length}`);
+    debugInfo(`Message details:`, { messages: messagesBeforeError.map(m => `${m.role}: ${m.text.substring(0, 50)}...`) });
 
     // Should have at least 2 messages (1 user + 1 assistant)
     expect(messagesBeforeError.length).toBeGreaterThanOrEqual(2);
@@ -58,8 +59,8 @@ test.describe('API Error Handling', () => {
 
     // Get messages after the error
     const messagesAfterError = await getVisibleMessages(page);
-    console.log(`Messages after error: ${messagesAfterError.length}`);
-    console.log(`All messages after error:`, messagesAfterError.map(m => `${m.role}: "${m.text}"`));
+    debugInfo(`Messages after error: ${messagesAfterError.length}`);
+    debugInfo(`All messages after error:`, { messages: messagesAfterError.map(m => `${m.role}: "${m.text}"`) });
 
     // Test the behavior based on whether the fix is in place
     const hasErrorMessage = messagesAfterError.some(msg =>
@@ -72,7 +73,7 @@ test.describe('API Error Handling', () => {
 
     if (hasErrorMessage) {
       // Fix is in place - verify proper error handling
-      console.log('✓ Fix is in place - testing proper error handling');
+      debugInfo('✓ Fix is in place - testing proper error handling');
 
       // Should have MORE messages than before (original + error message)
       expect(messagesAfterError.length).toBeGreaterThan(messagesBeforeError.length);
@@ -97,16 +98,16 @@ test.describe('API Error Handling', () => {
       // Should have an appropriate error message from assistant
       expect(hasErrorMessage).toBe(true);
 
-      console.log('✓ All error handling assertions passed - fix is working correctly');
+      debugInfo('✓ All error handling assertions passed - fix is working correctly');
 
     } else {
       // Fix is NOT in place - this demonstrates the bug
-      console.log('❌ Bug detected: No error message found in conversation');
+      debugWarn('❌ Bug detected: No error message found in conversation');
 
       // Without the fix, the conversation might be empty or missing messages
       // This proves the bug exists
-      console.log('Messages before error:', messagesBeforeError.length);
-      console.log('Messages after error:', messagesAfterError.length);
+      debugInfo('Messages before error:', { count: messagesBeforeError.length });
+      debugInfo('Messages after error:', { count: messagesAfterError.length });
 
       // This assertion will fail when the bug exists, proving the bug
       expect(hasErrorMessage).toBe(true); // This will fail, proving the bug exists
@@ -160,10 +161,10 @@ test.describe('API Error Handling', () => {
       );
       expect(hasWeatherMessage).toBe(true);
 
-      console.log('✓ Streaming error handled correctly - conversation preserved');
+      debugInfo('✓ Streaming error handled correctly - conversation preserved');
     } else {
       // Bug exists - streaming error caused conversation issues
-      console.log('❌ Streaming error handling bug detected');
+      debugWarn('❌ Streaming error handling bug detected');
 
       // This will fail when bug exists, demonstrating the issue
       expect(hasErrorInConversation).toBe(true);

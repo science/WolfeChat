@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { debugInfo } from './debug-utils';
 
 // Captures stack traces when the chat input textarea value is set/changed.
 // Helps identify where assistantRole text enters the field.
@@ -51,10 +52,10 @@ test('Trace: textarea value setter call sites', async ({ page }) => {
 
   // Read value and print gathered logs
   const val = await page.locator('textarea[placeholder="Type your message..."]').inputValue();
-  console.log('[trace] final textarea value:', JSON.stringify(val));
+  debugInfo('[trace] final textarea value:', { value: val });
 
   // Emit the captured logs to the test output
-  for (const l of logs) console.log(l);
+  for (const l of logs) debugInfo(l);
 
   // No assertion here; this test is for diagnostics. If desired, assert it does not include assistant role.
   // Example:

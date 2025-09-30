@@ -1,20 +1,18 @@
 import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI, operateQuickSettings, sendMessage, waitForStreamComplete } from './helpers';
+import { debugInfo, debugErr, debugWarn } from '../debug-utils';
 
 test.describe('Live: Quick Settings model dropdown recent models functionality', () => {
   test.setTimeout(120_000);
 
   test('initial state has no recent models, all models in main list', async ({ page }) => {
-    const hasKey = !!process.env.OPENAI_API_KEY;
-    test.skip(!hasKey, 'OPENAI_API_KEY env not set for live tests');
-
     const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
         const t = msg.text();
-        if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(t) || msg.type() === 'error') console.log(`[BROWSER-${msg.type()}] ${t}`);
+        if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(t) || msg.type() === 'error') debugInfo(`[BROWSER-${msg.type()}] ${t}`);
       });
-      page.on('pageerror', err => console.log('[BROWSER-PAGEERROR]', err.message));
+      page.on('pageerror', err => debugErr('[BROWSER-PAGEERROR]', { message: err.message }));
     }
 
     await page.goto('/');
@@ -63,23 +61,20 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
         const text = await availableOptions.nth(i).textContent();
         optionTexts.push(text);
       }
-      console.log('[TEST] Available models:', optionTexts);
+      debugInfo('[TEST] Available models:', { optionTexts });
     }
 
     await operateQuickSettings(page, { mode: 'ensure-closed' });
   });
 
   test('sending message with selected model adds it to recent models section', async ({ page }) => {
-    const hasKey = !!process.env.OPENAI_API_KEY;
-    test.skip(!hasKey, 'OPENAI_API_KEY env not set for live tests');
-
     const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
         const t = msg.text();
-        if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(t) || msg.type() === 'error') console.log(`[BROWSER-${msg.type()}] ${t}`);
+        if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(t) || msg.type() === 'error') debugInfo(`[BROWSER-${msg.type()}] ${t}`);
       });
-      page.on('pageerror', err => console.log('[BROWSER-PAGEERROR]', err.message));
+      page.on('pageerror', err => debugErr('[BROWSER-PAGEERROR]', { message: err.message }));
     }
 
     await page.goto('/');
@@ -98,7 +93,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
     // Get the currently selected model
     const modelSelect = page.locator('#current-model-select');
     const selectedModel = await modelSelect.inputValue();
-    if (DEBUG_LVL >= 2) console.log('[TEST] Selected model for test:', selectedModel);
+    if (DEBUG_LVL >= 2) debugInfo('[TEST] Selected model for test:', { selectedModel });
 
     await operateQuickSettings(page, { mode: 'ensure-closed' });
 
@@ -115,7 +110,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
     // Debug: Check localStorage for recent models
     if (DEBUG_LVL >= 2) {
       const recentModelsLS = await page.evaluate(() => localStorage.getItem('recent_models'));
-      console.log('[TEST] Recent models in localStorage:', recentModelsLS);
+      debugInfo('[TEST] Recent models in localStorage:', { recentModelsLS });
     }
 
     // Open Quick Settings again to verify recent models section
@@ -130,7 +125,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
         // Access the recentModelsStore if available
         return win.__recentModelsStoreValue || 'not available';
       });
-      console.log('[TEST] Recent models store state:', recentModelsState);
+      debugInfo('[TEST] Recent models store state:', { recentModelsState });
     }
 
     // Give the reactive stores time to update
@@ -141,12 +136,12 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
     const recentExists = await recentOptgroup.isVisible().catch(() => false);
     
     if (DEBUG_LVL >= 2) {
-      console.log('[TEST] Recent models optgroup visible:', recentExists);
+      debugInfo('[TEST] Recent models optgroup visible:', { recentExists });
       
       // Debug: Check all optgroups and their options
       const allOptgroups = modelSelect.locator('optgroup');
       const optgroupCount = await allOptgroups.count();
-      console.log('[TEST] Total optgroups:', optgroupCount);
+      debugInfo('[TEST] Total optgroups:', { optgroupCount });
       
       for (let i = 0; i < optgroupCount; i++) {
         const optgroup = allOptgroups.nth(i);
@@ -154,12 +149,12 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
         const visible = await optgroup.isVisible();
         const options = optgroup.locator('option');
         const optionCount = await options.count();
-        console.log(`[TEST] Optgroup ${i}: label="${label}", visible=${visible}, options=${optionCount}`);
+        debugInfo(`[TEST] Optgroup ${i}:`, { label, visible, optionCount });
         
         if (optionCount > 0) {
           for (let j = 0; j < Math.min(optionCount, 3); j++) {
             const optionText = await options.nth(j).textContent();
-            console.log(`[TEST]   Option ${j}: "${optionText}"`);
+            debugInfo(`[TEST]   Option ${j}:`, { optionText });
           }
         }
       }
@@ -167,7 +162,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
       // Also check direct select options
       const directOptions = modelSelect.locator('option');
       const directCount = await directOptions.count();
-      console.log('[TEST] Direct options in select:', directCount);
+      debugInfo('[TEST] Direct options in select:', { directCount });
     }
 
     // Since optgroups might not be "visible" in Playwright's sense but still functional,
@@ -186,7 +181,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
     expect(recentTexts).toContain(selectedModel);
 
     if (DEBUG_LVL >= 2) {
-      console.log('[TEST] Recent models after sending message:', recentTexts);
+      debugInfo('[TEST] Recent models after sending message:', { recentTexts });
     }
 
     // Verify the model is no longer in the "All models" section (or appears in both if app allows duplicates)
@@ -204,24 +199,21 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
     expect(allModelsTexts).not.toContain(selectedModel);
 
     if (DEBUG_LVL >= 2) {
-      console.log('[TEST] Remaining models in "All models" section:', allModelsTexts.slice(0, 5));
-      console.log('[TEST] ✅ Recent models functionality is working correctly!');
+      debugInfo('[TEST] Remaining models in "All models" section:', { models: allModelsTexts.slice(0, 5) });
+      debugInfo('[TEST] ✅ Recent models functionality is working correctly!');
     }
 
     await operateQuickSettings(page, { mode: 'ensure-closed' });
   });
 
   test('switching models and sending messages builds recent models list', async ({ page }) => {
-    const hasKey = !!process.env.OPENAI_API_KEY;
-    test.skip(!hasKey, 'OPENAI_API_KEY env not set for live tests');
-
     const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
         const t = msg.text();
-        if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(t) || msg.type() === 'error') console.log(`[BROWSER-${msg.type()}] ${t}`);
+        if (/\[TEST\]|\[DIAG\]|\[SSE\]/.test(t) || msg.type() === 'error') debugInfo(`[BROWSER-${msg.type()}] ${t}`);
       });
-      page.on('pageerror', err => console.log('[BROWSER-PAGEERROR]', err.message));
+      page.on('pageerror', err => debugErr('[BROWSER-PAGEERROR]', { message: err.message }));
     }
 
     await page.goto('/');
@@ -255,7 +247,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
         usedModels.push(currentModel);
       }
       
-      if (DEBUG_LVL >= 2) console.log('[TEST] Used model:', currentModel);
+      if (DEBUG_LVL >= 2) debugInfo('[TEST] Used model:', { currentModel });
       return currentModel;
     };
 
@@ -274,8 +266,8 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
     const foundDifferentModel = currentModel !== firstModel && /gpt-5-nano/i.test(currentModel);
     
     if (DEBUG_LVL >= 2) {
-      console.log('[TEST] Switched to model:', currentModel);
-      console.log('[TEST] Is different from first model:', foundDifferentModel);
+      debugInfo('[TEST] Switched to model:', { currentModel });
+      debugInfo('[TEST] Is different from first model:', { foundDifferentModel });
     }
     
     await operateQuickSettings(page, { mode: 'ensure-closed' });
@@ -308,13 +300,13 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
       }
       
       if (DEBUG_LVL >= 2) {
-        console.log('[TEST] Final recent models list:', recentTexts);
-        console.log('[TEST] Expected order: [gpt-5-nano, gpt-3.5-turbo]');
+        debugInfo('[TEST] Final recent models list:', { recentTexts });
+        debugInfo('[TEST] Expected order: [gpt-5-nano, gpt-3.5-turbo]');
       }
       
       await operateQuickSettings(page, { mode: 'ensure-closed' });
     } else {
-      console.log('[TEST] gpt-5-nano not available or same as first model, skipping two-model test');
+      debugInfo('[TEST] gpt-5-nano not available or same as first model, skipping two-model test');
       
       // Still verify the first model appears in recent list
       await operateQuickSettings(page, { mode: 'ensure-open' });

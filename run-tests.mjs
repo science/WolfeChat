@@ -96,14 +96,11 @@ global.Prism = {
 function seedTestStores() {
   // Seed model cache with reasoning-capable models
   const models = [
-    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
-    { id: 'gpt-4o', name: 'GPT-4o' },
-    { id: 'o1-mini', name: 'O1 Mini' },
-    { id: 'o1-preview', name: 'O1 Preview' },
-    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' }
+    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+    { id: 'gpt-5-nano', name: 'GPT-5 Nano' }
   ];
   localStorageMap.set('models', JSON.stringify(models));
-  localStorageMap.set('selectedModel', 'o1-mini'); // Use reasoning-capable model
+  localStorageMap.set('selectedModel', 'gpt-5-nano'); // Use reasoning-capable model
   
   // Seed reasoning settings with defaults
   localStorageMap.set('reasoning_effort', 'medium');
@@ -175,57 +172,72 @@ Object.defineProperty(HTMLElement.prototype, 'scrollTop', {
 });
 
 // Import test harness
-async function loadTestHarness(suite) {
+async function loadTestHarness(suite, singleFile = null) {
   try {
     // First compile the test harness and related files
     const { execSync } = await import('child_process');
-    
+
     // Compile TypeScript files to JavaScript - compile each test file separately
-    console.log(`Compiling ${suite} test files...`);
-    
+    if (singleFile) {
+      console.log(`Compiling single test file: ${singleFile}...`);
+    } else {
+      console.log(`Compiling ${suite} test files...`);
+    }
+
     // Clean build directory
     execSync(`rm -rf .test-build && mkdir -p .test-build`, { stdio: 'pipe' });
-    
-    // Determine which test files to compile based on suite
-    let patterns = [];
-    switch (suite) {
-      case 'unit':
-        patterns = [
-          'src/tests/unit/**/*.test.ts'
-        ];
-        break;
-      case 'browser-nonlive':
-        patterns = [
-          'src/tests/browser-nonlive/**/*.test.ts'
-        ];
-        break;
-      case 'live':
-        patterns = ['src/tests/live/**/*.test.ts'];
-        break;
-      case 'browser-live':
-        patterns = ['src/tests/browser-live/**/*.test.ts'];
-        break;
-      case 'all':
-        patterns = [
-          'src/tests/unit/**/*.test.ts',
-          'src/tests/browser-nonlive/**/*.test.ts',
-          'src/tests/live/**/*.test.ts',
-          'src/tests/browser-live/**/*.test.ts'
-        ];
-        break;
-      case 'nonapi': // Deprecated - kept for backward compatibility, maps to unit
-        console.log('Note: "nonapi" suite is deprecated. Use "unit" instead.');
-        patterns = [
-          'src/tests/unit/**/*.test.ts'
-        ];
-        break;
+
+    // If single file specified, use it directly; otherwise determine suite patterns
+    let testFiles = [];
+    if (singleFile) {
+      // Verify file exists
+      const fs = await import('fs');
+      if (!fs.existsSync(path.join(__dirname, singleFile))) {
+        throw new Error(`Test file not found: ${singleFile}`);
+      }
+      testFiles = [singleFile];
+    } else {
+      // Determine which test files to compile based on suite
+      let patterns = [];
+      switch (suite) {
+        case 'unit':
+          patterns = [
+            'src/tests/unit/**/*.test.ts'
+          ];
+          break;
+        case 'browser-nonlive':
+          patterns = [
+            'src/tests/browser-nonlive/**/*.test.ts'
+          ];
+          break;
+        case 'live':
+          patterns = ['src/tests/live/**/*.test.ts'];
+          break;
+        case 'browser-live':
+          patterns = ['src/tests/browser-live/**/*.test.ts'];
+          break;
+        case 'all':
+          patterns = [
+            'src/tests/unit/**/*.test.ts',
+            'src/tests/browser-nonlive/**/*.test.ts',
+            'src/tests/live/**/*.test.ts',
+            'src/tests/browser-live/**/*.test.ts'
+          ];
+          break;
+        case 'nonapi': // Deprecated - kept for backward compatibility, maps to unit
+          console.log('Note: "nonapi" suite is deprecated. Use "unit" instead.');
+          patterns = [
+            'src/tests/unit/**/*.test.ts'
+          ];
+          break;
+      }
+
+      testFiles = await fastGlob(patterns, {
+        cwd: __dirname,
+        absolute: false,
+        ignore: ['**/deleteAllBelowButton.test.ts'] // Skip tests that require full Svelte environment
+      });
     }
-    
-    const testFiles = await fastGlob(patterns, { 
-      cwd: __dirname, 
-      absolute: false,
-      ignore: ['**/deleteAllBelowButton.test.ts'] // Skip tests that require full Svelte environment
-    });
     
     // Create a single entry point that imports all test files
     const entryContent = [
@@ -286,7 +298,7 @@ async function loadAllTests(suite) {
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const opts = { tag: null, name: null, suite: 'unit' };
+  const opts = { tag: null, name: null, suite: 'unit', file: null };
   
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -294,6 +306,8 @@ function parseArgs() {
       opts.tag = args[++i];
     } else if ((arg === '-n' || arg === '--name') && args[i + 1]) {
       opts.name = args[++i];
+    } else if ((arg === '-f' || arg === '--file') && args[i + 1]) {
+      opts.file = args[++i];
     } else if ((arg === '-s' || arg === '--suite' || arg === '--group') && args[i + 1]) {
       const suiteArg = args[++i].toLowerCase();
       if (['unit', 'browser-nonlive', 'live', 'browser-live', 'all', 'nonapi'].includes(suiteArg)) {
@@ -306,6 +320,7 @@ function parseArgs() {
 Usage: node run-tests.mjs [options]
 
 Options:
+  -f, --file <path>    Run a single test file (e.g., src/tests/unit/my-test.test.ts)
   -s, --suite <name>   Run test suite: 'unit' (default), 'browser-nonlive', 'live', 'browser-live', or 'all'
   --group <name>       Alias for --suite
   --live               Shorthand for --suite live
@@ -321,10 +336,11 @@ Test Suites:
   nonapi           (Deprecated) Alias for 'unit'
 
 Examples:
-  node run-tests.mjs                    # Run unit tests (default)
-  node run-tests.mjs --suite live       # Run live/API tests
-  node run-tests.mjs --suite all        # Run all tests
-  node run-tests.mjs --tag keyboard     # Run tests tagged 'keyboard'
+  node run-tests.mjs                                              # Run unit tests (default)
+  node run-tests.mjs --file src/tests/unit/my-test.test.ts       # Run single test file
+  node run-tests.mjs --suite live                                 # Run live/API tests
+  node run-tests.mjs --suite all                                  # Run all tests
+  node run-tests.mjs --tag keyboard                               # Run tests tagged 'keyboard'
 `);
       process.exit(0);
     }
@@ -335,9 +351,9 @@ Examples:
 
 async function main() {
   try {
-    const { tag, name, suite } = parseArgs();
-    
-    const harness = await loadTestHarness(suite);
+    const { tag, name, suite, file } = parseArgs();
+
+    const harness = await loadTestHarness(suite, file);
     const { runAllTests, formatSuiteResultsText, clearTests } = harness;
     
     await loadAllTests(suite);

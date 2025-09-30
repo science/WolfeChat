@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { operateQuickSettings, bootstrapLiveAPI } from './helpers';
 
 // Utility to build a minimal SSE stream body the app can parse
 function sseBody(text: string) {
@@ -14,21 +15,10 @@ function sseBody(text: string) {
   ].join('\n');
 }
 
-// Seed localStorage before app scripts run
-async function seedLocalStorage(page: import('@playwright/test').Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('api_key', JSON.stringify('sk-test'));
-    localStorage.setItem('models', JSON.stringify([
-      { id: 'gpt-4.1' },
-      { id: 'gpt-5' }
-    ]));
-    localStorage.setItem('selectedModel', 'gpt-4.1');
-  });
-}
-
 test.describe('Model selection drives request payload.model', () => {
-  test('gpt-4.1 then gpt-5 reflected in payload.model', async ({ page }) => {
-    await seedLocalStorage(page);
+  test('gpt-3.5-turbo then gpt-5-nano reflected in payload.model', async ({ page }) => {
+    await page.goto('/');
+    await bootstrapLiveAPI(page, 'OpenAI');
 
     // Phase tracking for assertions per send
     let phase: 'first' | 'second' = 'first';
@@ -47,9 +37,9 @@ test.describe('Model selection drives request payload.model', () => {
       // For the main chat send we expect stream: true. Title generation uses stream: false.
       if (payload && payload.stream === true) {
         if (phase === 'first') {
-          expect(payload.model).toBe('gpt-4.1');
+          expect(payload.model).toMatch(/gpt-3\.5-turbo/);
         } else {
-          expect(payload.model).toBe('gpt-5');
+          expect(payload.model).toMatch(/gpt-5-nano/);
         }
         return route.fulfill({
           status: 200,
@@ -70,9 +60,7 @@ test.describe('Model selection drives request payload.model', () => {
       });
     });
 
-    await page.goto('/');
-
-    // Find the input and send a message
+    // Send first message (uses default model from bootstrap)
     const input = page.getByRole('textbox', { name: 'Chat input' });
     await input.waitFor({ state: 'visible' });
     await input.click();
@@ -93,39 +81,16 @@ test.describe('Model selection drives request payload.model', () => {
       ]);
     }
 
-    // Phase 2: Switch model to gpt-5
-    phase = 'second';
+    // Wait for response
+    await page.waitForTimeout(500);
 
-    // Change the selected model via UI if possible; otherwise set localStorage then reload
-    // First try a combobox/labeled select
-    // Open Quick Settings via semantic aria-controls and select model
-    const qsToggleByAria = page.locator('button[aria-controls="quick-settings-body"]');
-    if (await qsToggleByAria.isVisible().catch(() => false)) {
-      await qsToggleByAria.click();
-      const prodSelect = page.locator('#current-model-select');
-      if (await prodSelect.isVisible().catch(() => false)) {
-        await prodSelect.selectOption({ label: 'gpt-5' }).catch(async () => {
-          await prodSelect.click();
-          await page.getByRole('option', { name: /^gpt-5$/ }).click();
-        });
-      } else {
-        // Fallback: try role-based select inside the opened panel
-        const combo = page.getByRole('combobox', { name: /api model/i });
-        if (await combo.isVisible().catch(() => false)) {
-          await combo.selectOption({ label: 'gpt-5' }).catch(async () => {
-            await combo.click();
-            await page.getByRole('option', { name: /^gpt-5$/ }).click();
-          });
-        } else {
-          await page.evaluate(() => localStorage.setItem('selectedModel', 'gpt-5'));
-          await page.reload();
-        }
-      }
-    } else {
-      // As a last resort, use localStorage and reload
-      await page.evaluate(() => localStorage.setItem('selectedModel', 'gpt-5'));
-      await page.reload();
-    }
+    // Phase 2: Switch model to gpt-5-nano
+    phase = 'second';
+    await operateQuickSettings(page, {
+      mode: 'ensure-open',
+      model: 'gpt-5-nano',
+      closeAfter: true
+    });
 
     // Send again and assert second phase
     await input.waitFor({ state: 'visible' });

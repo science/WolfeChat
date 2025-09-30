@@ -1,7 +1,6 @@
 // appInit.ts
-import { initOpenAIApi } from "./services/openaiService.js";
 import { clearAllAudioBlobs } from './idb.js';
-import { apiKey, base64Images } from "./stores/stores.js";
+import { base64Images } from "./stores/stores.js";
 import { conversations, chosenConversationId, settingsVisible } from "./stores/stores.js";
 import { get, writable } from "svelte/store";
 
@@ -59,12 +58,7 @@ export async function initApp() {
     console.error('Failed to clear audio blobs:', error);
   }
   base64Images.set([]);
-  // Initialize OpenAI service with API key from store
-  apiKey.subscribe((value) => {
-    if (value) {
-      initOpenAIApi();
-    }
-  });
+  // No initialization needed - using direct fetch calls
 
   // Additional initialization logic can go here
 }

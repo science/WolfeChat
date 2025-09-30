@@ -19,6 +19,9 @@ export const helpVisible = writable(false)
 export const debugVisible = writable(false)
 export const menuVisible = writable(false)
 
+// Import provider store
+import { currentApiKey } from './providerStore.js';
+
 let storedApiKey = localStorage.getItem("api_key")
 let parsedApiKey = storedApiKey !== null ? JSON.parse(storedApiKey) : null;
 
@@ -41,9 +44,12 @@ try {
 
 const initialApiKey: string | null = parsedApiKey ?? envApiKey ?? null;
 
+// Keep legacy apiKey for backward compatibility, but use currentApiKey from provider store
 export const apiKey:Writable<string|null> = writable(initialApiKey)
-// Persist to localStorage so downstream code keeps reading from the same source
 apiKey.subscribe((value) => localStorage.setItem("api_key", JSON.stringify(value)));
+
+// Re-export currentApiKey from provider store for easy access
+export { currentApiKey };
 
 let storedCombinedTokens = localStorage.getItem('combined_tokens');
 let parsedCombinedTokens: number = storedCombinedTokens !== null ? JSON.parse(storedCombinedTokens) : 0;
@@ -53,7 +59,7 @@ combinedTokens.subscribe((value) => localStorage.setItem("combined_tokens", JSON
 let storedDefaultAssistantRole = localStorage.getItem('default_assistant_role');
 let parsedDefaultAssistantRole: DefaultAssistantRole = storedDefaultAssistantRole !== null ? JSON.parse(storedDefaultAssistantRole) : 0;
 export const defaultAssistantRole = writable(parsedDefaultAssistantRole || {
-    role: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
+    role: "Don't provide compliments or enthusiastic comments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
     type: "system",
   });
 defaultAssistantRole.subscribe((value) => localStorage.setItem("default_assistant_role", JSON.stringify(value)));
@@ -109,7 +115,7 @@ export const conversations: Writable<Conversation[]> = writable(parsedConversati
     id: generateConversationId(),
     history: [],
     conversationTokens: 0,
-    assistantRole: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
+    assistantRole: "Don't provide compliments or enthusiastic comments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
     title: "",
   }]);
 
@@ -169,7 +175,7 @@ export function createNewConversation(): Conversation {
     id: generateConversationId(),
     history: [],
     conversationTokens: 0,
-    assistantRole: "Don't provide compliments or enthusiastic compliments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
+    assistantRole: "Don't provide compliments or enthusiastic comments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
     title: "",
   };
 }

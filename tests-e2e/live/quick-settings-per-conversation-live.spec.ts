@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI, operateQuickSettings } from './helpers';
+import { debugInfo, debugErr } from '../debug-utils';
 
 test.setTimeout(45_000);
 
@@ -8,9 +9,9 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   if (DEBUG_LVL >= 2) {
     page.on('console', msg => {
       const t = msg.text();
-      if (/[\[TEST\]]|\[DIAG\]|\[SSE\]/.test(t) || msg.type() === 'error') console.log(`[BROWSER-${msg.type()}] ${t}`);
+      if (/[\[TEST\]]|\[DIAG\]|\[SSE\]/.test(t) || msg.type() === 'error') debugInfo(`[BROWSER-${msg.type()}] ${t}`);
     });
-    page.on('pageerror', err => console.log('[BROWSER-PAGEERROR]', err.message));
+    page.on('pageerror', err => debugErr('[BROWSER-PAGEERROR]', { message: err.message }));
   }
   if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL);
 

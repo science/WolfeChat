@@ -70,7 +70,7 @@
    let conv = $conversations.filter((value, index) => index !== i);
    console.log("Updated conversations list after deletion attempt:", conv);
    if (deleted?.id) {
-     drafts.deleteDraft(deleted.id);
+     draftsStore.deleteDraft(deleted.id);
      try { (window as any).conversationQuickSettings?.deleteSettings?.(deleted.id); } catch {}
    }
  
@@ -191,10 +191,10 @@ let editingTitleId = null;
               {#if editingTitleId === $conversations.length - i - 1}
               <input type="text" class="edit-input" bind:value={editedTitle} on:blur={() => saveEditedTitle($conversations.length - i - 1)} on:keydown={(e) => {if (e.key === 'Enter') {saveEditedTitle($conversations.length - i - 1); e.preventDefault();}}}/>
               {:else}
-              <p class="text-left text-sm flex-grow title-text {$showTokens ? '' : ''}">
+              <p class="text-left text-sm flex-grow title-text {$showTokens ? '' : ''}" title={conv.title === "" ? "New conversation" : conv.title}>
                 {conv.title === "" ? "New conversation" : conv.title}
               </p>
-              
+
               {/if}
 
 

@@ -161,6 +161,30 @@ function clearFiles() {
       newChat();
     }
 
+    // DEBUG: Expose stores on window for E2E testing
+    if (typeof window !== 'undefined') {
+      const { modelsStore } = await import('./stores/modelStore.js');
+      const { openaiApiKey, anthropicApiKey, selectedProvider } = await import('./stores/providerStore.js');
+      const { selectedModel, selectedMode } = await import('./stores/stores.js');
+      const { get } = await import('svelte/store');
+      const { createResponseViaResponsesAPI, streamResponseViaResponsesAPI, supportsReasoning } = await import('./services/openaiService.js');
+      const { bindToCallbacks } = await import('./tests/helpers/TestSSEEvents.js');
+
+      window.stores = {
+        modelsStore,
+        openaiApiKey,
+        anthropicApiKey,
+        selectedProvider,
+        selectedModel,
+        selectedMode
+      };
+      window.get = get;
+      window.createResponseViaResponsesAPI = createResponseViaResponsesAPI;
+      window.streamResponseViaResponsesAPI = streamResponseViaResponsesAPI;
+      window.supportsReasoning = supportsReasoning;
+      window.bindToCallbacks = bindToCallbacks;
+    }
+
     // Attach scroll memory to chat container and initialize for current conversation
     if (chatContainer) {
       scrollMem.attach(chatContainer);
@@ -221,12 +245,17 @@ function autoExpand(event) {
   }
 
   function processMessage() {
-    let convId = $chosenConversationId;
+    let convIndex = $chosenConversationId;
+    let convId = $conversations[convIndex]?.id;
+    if (!convId) {
+      console.error('No conversation selected');
+      return;
+    }
     routeMessage(input, convId);
-    input = ""; 
+    input = "";
     // Clear the draft since message was sent
-    if ($conversations[convId]) {
-      draftsStore.setDraft($conversations[convId].id, "");
+    if ($conversations[convIndex]) {
+      draftsStore.setDraft($conversations[convIndex].id, "");
     }
     clearFiles ();
     textAreaElement.style.height = '96px'; // Reset the height after sending
@@ -285,7 +314,12 @@ function startEditMessage(i: number) {
       deleteMessageFromConversation($conversations[$chosenConversationId].history.length - 1);
     }
     // Process the edited message as new input
-    let convId = $chosenConversationId;
+    let convIndex = $chosenConversationId;
+    let convId = $conversations[convIndex]?.id;
+    if (!convId) {
+      console.error('No conversation selected');
+      return;
+    }
     routeMessage(editedContent, convId);
     cancelEdit(); // Reset editing state
   }

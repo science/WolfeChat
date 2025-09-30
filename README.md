@@ -1,4 +1,6 @@
-# WolfeChat - a ChatGPT API Enhanced UI
+# WolfeChat - a Multi-Provider Chat UI
+
+WolfeChat supports both OpenAI and Anthropic AI providers, giving you access to GPT and Claude models in a single interface.
 
 ## Build notes
 
@@ -25,7 +27,7 @@ The project includes a comprehensive test suite with both unit tests and end-to-
 
 **E2E Tests** (Playwright browser tests):
 - `tests-e2e/nonlive/` - Browser tests that don't require external APIs
-- `tests-e2e/live/` - Browser tests that require OpenAI API (set `OPENAI_API_KEY` env var)
+- `tests-e2e/live/` - Browser tests that require OpenAI and/or Anthropic APIs (set `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` env vars)
 
 ### Running Tests
 
@@ -52,7 +54,7 @@ npx playwright test tests-e2e
 # Run non-live E2E tests (no API key needed)
 npx playwright test tests-e2e/nonlive
 
-# Run live E2E tests (requires OPENAI_API_KEY)
+# Run live E2E tests (requires OPENAI_API_KEY and/or ANTHROPIC_API_KEY)
 npx playwright test tests-e2e/live
 
 # Run specific test file
@@ -73,6 +75,32 @@ See [CLI_TESTING.md](CLI_TESTING.md) for detailed testing documentation.
 WolfeChat is a fork and continuation of prior excellent open-source work. Special thanks to patrikzudel for the original [PatrikZeros-ChatGPT-API-UI](https://github.com/patrikzudel/PatrikZeros-ChatGPT-API-UI), and to agambon for the improvements in [SmoothGPT](https://github.com/agambon/SmoothGPT) that led to this project. This repository adapts and extends that lineage for WolfeChat while acknowledging all prior authors and licensing.
 
 This project evolves the UI/UX, features, and codebase organization to fit WolfeChat’s goals while remaining grateful to the projects it builds upon.
+
+## Multi-Provider Support
+
+WolfeChat now supports both OpenAI and Anthropic AI providers:
+
+**Supported Providers:**
+- **OpenAI**: GPT models, vision capabilities, reasoning models (o1), TTS, DALL-E
+- **Anthropic**: Claude models with vision support
+
+**Key Features:**
+- Configure separate API keys for each provider in Settings
+- Automatic provider switching based on selected model
+- Combined model lists when both providers are configured
+- Provider-specific validation and error handling
+- Seamless switching between GPT and Claude models in conversations
+
+**Setup:**
+1. Go to Settings
+2. Select your preferred provider (OpenAI or Anthropic)
+3. Enter the corresponding API key
+4. Optionally configure both providers for access to all models
+
+## Security
+
+**Anthropic API Browser Access:**
+This application uses the `anthropic-dangerous-direct-browser-access: true` header for direct browser communication with Anthropic's API. This implementation has been reviewed and approved by internal security teams and is authorized as secure for this specific use case. The header is required for browser-based applications to access Anthropic's API directly.
 
 ## APP IMPROVEMENTS:
 

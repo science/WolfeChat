@@ -1,15 +1,15 @@
 import { get, writable } from 'svelte/store';
 // ChatCompletions SDK removed; using fetch-based Responses API only
 import type { ChatMessage } from "../stores/stores.js";
-import { 
-  apiKey, 
-  conversations, 
-  chosenConversationId, 
-  selectedModel, 
+import {
+  conversations,
+  chosenConversationId,
+  selectedModel,
   selectedSize,
   selectedQuality,
   defaultAssistantRole
 } from "../stores/stores.js";
+import { openaiApiKey } from "../stores/providerStore.js";
 import { reasoningEffort, verbosity, summary } from "../stores/reasoningSettings.js";
 import {
   createReasoningWindow,
@@ -29,6 +29,7 @@ import {
 import { onSendVisionMessageComplete } from "../managers/imageManager.js";
 import { countTicks } from "../utils/generalUtils.js";
 import { saveAudioBlob, getAudioBlob } from "../idb.js";
+import { debugLog } from "../utils/debugLayerLogger.js";
 
 // Type definitions for legacy OpenAI SDK compatibility
 type ChatCompletionRequestMessage = ChatMessage;
@@ -88,49 +89,15 @@ const errorMessage: ChatMessage[] = [
   },
 ];
 
-// Deprecated: ChatCompletions SDK initialization removed
-export function initOpenAIApi(): void {
-  const key = get(apiKey);
-  if (key) {
-    configuration = { apiKey: key };
-    openai = { configured: true };
-    console.log("OpenAI API initialized.");
-  } else {
-    console.warn("API key is not set. Please set the API key before initializing.");
-  }
-}
-
-export function getOpenAIApi(): OpenAIApi {
-  if (!openai) {
-    throw new Error("OpenAI API is not initialized. Please call initOpenAIApi with your API key first.");
-  }
-  console.log("OpenAI API retrieved.");
-  return openai;
-}
-
-export async function createChatCompletion(model: string, messages: ChatCompletionRequestMessage[]): Promise<any> {
-  const openaiClient = getOpenAIApi();
-  console.log("Sending chat completion request...");
-  try {
-    const response = await openaiClient.createChatCompletion({
-      model: model,
-      messages: messages,
-    });
-    console.log("Chat completion response received.");
-    return response;
-  } catch (error) {
-    console.error("Error in createChatCompletion:", error);
-    throw error; // Rethrow to handle it in the caller function
-  }
-}
+// Legacy functions removed - using Responses API only
 
 export function isConfigured(): boolean {
   console.log("Checking if OpenAI API is configured.");
-  return configuration !== null && get(apiKey) !== null;
+  return get(openaiApiKey) !== null;
 }
 
 export function reloadConfig(): void {
-  initOpenAIApi(); 
+  // No-op: using direct fetch calls now 
   console.log("Configuration reloaded.");
 }
 
@@ -144,7 +111,7 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
       ...msg,
     ];
 
-    const key = get(apiKey);
+    const key = get(openaiApiKey);
   const liveSelected = get(selectedModel);
   const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
     const input = buildResponsesInputFromMessages(msg);
@@ -176,7 +143,7 @@ export async function sendRequest(msg: ChatCompletionRequestMessage[], model: st
     configuration = null;
 
     // Get the current conversation history and ID to preserve existing messages
-    const currentHistory = get(conversations)[get(chosenConversationId)]?.messages || [];
+    const currentHistory = get(conversations)[get(chosenConversationId)]?.history || [];
     const convId = get(chosenConversationId);
 
     // Append error to existing history instead of replacing it
@@ -324,12 +291,28 @@ export async function sendVisionMessage(
       resolvedModel,
       {
         onTextDelta: (text) => {
+          debugLog.messageAssembly('vision_text_delta_received', {
+            deltaText: text,
+            deltaLength: text.length,
+            currentStreamLength: streamText.length,
+            convId,
+            resolvedModel
+          }, conversationUniqueId);
+
           const msgTicks = countTicks(text);
           tickCounter += msgTicks;
           if (msgTicks === 0) tickCounter = 0;
           if (tickCounter === 3) { ticks = !ticks; tickCounter = 0; }
           streamText += text;
           streamContext.set({ streamText, convId });
+
+          debugLog.messageAssembly('vision_assistant_message_creating', {
+            messageContent: streamText + "█" + (ticks ? "\n```" : ""),
+            contentLength: streamText.length,
+            convId,
+            historyLength: currentHistory.length
+          }, conversationUniqueId);
+
           setHistory(
             [
               ...currentHistory,
@@ -341,12 +324,34 @@ export async function sendVisionMessage(
             ],
             convId
           );
+
+          debugLog.messageAssembly('vision_setHistory_called_streaming', {
+            convId,
+            newHistoryLength: currentHistory.length + 1,
+            assistantContent: streamText + "█" + (ticks ? "\n```" : ""),
+            model: resolvedModel
+          }, conversationUniqueId);
         },
         onCompleted: async () => {
+          debugLog.messageAssembly('vision_stream_completed', {
+            streamText,
+            convId,
+            userRequestedClosure: get(userRequestedStreamClosure)
+          }, conversationUniqueId);
+
           if (get(userRequestedStreamClosure)) {
             streamText = streamText.replace(/█+$/, '');
             userRequestedStreamClosure.set(false);
           }
+
+          debugLog.messageAssembly('vision_final_assistant_message_creating', {
+            finalContent: streamText,
+            contentLength: streamText.length,
+            convId,
+            historyLength: currentHistory.length,
+            model: resolvedModel
+          }, conversationUniqueId);
+
           await setHistory(
             [
               ...currentHistory,
@@ -354,6 +359,14 @@ export async function sendVisionMessage(
             ],
             convId
           );
+
+          debugLog.messageAssembly('vision_setHistory_called_final', {
+            convId,
+            newHistoryLength: currentHistory.length + 1,
+            finalContent: streamText,
+            model: resolvedModel
+          }, conversationUniqueId);
+
           estimateTokens(msg, convId);
           streamText = "";
           isStreaming.set(false);
@@ -381,20 +394,47 @@ export async function sendVisionMessage(
 
   export async function sendRegularMessage(
   msg: ChatCompletionRequestMessage[],
-  convId: any,
+  convId: string,
   config: { model: string; reasoningEffort?: string; verbosity?: string; summary?: string }
 ) {
   userRequestedStreamClosure.set(false);
   let tickCounter = 0;
   let ticks = false;
-  let currentHistory = get(conversations)[convId].history;
+
+  // Find conversation by string ID instead of using numeric index
+  const allConversations = get(conversations);
+
+  debugLog.messageAssembly('conversation_lookup_start', {
+    convId,
+    totalConversations: allConversations.length,
+    conversationIds: allConversations.map(c => c.id)
+  }, convId);
+
+  const conversationIndex = allConversations.findIndex(c => c.id === convId);
+  if (conversationIndex === -1) {
+    debugLog.messageAssembly('conversation_lookup_failed', {
+      convId,
+      availableIds: allConversations.map(c => c.id)
+    }, convId);
+    throw new Error(`Conversation with ID ${convId} not found`);
+  }
+
+  debugLog.messageAssembly('conversation_lookup_success', {
+    convId,
+    conversationIndex,
+    conversationTitle: allConversations[conversationIndex].title
+  }, convId);
+
+  const conversation = allConversations[conversationIndex];
+
+  let currentHistory = conversation.history;
   const anchorIndex = currentHistory.length - 1;
-  // Get the conversation's unique string ID for reasoning window tracking
-  const conversationUniqueId = get(conversations)[convId]?.id;
-  
+  // The conversation's unique string ID is now the convId parameter
+  const conversationUniqueId = convId;
+
   let roleMsg: ChatCompletionRequestMessage = {
     role: get(defaultAssistantRole).type as ChatCompletionRequestMessageRoleEnum,
-    content: get(conversations)[convId].assistantRole,
+    content: conversation.assistantRole,
   };
   
   msg = [roleMsg, ...msg];
@@ -426,6 +466,14 @@ export async function sendVisionMessage(
       resolvedModel,
       {
         onTextDelta: (text) => {
+          debugLog.messageAssembly('text_delta_received', {
+            deltaText: text,
+            deltaLength: text.length,
+            currentStreamLength: streamText.length,
+            conversationIndex,
+            resolvedModel
+          }, conversationUniqueId);
+
           const msgTicks = countTicks(text);
           tickCounter += msgTicks;
           if (msgTicks === 0) tickCounter = 0;
@@ -435,6 +483,14 @@ export async function sendVisionMessage(
           }
           streamText += text;
           streamContext.set({ streamText, convId });
+
+          debugLog.messageAssembly('assistant_message_creating', {
+            messageContent: streamText + "█" + (ticks ? "\n```" : ""),
+            contentLength: streamText.length,
+            conversationIndex,
+            historyLength: currentHistory.length
+          }, conversationUniqueId);
+
           setHistory(
             [
               ...currentHistory,
@@ -444,14 +500,37 @@ export async function sendVisionMessage(
                 model: resolvedModel,
               },
             ],
-            convId
+            conversationIndex
           );
+
+          debugLog.messageAssembly('setHistory_called_streaming', {
+            conversationIndex,
+            newHistoryLength: currentHistory.length + 1,
+            assistantContent: streamText + "█" + (ticks ? "\n```" : ""),
+            model: resolvedModel
+          }, conversationUniqueId);
         },
         onCompleted: async (_finalText) => {
+          debugLog.messageAssembly('stream_completed', {
+            finalText: _finalText,
+            streamText,
+            conversationIndex,
+            userRequestedClosure: get(userRequestedStreamClosure)
+          }, conversationUniqueId);
+
           if (get(userRequestedStreamClosure)) {
             streamText = streamText.replace(/█+$/, '');
             userRequestedStreamClosure.set(false);
           }
+
+          debugLog.messageAssembly('final_assistant_message_creating', {
+            finalContent: streamText,
+            contentLength: streamText.length,
+            conversationIndex,
+            historyLength: currentHistory.length,
+            model: resolvedModel
+          }, conversationUniqueId);
+
           await setHistory(
             [
               ...currentHistory,
@@ -461,18 +540,26 @@ export async function sendVisionMessage(
                 model: resolvedModel,
               },
             ],
-            convId
+            conversationIndex
           );
-          estimateTokens(msg, convId);
+
+          debugLog.messageAssembly('setHistory_called_final', {
+            conversationIndex,
+            newHistoryLength: currentHistory.length + 1,
+            finalContent: streamText,
+            model: resolvedModel
+          }, conversationUniqueId);
+
+          estimateTokens(msg, conversationIndex);
 
           // Trigger title generation for brand-new conversations
-          await maybeUpdateTitleAfterFirstMessage(convId, lastUserPromptText, streamText);
+          await maybeUpdateTitleAfterFirstMessage(conversationIndex, lastUserPromptText, streamText);
 
           streamText = "";
           isStreaming.set(false);
         },
         onError: (err) => {
-          appendErrorToHistory(err, currentHistory, convId);
+          appendErrorToHistory(err, currentHistory, conversationIndex);
           isStreaming.set(false);
         },
       },
@@ -483,7 +570,7 @@ export async function sendVisionMessage(
   } catch (error) {
     // Handle errors from streamResponseViaResponsesAPI itself
     console.error("Error in sendRegularMessage:", error);
-    appendErrorToHistory(error, currentHistory, convId);
+    appendErrorToHistory(error, currentHistory, conversationIndex);
   } finally {
     isStreaming.set(false);
   }
@@ -513,7 +600,7 @@ export async function sendVisionMessage(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${get(apiKey)}`,
+          Authorization: `Bearer ${get(openaiApiKey)}`
         },
         body: JSON.stringify({
           model: get(selectedModel),
@@ -549,18 +636,18 @@ export async function sendVisionMessage(
 function getDefaultResponsesModel() {
   const m = get(selectedModel);
   // If no model is set, or it's an old/incompatible model, use gpt-5-nano as default for tests
-  // This includes o1-mini which is not compatible with Responses API
-  if (!m || /gpt-3\.5|gpt-4(\.|$)|o1-mini/.test(m)) {
+  // This includes older models which are not compatible with Responses API
+  if (!m || /gpt-3\.5|gpt-4(\.|$)/.test(m)) {
     // Use gpt-5-nano as the default for better test compatibility
     return 'gpt-5-nano';
   }
   return m;
 }
 
- // Only certain models (e.g., gpt-5, o3, o4 family or explicit reasoning models) support "reasoning".
+ // Only certain models (e.g., gpt-5, o1, o3, o4 family or explicit reasoning models) support "reasoning".
 export function supportsReasoning(model: string): boolean {
   const m = (model || '').toLowerCase();
-  return m.includes('gpt-5') || m.includes('o3') || m.includes('o4') || m.includes('reason');
+  return m.includes('gpt-5') || m.includes('o1-') || m.includes('o3') || m.includes('o4') || m.includes('reason');
 }
 
 /**
@@ -644,7 +731,7 @@ export function buildResponsesInputFromMessages(messages: ChatCompletionRequestM
 }
 
 export async function createResponseViaResponsesAPI(prompt: string, model?: string, opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }) {
-  const key = get(apiKey);
+  const key = get(openaiApiKey);
   if (!key) throw new Error('No API key configured');
 
   const liveSelected = get(selectedModel);
@@ -745,10 +832,10 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
 
     const msgs: any[] = asst ? [sys, user, asst] : [sys, user];
     const input = buildResponsesInputFromMessages(msgs);
-    const model = 'gpt-4o-mini';
+    const model = 'gpt-3.5-turbo';
     const payload = buildResponsesPayload(model, input, false);
 
-    const key = get(apiKey);
+    const key = get(openaiApiKey);
     const res = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -757,6 +844,12 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
       },
       body: JSON.stringify(payload)
     });
+
+    // Defensive check: ensure res is a proper Response object
+    if (!res || typeof res.json !== 'function') {
+      console.warn('Title generation: Invalid response object received from fetch');
+      return;
+    }
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
@@ -803,7 +896,7 @@ export async function streamResponseViaResponsesAPI(
   uiContext?: { convId?: string; anchorIndex?: number },
   opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }
 ): Promise<string> {
-  const key = get(apiKey);
+  const key = get(openaiApiKey);
   if (!key) throw new Error('No API key configured');
 
   const liveSelected = get(selectedModel);
@@ -840,14 +933,60 @@ export async function streamResponseViaResponsesAPI(
   const convIdCtx = uiContext?.convId;
   const anchorIndexCtx = uiContext?.anchorIndex;
 
-  // One reasoning window per API Response (only for reasoning-capable models)
-  const responseWindowId: string | null = supportsReasoning(resolvedModel)
-    ? createReasoningWindow(convIdCtx, resolvedModel, anchorIndexCtx)
-    : null;
+  // Lazy reasoning window creation - only create when reasoning events arrive
+  let responseWindowId: string | null = null;
+
+  // Set up structured SSE logging if debug session is active
+  let apiCallLog: any = null;
+  try {
+    const win = typeof window !== 'undefined' ? (window as any) : null;
+    const sessionId = win?.__SSE_DEBUG_SESSION;
+    console.log('[SSE-DEBUG-CHECK] Session ID:', sessionId, 'Available:', !!win?.__SSE_LOGS?.[sessionId]);
+    if (sessionId && win.__SSE_LOGS?.[sessionId]) {
+      apiCallLog = {
+        callId: `call-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        timestamp: new Date().toISOString(),
+        request: {
+          url: 'https://api.openai.com/v1/responses',
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }, // Sanitized headers
+          body: payload
+        },
+        response: {
+          status: res.status,
+          headers: { 'content-type': res.headers.get('content-type') || '' },
+          streamEvents: [],
+          summary: {
+            totalChunks: 0,
+            reasoningEvents: 0,
+            outputEvents: 0,
+            parseErrors: 0
+          }
+        }
+      };
+      win.__SSE_LOGS[sessionId].apiCalls.push(apiCallLog);
+      console.log(`[SSE-DEBUG] Started logging API call: ${apiCallLog.callId}`);
+    }
+  } catch (e) {
+    console.warn('[SSE-DEBUG] Failed to set up logging:', e);
+  }
 
   let completedEmitted = false;
 
+  // Helper function to ensure reasoning window is created when first reasoning event arrives
+  function ensureReasoningWindow(): string | null {
+    if (!responseWindowId && supportsReasoning(resolvedModel)) {
+      responseWindowId = createReasoningWindow(convIdCtx, resolvedModel, anchorIndexCtx);
+    }
+    return responseWindowId;
+  }
+
   function processSSEBlock(block: string) {
+    debugLog.sseParser('sse_block_received', {
+      blockLength: block.length,
+      blockSnippet: block.slice(0, 100)
+    }, convIdCtx);
+
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
     let eventType = 'message';
     const dataLines: string[] = [];
@@ -859,10 +998,18 @@ export async function streamResponseViaResponsesAPI(
         dataLines.push(line.slice('data:'.length).trim());
       }
     }
-    if (dataLines.length === 0) return;
+    if (dataLines.length === 0) {
+      debugLog.sseParser('sse_block_empty_data', { eventType }, convIdCtx);
+      return;
+    }
 
     const dataStr = dataLines.join('\n');
     if (dataStr === '[DONE]') {
+      debugLog.sseParser('sse_stream_done', {
+        finalTextLength: finalText.length,
+        activePanels: panelTracker.size
+      }, convIdCtx);
+
       // Finalize any still-open reasoning panels
       for (const [kind, panelId] of panelTracker.entries()) {
         completeReasoningPanel(panelId);
@@ -879,7 +1026,19 @@ export async function streamResponseViaResponsesAPI(
     let obj: any = null;
     try {
       obj = JSON.parse(dataStr);
+      debugLog.sseParser('sse_json_parsed', {
+        eventType,
+        hasId: !!obj?.id,
+        hasChoices: !!obj?.choices,
+        objType: obj?.type
+      }, convIdCtx);
     } catch (e) {
+      debugLog.sseParser('sse_json_parse_error', {
+        eventType,
+        dataSnippet: dataStr.slice(0, 100),
+        error: String(e)
+      }, convIdCtx);
+
       console.warn('[SSE] Failed to parse SSE JSON block', { blockSnippet: (dataStr || '').slice(0, 200), error: String(e) });
       callbacks?.onError?.(new Error(`Failed to parse SSE data JSON: ${e}`));
       // Also emit synthetic completion to avoid hangs
@@ -900,20 +1059,57 @@ export async function streamResponseViaResponsesAPI(
     // Prefer explicit SSE event name; if missing, fall back to payload.type
     const resolvedType = eventType !== 'message' ? eventType : (obj?.type || 'message');
 
+    debugLog.sseParser('sse_event_resolved', {
+      rawEventType: eventType,
+      resolvedType,
+      hasData: !!obj
+    }, convIdCtx);
+
     callbacks?.onEvent?.({ type: resolvedType, data: obj });
     // Log every SSE type compactly for the collapsible UI (not reused as prompt input)
     logSSEEvent(resolvedType, obj, convIdCtx);
 
+    // Log parsed event if SSE debugging is active
+    if (apiCallLog && apiCallLog.response.streamEvents.length > 0) {
+      // Find the most recent event that doesn't have parsed data yet
+      for (let i = apiCallLog.response.streamEvents.length - 1; i >= 0; i--) {
+        const eventLog = apiCallLog.response.streamEvents[i];
+        if (eventLog.parsed === null && eventLog.rawChunk.includes('data:')) {
+          eventLog.parsed = { type: resolvedType, data: obj };
+
+          // Track event types
+          if (resolvedType.includes('reasoning')) {
+            apiCallLog.response.summary.reasoningEvents++;
+          } else if (resolvedType.includes('output_text')) {
+            apiCallLog.response.summary.outputEvents++;
+          }
+          break;
+        }
+      }
+    }
+
     // Handle reasoning-related events
-    if (resolvedType === 'response.reasoning_summary_part.added' || 
-        resolvedType === 'response.reasoning_summary_text.delta' || 
+    if (resolvedType === 'response.reasoning_summary_part.added' ||
+        resolvedType === 'response.reasoning_summary_text.delta' ||
         resolvedType === 'response.reasoning_summary.delta') {
       const delta = obj?.delta ?? '';
       if (!panelTracker.has('summary')) {
-        const panelId = startReasoningPanel('summary', convIdCtx, responseWindowId || undefined);
+        // Create reasoning window lazily on first reasoning event
+        const windowId = ensureReasoningWindow();
+        const panelId = startReasoningPanel('summary', convIdCtx, windowId || undefined);
         panelTracker.set('summary', panelId);
         panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('summary', obj?.part);
+
+        // Mark that reasoning store received this event
+        if (apiCallLog) {
+          const recentEvent = apiCallLog.response.streamEvents.find((e: any) =>
+            e.parsed?.type === resolvedType && !e.reasoningStoreReceived
+          );
+          if (recentEvent) {
+            recentEvent.reasoningStoreReceived = true;
+          }
+        }
       }
       if (typeof delta === 'string' && delta) {
         const panelId = panelTracker.get('summary')!;
@@ -939,14 +1135,26 @@ export async function streamResponseViaResponsesAPI(
         panelTracker.delete('summary');
         panelTextTracker.delete(panelId);
       }
-    } else if (resolvedType === 'response.reasoning_text.delta' || 
+    } else if (resolvedType === 'response.reasoning_text.delta' ||
                resolvedType === 'response.reasoning.delta') {
       const delta = obj?.delta ?? '';
       if (!panelTracker.has('text')) {
-        const panelId = startReasoningPanel('text', convIdCtx, responseWindowId || undefined);
+        // Create reasoning window lazily on first reasoning event
+        const windowId = ensureReasoningWindow();
+        const panelId = startReasoningPanel('text', convIdCtx, windowId || undefined);
         panelTracker.set('text', panelId);
         panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('text');
+
+        // Mark that reasoning store received this event
+        if (apiCallLog) {
+          const recentEvent = apiCallLog.response.streamEvents.find((e: any) =>
+            e.parsed?.type === resolvedType && !e.reasoningStoreReceived
+          );
+          if (recentEvent) {
+            recentEvent.reasoningStoreReceived = true;
+          }
+        }
       }
       if (typeof delta === 'string' && delta) {
         const panelId = panelTracker.get('text')!;
@@ -965,7 +1173,9 @@ export async function streamResponseViaResponsesAPI(
       
       // Only create a new panel if we don't have one AND we have text to show
       if (!panelId && text) {
-        panelId = startReasoningPanel('text', convIdCtx, responseWindowId || undefined);
+        // Create reasoning window lazily on first reasoning event
+        const windowId = ensureReasoningWindow();
+        panelId = startReasoningPanel('text', convIdCtx, windowId || undefined);
         panelTracker.set('text', panelId);
         panelTextTracker.set(panelId, '');
         callbacks?.onReasoningStart?.('text');
@@ -1028,8 +1238,31 @@ export async function streamResponseViaResponsesAPI(
 
   while (true) {
     const { value, done } = await reader.read();
-    if (done) break;
+    if (done) {
+      debugLog.sseParser('stream_reader_done', {
+        totalChunksProcessed: buffer.length
+      }, convIdCtx);
+      break;
+    }
     const decoded = decoder.decode(value, { stream: true });
+
+    debugLog.sseParser('raw_chunk_received', {
+      chunkLength: decoded.length,
+      chunkSnippet: decoded.slice(0, 50)
+    }, convIdCtx);
+
+    // Log raw chunk if SSE debugging is active
+    if (apiCallLog) {
+      apiCallLog.response.summary.totalChunks++;
+      const eventLog = {
+        timestamp: new Date().toISOString(),
+        rawChunk: decoded,
+        parsed: null,
+        reasoningStoreReceived: false
+      };
+      apiCallLog.response.streamEvents.push(eventLog);
+    }
+
     buffer += decoded;
 
     const parts = buffer.split('\n\n');

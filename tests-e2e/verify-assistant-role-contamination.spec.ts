@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { debugInfo } from './debug-utils';
 
 // Verifies whether textarea starts with assistant role text instead of empty
 test('Verify: textarea starts with assistant role text instead of empty', async ({ page }) => {
@@ -9,9 +10,9 @@ test('Verify: textarea starts with assistant role text instead of empty', async 
   await expect(textarea).toBeVisible();
 
   const initialValue = await textarea.inputValue();
-  console.log('Initial textarea value:', JSON.stringify(initialValue));
-  console.log('Is empty?:', initialValue === '');
-  console.log('Contains assistant role?:', initialValue.includes("Don't provide compliments"));
+  debugInfo('Initial textarea value:', { value: JSON.stringify(initialValue) });
+  debugInfo('Is empty?:', { isEmpty: initialValue === '' });
+  debugInfo('Contains assistant role?:', { containsAssistantRole: initialValue.includes("Don't provide compliments") });
 
   // Expected behavior: should be empty
   await expect(textarea).toHaveValue('');
