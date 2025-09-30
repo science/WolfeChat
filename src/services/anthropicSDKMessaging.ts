@@ -124,6 +124,7 @@ export async function streamAnthropicMessageSDK(
 
   // Buffer for batching history updates
   let accumulatedText = '';
+  let accumulatedReasoningText = '';
   let lastHistoryUpdate = Date.now();
   const historyUpdateInterval = 100; // Update history every 100ms max
 
@@ -227,7 +228,9 @@ export async function streamAnthropicMessageSDK(
         reasoningStarted = true;
       }
 
-      reasoningSupport.updateReasoning(thinkingDelta || '');
+      // Accumulate reasoning text and pass full accumulated text
+      accumulatedReasoningText += (thinkingDelta || '');
+      reasoningSupport.updateReasoning(accumulatedReasoningText);
     });
 
     // Also add signature handler for thinking verification
