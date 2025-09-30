@@ -182,6 +182,10 @@ export async function routeMessage(input: string, convId: string) {
 
     let currentHistory = conversation.history;
     let messageHistory = currentHistory;
+
+    // Check if we need to create a title BEFORE sending message (when history is still original length)
+    const needsTitle = currentHistory.length === 0 || conversation.title === '';
+
     currentHistory = [...currentHistory, { role: "user", content: input }];
     setHistory(currentHistory, conversationIndex);
 
@@ -192,7 +196,7 @@ export async function routeMessage(input: string, convId: string) {
     const perConv = conversationQuickSettings.getSettings(convUniqueId);
     const model = perConv.model || get(selectedModel) || defaultModel;
     const voice = get(selectedVoice) || defaultVoice;
-    
+
     // Add the effective model to recent models
     addRecentModel(model);
 
@@ -201,6 +205,11 @@ export async function routeMessage(input: string, convId: string) {
         ...messageHistory,
         { role: "user", content: input },
       ];
+
+    // Fire title generation async BEFORE main message if needed
+    if (needsTitle) {
+        createTitle(input, conversationIndex);
+    }
 
     if (model.includes('tts')) {
         // The model string contains 'tts', proceed with TTS message handling
@@ -222,21 +231,16 @@ export async function routeMessage(input: string, convId: string) {
         const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };
         await sendRegularMessage(outgoingMessage, convId, config);
       }
-    // Check if we need to create a title (first message or empty title)
-    const updatedConversation = get(conversations)[conversationIndex];
-    if (updatedConversation.history.length === 1 || updatedConversation.title === '') {
-        await createTitle(input);
-    }
 }
 
-function setTitle(title: string) {
+function setTitle(title: string, convId: number) {
     let conv = get(conversations);
-    conv[get(chosenConversationId)].title = title;
+    conv[convId].title = title;
     conversations.set(conv);
   }
 
-async function createTitle(currentInput: string) {
-    const titleModel = 'gpt-3.5-turbo';
+async function createTitle(currentInput: string, convId: number) {
+    const titleModel = 'gpt-5-nano';
     try {
         // Use Responses API pathway consistently
         const msgs: any[] = [
@@ -244,7 +248,7 @@ async function createTitle(currentInput: string) {
             { role: 'user', content: currentInput }
         ];
         // Reuse helpers from openaiService via sendRequest which now posts to /responses
-        const response = await sendRequest(msgs as any, titleModel);
+        const response = await sendRequest(msgs as any, titleModel, { reasoningEffort: 'minimal', verbosity: 'low' });
         // Extract text using the same utility used by maybeUpdateTitleAfterFirstMessage
         const svc = await import('../services/openaiService.js');
         const raw = svc.extractOutputTextFromResponses(response);
@@ -252,10 +256,10 @@ async function createTitle(currentInput: string) {
         if (!title) throw new Error('Empty title text');
         const clean = svc.sanitizeTitle(title);
         if (!clean) throw new Error('Sanitized title empty');
-        setTitle(clean);
+        setTitle(clean, convId);
     } catch (error) {
         console.warn("Title generation: Invalid response structure", error);
-        setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''));
+        setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''), convId);
     }
 }
 

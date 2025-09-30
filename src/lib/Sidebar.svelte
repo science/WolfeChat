@@ -191,10 +191,10 @@ let editingTitleId = null;
               {#if editingTitleId === $conversations.length - i - 1}
               <input type="text" class="edit-input" bind:value={editedTitle} on:blur={() => saveEditedTitle($conversations.length - i - 1)} on:keydown={(e) => {if (e.key === 'Enter') {saveEditedTitle($conversations.length - i - 1); e.preventDefault();}}}/>
               {:else}
-              <p class="text-left text-sm flex-grow title-text {$showTokens ? '' : ''}">
+              <p class="text-left text-sm flex-grow title-text {$showTokens ? '' : ''}" title={conv.title === "" ? "New conversation" : conv.title}>
                 {conv.title === "" ? "New conversation" : conv.title}
               </p>
-              
+
               {/if}
 
 
