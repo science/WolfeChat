@@ -222,10 +222,16 @@ export async function routeMessage(input: string, convId: string) {
         await sendDalleMessage(outgoingMessage, conversationIndex);
       } else if (isAnthropicModel(model)) {
         // Handle Claude/Anthropic models
+        // Add system message for Anthropic (SDK will extract it separately)
+        const systemMessage: ChatCompletionRequestMessage = {
+          role: "system",
+          content: conversation.assistantRole
+        };
+        const anthropicMessages = [systemMessage, ...outgoingMessage];
         const config = { model };
         console.log(`Routing Claude model ${model} to Anthropic service`);
         // For now, use streaming by default for Claude models
-        await streamAnthropicMessage(outgoingMessage, conversationIndex, config);
+        await streamAnthropicMessage(anthropicMessages, conversationIndex, config);
       } else {
         // Default case for regular messages if no specific keywords are found in the model string
         const config = { model, reasoningEffort: perConv.reasoningEffort, verbosity: perConv.verbosity, summary: perConv.summary };

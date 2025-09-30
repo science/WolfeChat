@@ -1627,3 +1627,21 @@ export async function getModelDropdownState(
   return result;
 }
 
+/**
+ * Sets the system role/prompt for the current conversation
+ * @param page - Playwright Page object
+ * @param systemPrompt - The system prompt text to set
+ */
+export async function setConversationSystemPrompt(page: Page, systemPrompt: string): Promise<void> {
+  const systemRoleTextarea = page.locator('#conversation-system-role');
+  await expect(systemRoleTextarea).toBeVisible({ timeout: 5000 });
+  await systemRoleTextarea.click();
+  await systemRoleTextarea.fill(systemPrompt);
+
+  // Verify the value was set
+  const actualValue = await systemRoleTextarea.inputValue();
+  if (actualValue !== systemPrompt) {
+    throw new Error(`Failed to set system prompt. Expected: "${systemPrompt}", Got: "${actualValue}"`);
+  }
+}
+
