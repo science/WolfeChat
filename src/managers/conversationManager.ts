@@ -9,6 +9,8 @@ import { reasoningWindows } from '../stores/reasoningStore.js';
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService.js";
 import { streamAnthropicMessage } from "../services/anthropicMessagingService.js";
 import { isAnthropicModel } from "../services/anthropicService.js";
+import { openaiApiKey, anthropicApiKey } from "../stores/providerStore.js";
+import { createAnthropicClient } from "../services/anthropicClientFactory.js";
 import { debugLog } from "../utils/debugLayerLogger.js";
 import { log } from '../lib/logger.js';
 let streamText = "";
@@ -247,25 +249,59 @@ function setTitle(title: string, convId: number) {
   }
 
 async function createTitle(currentInput: string, convId: number) {
-    const titleModel = 'gpt-5-nano';
+    const openaiKey = get(openaiApiKey);
+    const anthropicKey = get(anthropicApiKey);
+
     try {
-        // Use Responses API pathway consistently
-        const msgs: any[] = [
-            { role: 'system', content: 'You generate a short, clear chat title. Respond with only the title, no quotes, max 8 words, Title Case.' },
-            { role: 'user', content: currentInput }
-        ];
-        // Reuse helpers from openaiService via sendRequest which now posts to /responses
-        const response = await sendRequest(msgs as any, titleModel, { reasoningEffort: 'minimal', verbosity: 'low' });
-        // Extract text using the same utility used by maybeUpdateTitleAfterFirstMessage
-        const svc = await import('../services/openaiService.js');
-        const raw = svc.extractOutputTextFromResponses(response);
-        let title = raw?.trim() || '';
-        if (!title) throw new Error('Empty title text');
-        const clean = svc.sanitizeTitle(title);
-        if (!clean) throw new Error('Sanitized title empty');
-        setTitle(clean, convId);
+        // Prefer OpenAI for title generation, fall back to Anthropic if OpenAI key missing
+        if (openaiKey) {
+            // Use OpenAI for title generation (preferred)
+            const titleModel = 'gpt-5-nano';
+            const msgs: any[] = [
+                { role: 'system', content: 'You generate a short, clear chat title. Respond with only the title, no quotes, max 8 words, Title Case.' },
+                { role: 'user', content: currentInput }
+            ];
+            const response = await sendRequest(msgs as any, titleModel, { reasoningEffort: 'minimal', verbosity: 'low' });
+            const svc = await import('../services/openaiService.js');
+            const raw = svc.extractOutputTextFromResponses(response);
+            let title = raw?.trim() || '';
+            if (!title) throw new Error('Empty title text');
+            const clean = svc.sanitizeTitle(title);
+            if (!clean) throw new Error('Sanitized title empty');
+            setTitle(clean, convId);
+        } else if (anthropicKey) {
+            // Fall back to Anthropic Haiku for title generation
+            const titleModel = 'claude-3-haiku-20240307';
+            const client = createAnthropicClient(anthropicKey);
+            const response = await client.messages.create({
+                model: titleModel,
+                max_tokens: 50,
+                messages: [
+                    { role: 'user', content: currentInput }
+                ],
+                system: 'You generate a short, clear chat title. Respond with only the title, no quotes, max 8 words, Title Case.'
+            });
+
+            const titleText = response.content
+                .filter(block => block.type === 'text')
+                .map(block => (block as any).text)
+                .join('')
+                .trim();
+
+            if (!titleText) throw new Error('Empty title text from Anthropic');
+
+            // Sanitize title (remove quotes, limit length)
+            let clean = titleText.replace(/^["']|["']$/g, '').trim();
+            if (clean.length > 50) clean = clean.substring(0, 50).trim();
+            if (!clean) throw new Error('Sanitized title empty');
+
+            setTitle(clean, convId);
+        } else {
+            // No API keys available - use fallback
+            throw new Error('No API keys available for title generation');
+        }
     } catch (error) {
-        log.warn("Title generation: Invalid response structure", error);
+        log.warn("Title generation failed, using fallback:", error);
         setTitle(currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''), convId);
     }
 }
