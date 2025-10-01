@@ -14,6 +14,7 @@ import { createAnthropicClient } from './anthropicClientFactory.js';
 import { convertToSDKFormatWithSystem } from './anthropicSDKConverter.js';
 import { addThinkingConfigurationWithBudget, createAnthropicReasoningSupport } from './anthropicReasoning.js';
 import { getMaxOutputTokens } from './anthropicModelConfig.js';
+import { anthropicStreamContext } from './anthropicMessagingService.js';
 import { log } from '../lib/logger.js';
 
 /**
@@ -133,6 +134,8 @@ export async function streamAnthropicMessageSDK(
 
   // Buffer for accumulating reasoning text
   let accumulatedReasoningText = '';
+  // Buffer for accumulating response text
+  let accumulatedResponseText = '';
 
   try {
     // Create SDK client
@@ -196,9 +199,30 @@ export async function streamAnthropicMessageSDK(
 
     log.debug('[DEBUG] SDK stream created, registering event handlers');
 
-    // Handle streaming events
-    stream.on('text', (text) => {
-      log.debug('[DEBUG] text event fired, length:', text.length);
+    // Handle streaming events - progressively update conversation history
+    stream.on('text', (text, _snapshot) => {
+      log.debug('[DEBUG] text event fired, delta length:', text.length);
+
+      // Accumulate response text
+      accumulatedResponseText += text;
+
+      // Update streaming context for tests and monitoring
+      anthropicStreamContext.set({
+        streamText: accumulatedResponseText,
+        convId: convId
+      });
+
+      // Progressively update conversation history for real-time UI updates
+      // IMPORTANT: Use original currentHistory, not fresh history, to avoid duplicates
+      // Each update replaces the assistant message, not appends a new one
+      const streamingMessage: ChatMessage = {
+        role: "assistant",
+        content: accumulatedResponseText,
+        model: config.model
+      };
+
+      const updatedHistory = [...currentHistory, streamingMessage];
+      setHistory(updatedHistory, convId);
     });
 
     // Track if reasoning has started
@@ -258,28 +282,41 @@ export async function streamAnthropicMessageSDK(
     log.debug("Anthropic SDK stream completed:", {
       model: finalMessage.model,
       textLength: responseText.length,
-      usage: finalMessage.usage
+      accumulatedLength: accumulatedResponseText.length,
+      usage: finalMessage.usage,
+      stopReason: finalMessage.stop_reason,
+      contentBlocks: finalMessage.content.length,
+      contentBlockTypes: finalMessage.content.map(b => b.type)
     });
 
-    // Final history update with complete message
+    // Log if response seems truncated
+    if (finalMessage.stop_reason && finalMessage.stop_reason !== 'end_turn') {
+      log.warn(`[DEBUG] Response may be truncated! Stop reason: ${finalMessage.stop_reason}`);
+    }
+
+    // ALWAYS do final history update with complete message from API
+    // This ensures we have the complete response even if progressive updates missed some chunks
     const assistantMessage: ChatMessage = {
       role: "assistant",
       content: responseText,
       model: config.model
     };
 
-    const freshHistory = get(conversations)[convId].history;
-    const updatedHistory = [...freshHistory, assistantMessage];
+    // Use original currentHistory for consistency
+    const updatedHistory = [...currentHistory, assistantMessage];
+
+    if (accumulatedResponseText !== responseText) {
+      log.warn('[DEBUG] Accumulated text mismatch - final message has different content');
+    }
+
     log.debug('[DEBUG] Final history update:', {
       convId,
       originalSnapshotLength: currentHistory.length,
-      freshHistoryLength: freshHistory.length,
       updatedHistoryLength: updatedHistory.length,
       responseTextLength: responseText.length,
-      originalSnapshot: currentHistory.map((m, i) => ({ index: i, role: m.role })),
-      freshHistoryRoles: freshHistory.map((m, i) => ({ index: i, role: m.role })),
-      updatedHistory: updatedHistory.map((m, i) => ({ index: i, role: m.role, contentSnippet: m.content.substring(0, 20) }))
+      textMatches: accumulatedResponseText === responseText
     });
+
     setHistory(updatedHistory, convId);
 
   } catch (error) {
@@ -296,8 +333,11 @@ export async function streamAnthropicMessageSDK(
       content: userFriendlyError,
     };
 
-    const freshHistory = get(conversations)[convId].history;
-    setHistory([...freshHistory, errorChatMessage], convId);
+    // Use original currentHistory for consistency
+    setHistory([...currentHistory, errorChatMessage], convId);
     throw error;
+  } finally {
+    // Clear streaming context
+    anthropicStreamContext.set({ streamText: '', convId: null });
   }
 }

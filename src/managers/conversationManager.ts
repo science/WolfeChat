@@ -210,8 +210,11 @@ export async function routeMessage(input: string, convId: string) {
       ];
 
     // Fire title generation async BEFORE main message if needed
+    let titlePromise: Promise<void> | null = null;
     if (needsTitle) {
-        createTitle(input, conversationIndex);
+        titlePromise = createTitle(input, conversationIndex);
+        // Small delay to ensure title request is initiated before main message
+        await new Promise(resolve => setTimeout(resolve, 0));
     }
 
     if (model.includes('tts')) {
@@ -265,7 +268,10 @@ async function createTitle(currentInput: string, convId: number) {
             const svc = await import('../services/openaiService.js');
             const raw = svc.extractOutputTextFromResponses(response);
             let title = raw?.trim() || '';
-            if (!title) throw new Error('Empty title text');
+            if (!title) {
+                log.warn('Title generation: Invalid response structure - no title text extracted from:', response);
+                throw new Error('Empty title text');
+            }
             const clean = svc.sanitizeTitle(title);
             if (!clean) throw new Error('Sanitized title empty');
             setTitle(clean, convId);

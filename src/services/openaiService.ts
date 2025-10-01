@@ -860,7 +860,10 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
     const data = await res.json();
     const rawTitle = extractOutputTextFromResponses(data);
     const title = sanitizeTitle(rawTitle);
-    if (!title) return;
+    if (!title) {
+      log.warn('Title generation: Invalid response structure - no title text extracted from:', data);
+      return;
+    }
 
     conversations.update((allConvs) => {
       const copy = [...allConvs];

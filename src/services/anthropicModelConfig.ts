@@ -34,6 +34,13 @@ const MODEL_CONFIGS: Record<string, ModelConfig> = {
     thinkingBudgetTokens: 8000  // 25% of 32000
   },
 
+  // Sonnet 4.5 family - 64000 max tokens, supports reasoning
+  'claude-sonnet-4-5': {
+    maxOutputTokens: 64000,
+    supportsReasoning: true,
+    thinkingBudgetTokens: 16000  // 25% of 64000
+  },
+
   // Sonnet 4 family - 64000 max tokens, supports reasoning
   'claude-sonnet-4': {
     maxOutputTokens: 64000,
