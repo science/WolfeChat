@@ -48,6 +48,13 @@ const MODEL_CONFIGS: Record<string, ModelConfig> = {
     thinkingBudgetTokens: 16000  // 25% of 64000
   },
 
+  // Alternative Sonnet 3.7 naming pattern
+  'claude-sonnet-3.7': {
+    maxOutputTokens: 64000,
+    supportsReasoning: true,
+    thinkingBudgetTokens: 16000  // 25% of 64000
+  },
+
   // Haiku 3.5 family - 8192 max tokens, NO reasoning
   'claude-3-5-haiku': {
     maxOutputTokens: 8192,

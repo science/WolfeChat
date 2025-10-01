@@ -1,5 +1,5 @@
-const isDev = import.meta.env.DEV;
-const isTest = import.meta.env.VITE_E2E_TEST === 'true';
+const isDev = import.meta.env?.DEV ?? false;
+const isTest = import.meta.env?.VITE_E2E_TEST === 'true';
 
 const shouldLog = isDev || isTest;
 

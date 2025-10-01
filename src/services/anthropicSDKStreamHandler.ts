@@ -154,8 +154,8 @@ export class AnthropicSDKStreamHandler {
     // Message is complete
     this.callbacks.onCompleted?.();
 
-    // Clean up
-    this.contentBlocks.clear();
+    // Note: We don't clear contentBlocks here to allow accessing accumulated text
+    // after the stream completes (e.g., for testing or post-processing)
     this.isReasoningActive = false;
   }
 
