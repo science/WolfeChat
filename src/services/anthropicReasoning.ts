@@ -7,6 +7,7 @@
 
 import {
   createReasoningWindow,
+  collapseReasoningWindow,
   startReasoningPanel,
   setReasoningText,
   completeReasoningPanel
@@ -131,9 +132,14 @@ export class AnthropicReasoningSupport {
 
     completeReasoningPanel(this.panelId);
 
+    if (this.windowId) {
+      collapseReasoningWindow(this.windowId);
+    }
+
     log.debug('Completed Anthropic reasoning session:', {
       convId: this.convId,
-      panelId: this.panelId
+      panelId: this.panelId,
+      windowId: this.windowId
     });
 
     this.callbacks.onReasoningComplete?.();
