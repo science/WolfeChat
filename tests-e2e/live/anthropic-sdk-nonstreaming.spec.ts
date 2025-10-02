@@ -18,12 +18,17 @@ import { debugInfo } from '../debug-utils';
 
 test.describe('Anthropic SDK Non-Streaming', () => {
 
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.clear();
+    });
+    await page.reload();
+  });
+
   test('should send non-streaming message via SDK with claude-3-haiku', async ({ page }) => {
-    // Debug: Log the start of the test
     debugInfo('🧪 Starting SDK non-streaming test with Claude Haiku');
 
-    // Navigate to the app first
-    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Bootstrap the live API environment with Anthropic
@@ -74,8 +79,6 @@ test.describe('Anthropic SDK Non-Streaming', () => {
   test('should handle errors gracefully with invalid model via SDK', async ({ page }) => {
     debugInfo('🧪 Starting SDK error handling test');
 
-    // Navigate to the app first
-    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Bootstrap the live API environment with Anthropic

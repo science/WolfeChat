@@ -18,6 +18,14 @@ import {
 
 test.describe('Anthropic System Prompt Integration', () => {
 
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.clear();
+    });
+    await page.reload();
+  });
+
   test('should include default system prompt in Anthropic API request', async ({ page }) => {
     // Capture API requests to Anthropic
     const anthropicRequests: any[] = [];
@@ -38,7 +46,7 @@ test.describe('Anthropic System Prompt Integration', () => {
     });
 
     // Setup API keys
-    await page.goto('/');
+    await page.waitForLoadState('networkidle');
     await bootstrapBothProviders(page);
 
     // Select Claude model
@@ -94,7 +102,7 @@ test.describe('Anthropic System Prompt Integration', () => {
       }
     });
 
-    await page.goto('/');
+    await page.waitForLoadState('networkidle');
     await bootstrapBothProviders(page);
 
     // Change the conversation-level system prompt using helper
@@ -146,7 +154,7 @@ test.describe('Anthropic System Prompt Integration', () => {
       }
     });
 
-    await page.goto('/');
+    await page.waitForLoadState('networkidle');
     await bootstrapBothProviders(page);
 
     // Select Claude Sonnet 4 (reasoning model)

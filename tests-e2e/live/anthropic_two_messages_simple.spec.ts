@@ -7,9 +7,19 @@ import { debugInfo } from '../debug-utils';
  * Waits adequately between messages to match real UAT usage
  */
 
-test('Two Anthropic reasoning messages with adequate wait', async ({ page }) => {
-  await page.goto('/');
-  await bootstrapLiveAPI(page, 'Anthropic');
+test.describe('Anthropic Two Messages Test', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.clear();
+    });
+    await page.reload();
+  });
+
+  test('Two Anthropic reasoning messages with adequate wait', async ({ page }) => {
+    await page.waitForLoadState('networkidle');
+    await bootstrapLiveAPI(page, 'Anthropic');
 
   await operateQuickSettings(page, {
     mode: 'ensure-open',
@@ -40,4 +50,5 @@ test('Two Anthropic reasoning messages with adequate wait', async ({ page }) => 
   const after2 = await page.locator('details:has-text("Reasoning")').count();
   debugInfo(`After message 2: ${after2} reasoning windows`);
   expect(after2).toBe(2);
+  });
 });

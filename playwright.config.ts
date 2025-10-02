@@ -15,7 +15,26 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'nonlive',
+      testMatch: 'tests-e2e/nonlive/**/*.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'live',
+      testMatch: 'tests-e2e/live/**/*.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+      timeout: 60_000,
+    },
+    {
+      name: 'live-regression',
+      testMatch: 'tests-e2e/live-regression/**/*.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+      timeout: 60_000,
+      fullyParallel: false,
+      workers: 1,
+      dependencies: ['live'],
+    },
   ],
   webServer: {
     command: 'npm run dev',
