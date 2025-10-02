@@ -17,17 +17,25 @@ import {
   bootstrapLiveAPI,
   operateQuickSettings,
   waitForStreamComplete
-} from './helpers';
+} from '../live/helpers';
 import { debugInfo } from '../debug-utils';
 
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Anthropic SDK Streaming with Reasoning', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.clear();
+    });
+    await page.reload();
+  });
 
   test('should stream response and show reasoning window with Sonnet 4.5', async ({ page }) => {
     // This test describes EXPECTED behavior: Sonnet 4.5 should show reasoning window
     debugInfo('🧪 Starting streaming test with reasoning model (Sonnet 4.5)');
 
-    // Navigate to the app
-    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Bootstrap the live API environment with Anthropic
@@ -89,8 +97,6 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
     // This test verifies that non-reasoning models don't show reasoning window
     debugInfo('🧪 Starting streaming test with non-reasoning model (Haiku)');
 
-    // Navigate to the app
-    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Bootstrap the live API environment with Anthropic
@@ -137,8 +143,6 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
     // This test verifies that text appears progressively during streaming
     debugInfo('🧪 Testing progressive text accumulation during streaming');
 
-    // Navigate to the app
-    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Bootstrap the live API environment with Anthropic
@@ -153,21 +157,32 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
 
     debugInfo('📤 Sent message for progressive streaming test');
 
+    // Wait for assistant message to appear before starting to monitor
+    await page.waitForSelector('[role="listitem"][data-message-role="assistant"]', {
+      state: 'attached',
+      timeout: 30000
+    });
+    debugInfo('✅ Assistant message appeared, starting text monitoring');
+
     // Track text accumulation
     const textSnapshots: string[] = [];
     let previousText = '';
 
     // Monitor assistant message for changes
     const checkInterval = setInterval(async () => {
-      const messages = await getVisibleMessages(page);
-      const assistantMessage = messages.find(msg => msg.role === 'assistant');
+      try {
+        const messages = await getVisibleMessages(page);
+        const assistantMessage = messages.find(msg => msg.role === 'assistant');
 
-      if (assistantMessage && assistantMessage.text !== previousText) {
-        textSnapshots.push(assistantMessage.text);
-        previousText = assistantMessage.text;
-        debugInfo(`📊 Text snapshot ${textSnapshots.length}: ${assistantMessage.text.length} chars`);
+        if (assistantMessage && assistantMessage.text !== previousText) {
+          textSnapshots.push(assistantMessage.text);
+          previousText = assistantMessage.text;
+          debugInfo(`📊 Text snapshot ${textSnapshots.length}: ${assistantMessage.text.length} chars`);
+        }
+      } catch (err) {
+        debugInfo(`⚠️ Error getting messages in interval: ${err}`);
       }
-    }, 100); // Reduced from 500ms to 100ms for more frequent checks
+    }, 100);
 
     // Wait for streaming to complete
     await waitForStreamComplete(page, { timeout: 30000 });
@@ -190,8 +205,6 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
     // This test verifies that streaming can be interrupted
     debugInfo('🧪 Testing stream interruption handling');
 
-    // Navigate to the app
-    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Bootstrap the live API environment with Anthropic
@@ -206,8 +219,15 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
 
     debugInfo('📤 Sent message for stream interruption test');
 
-    // Wait for streaming to start
-    await page.waitForTimeout(2000);
+    // Wait for assistant message to appear (ensures streaming has started)
+    await page.waitForSelector('[role="listitem"][data-message-role="assistant"]', {
+      state: 'attached',
+      timeout: 30000
+    });
+    debugInfo('✅ Assistant message appeared, streaming started');
+
+    // Give streaming a moment to produce some content
+    await page.waitForTimeout(1000);
 
     // Check if stop button exists (common pattern for streaming UIs)
     const stopButton = await page.$('[data-testid="stop-streaming"], button:has-text("Stop"), .stop-button');
@@ -240,8 +260,6 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
     // This test verifies the reasoning display format for Sonnet 4.5
     debugInfo('🧪 Testing reasoning display format with Sonnet 4.5');
 
-    // Navigate to the app
-    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Bootstrap the live API environment with Anthropic

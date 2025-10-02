@@ -14,20 +14,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 #### Test Organization
 Tests are automatically discovered based on folder structure:
-- `src/tests/unit/` - Unit tests with JSDOM environment  
+- `src/tests/unit/` - Unit tests with JSDOM environment
 - `src/tests/live/` - Tests requiring OpenAI API
 - `tests-e2e/nonlive/` - Playwright browser tests without external APIs
-- `tests-e2e/live/` - Playwright browser tests with OpenAI API
+- `tests-e2e/live/` - Fast Playwright E2E tests with live APIs (parallel execution, "daily driver" tests)
+- `tests-e2e/live-regression/` - Slow Playwright E2E tests for full production regression (serial execution, single worker)
 
 #### Running Tests
 ```bash
 # Unit tests (default)
-npm run test
+npm run test                      # or: node run-tests.mjs
 
-# Browser E2E tests (Playwright)
-# Recommended: Run directly with Playwright
-npx playwright test tests-e2e                    # all E2E tests
+# Fast E2E tests (parallel, for daily development)
+npm run test:browser-live         # or: npx playwright test --project=live
+npm run test:browser              # or: npx playwright test --project=nonlive
+
+# Full production regression (slow, serialized)
+npm run test:regression           # or: npx playwright test --project=live-regression
+
+# All tests (unit + all E2E projects)
+npm run test:all                  # runs unit tests + all Playwright projects
+
+# Specific test file
+npx playwright test tests-e2e/live/specific-test.spec.ts
 ```
+
+**Test Suite Purpose:**
+- **live**: Fast feedback during development (parallel execution, ~3-5 minutes)
+- **live-regression**: Comprehensive validation before releases (serial execution, ~10+ minutes, includes Anthropic tests)
+- **nonlive**: Browser tests without external API dependencies
 
 ## Architecture
 

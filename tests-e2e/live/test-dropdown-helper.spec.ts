@@ -12,7 +12,13 @@ test.describe('Model Dropdown Helper Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:5173/');
     // Start with clean state
+    await page.evaluate(() => {
+      localStorage.clear();
+    });
     await page.reload();
+    await page.waitForLoadState('networkidle');
+    // Additional wait to ensure stores are fully reset
+    await page.waitForTimeout(500);
   });
 
   test('helper correctly identifies empty dropdown state', async ({ page }) => {

@@ -26,6 +26,9 @@ test.describe.configure({ mode: 'serial' });
       localStorage.clear();
     });
     await page.reload();
+    await page.waitForLoadState('networkidle');
+    // Additional wait to ensure stores are fully reset
+    await page.waitForTimeout(500);
   });
 
   test('user can access models when single provider is configured', async ({ page }) => {
