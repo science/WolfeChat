@@ -26,6 +26,9 @@ test.describe.configure({ mode: 'serial' });
       localStorage.clear();
     });
     await page.reload();
+    await page.waitForLoadState('networkidle');
+    // Additional wait to ensure stores are fully reset
+    await page.waitForTimeout(500);
   });
 
   test('user can access models when single provider is configured', async ({ page }) => {
@@ -232,7 +235,9 @@ test.describe.configure({ mode: 'serial' });
 
     // Send another test message
     await sendMessage(page, 'Test with Anthropic');
-    await waitForAssistantDone(page);
+    // Use waitForStreamComplete for provider-agnostic waiting
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000); // Extra stabilization for Anthropic
 
     messages = await getVisibleMessages(page);
     const anthropicResponse = messages.filter(m => m.role === 'assistant')[1];

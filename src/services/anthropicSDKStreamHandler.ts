@@ -5,6 +5,8 @@
  * Processes different event types and manages reasoning/thinking blocks
  */
 
+import { log } from '../lib/logger.js';
+
 export interface StreamCallbacks {
   onTextDelta?: (text: string) => void;
   onReasoningStart?: () => void;
@@ -68,10 +70,10 @@ export class AnthropicSDKStreamHandler {
           break;
 
         default:
-          console.warn('Unknown stream event type:', event.type);
+          log.warn('Unknown stream event type:', event.type);
       }
     } catch (error) {
-      console.error('Error handling stream event:', error);
+      log.error('Error handling stream event:', error);
       this.callbacks.onError?.(error instanceof Error ? error : new Error(String(error)));
     }
   }
@@ -103,7 +105,7 @@ export class AnthropicSDKStreamHandler {
 
     const block = this.contentBlocks.get(index);
     if (!block) {
-      console.warn('Received delta for unknown content block:', index);
+      log.warn('Received delta for unknown content block:', index);
       return;
     }
 
@@ -132,7 +134,7 @@ export class AnthropicSDKStreamHandler {
     const block = this.contentBlocks.get(index);
 
     if (!block) {
-      console.warn('Received stop for unknown content block:', index);
+      log.warn('Received stop for unknown content block:', index);
       return;
     }
 
@@ -152,8 +154,8 @@ export class AnthropicSDKStreamHandler {
     // Message is complete
     this.callbacks.onCompleted?.();
 
-    // Clean up
-    this.contentBlocks.clear();
+    // Note: We don't clear contentBlocks here to allow accessing accumulated text
+    // after the stream completes (e.g., for testing or post-processing)
     this.isReasoningActive = false;
   }
 

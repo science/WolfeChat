@@ -8,11 +8,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node run-tests.mjs",
-    "test:browser": "npx playwright test tests-e2e/nonlive",
-    "test:browser-live": "npx playwright test tests-e2e/live",
+    "test:browser": "npx playwright test --project=nonlive",
+    "test:browser-live": "npx playwright test --project=live",
+    "test:regression": "npx playwright test --project=live-regression",
     "pretest:live": "vite build",
     "test:live": "node run-tests.mjs --live",
-    "test:all": "node run-tests.mjs --suite all",
+    "test:all": "node run-tests.mjs --suite all && npx playwright test",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {

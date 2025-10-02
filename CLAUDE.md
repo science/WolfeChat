@@ -14,20 +14,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 #### Test Organization
 Tests are automatically discovered based on folder structure:
-- `src/tests/unit/` - Unit tests with JSDOM environment  
+- `src/tests/unit/` - Unit tests with JSDOM environment
 - `src/tests/live/` - Tests requiring OpenAI API
 - `tests-e2e/nonlive/` - Playwright browser tests without external APIs
-- `tests-e2e/live/` - Playwright browser tests with OpenAI API
+- `tests-e2e/live/` - Fast Playwright E2E tests with live APIs (parallel execution, "daily driver" tests)
+- `tests-e2e/live-regression/` - Slow Playwright E2E tests for full production regression (serial execution, single worker)
 
 #### Running Tests
 ```bash
 # Unit tests (default)
-npm run test
+npm run test                      # or: node run-tests.mjs
 
-# Browser E2E tests (Playwright)
-# Recommended: Run directly with Playwright
-npx playwright test tests-e2e                    # all E2E tests
+# Fast E2E tests (parallel, for daily development)
+npm run test:browser-live         # or: npx playwright test --project=live
+npm run test:browser              # or: npx playwright test --project=nonlive
+
+# Full production regression (slow, serialized)
+npm run test:regression           # or: npx playwright test --project=live-regression
+
+# All tests (unit + all E2E projects)
+npm run test:all                  # runs unit tests + all Playwright projects
+
+# Specific test file
+npx playwright test tests-e2e/live/specific-test.spec.ts
 ```
+
+**Test Suite Purpose:**
+- **live**: Fast feedback during development (parallel execution, ~3-5 minutes)
+- **live-regression**: Comprehensive validation before releases (serial execution, ~10+ minutes, includes Anthropic tests)
+- **nonlive**: Browser tests without external API dependencies
 
 ## Architecture
 
@@ -153,6 +168,38 @@ The app expects an OpenAI API key to be configured in Settings. It supports:
 - DALL-E image generation
 
 SSE streaming is handled via fetch with proper abort controller management for safe stream termination.
+
+### Logging Architecture
+
+**Browser Console Logging** - The application uses a tree-shaking logger to eliminate debug logs from production builds:
+
+- **Logger Module** (`src/lib/logger.ts`): Centralized logging utility that uses `import.meta.env.DEV` for automatic dead-code elimination
+  - `log.debug()` - Development/test only, stripped from production builds
+  - `log.info()` - Development/test only, stripped from production builds
+  - `log.warn()` - Always included in builds
+  - `log.error()` - Always included in builds
+
+**Usage Pattern:**
+```typescript
+import { log } from '../lib/logger.js';
+
+// Debug logs (stripped in production)
+log.debug('Starting API request:', { model, messageCount });
+log.info('Configuration loaded successfully');
+
+// Production logs (always included)
+log.warn('Rate limit approaching threshold');
+log.error('API request failed:', error);
+```
+
+**Build-Time Tree-Shaking:** Vite automatically removes `log.debug()` and `log.info()` calls during production builds, resulting in zero runtime overhead. The logger checks `import.meta.env.DEV` which Vite statically evaluates during bundling.
+
+**E2E Test Logging:** For E2E tests, set `VITE_E2E_TEST=true` environment variable to enable debug logs in the browser context. E2E test runner code uses the separate `debugLog()` system from `tests-e2e/debug-utils.ts` controlled by `DEBUG_E2E` environment variable.
+
+**Migration from console.log:** All production service code should use the logger instead of direct `console.*` calls. This has been implemented in:
+- All service files (`src/services/`)
+- Manager modules (`src/managers/`)
+- Main entry point (`src/main.ts`)
 
 ## Important Notes
 

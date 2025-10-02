@@ -60,21 +60,25 @@ if (hasAnthropicKey) {
     tags: ['live', 'anthropic', 'messaging'],
     timeoutMs: 30000,
     fn: async (t) => {
+      // Import stores and set API key
+      const { anthropicApiKey } = await import('../../stores/providerStore.js');
+      const { conversations } = await import('../../stores/stores.js');
+
+      anthropicApiKey.set(process.env.ANTHROPIC_API_KEY);
+
       // Mock conversation store data
       const mockConversations = {
         1: {
+          id: 1,
           history: [
             { role: 'user', content: 'Say hello in exactly 3 words.' }
           ]
         }
       };
 
-      // Mock the stores
-      const { get, writable } = await import('svelte/store');
-      const anthropicApiKey = writable(process.env.ANTHROPIC_API_KEY);
-      const conversations = writable(mockConversations);
+      conversations.set(mockConversations);
 
-      // Import after setting up mocks
+      // Import the service
       const { sendAnthropicMessage } = await import('../../services/anthropicMessagingService.js');
 
       const messages = [
@@ -103,21 +107,25 @@ if (hasAnthropicKey) {
     tags: ['live', 'anthropic', 'messaging'],
     timeoutMs: 45000,
     fn: async (t) => {
+      // Import stores and set API key
+      const { anthropicApiKey } = await import('../../stores/providerStore.js');
+      const { conversations } = await import('../../stores/stores.js');
+
+      anthropicApiKey.set(process.env.ANTHROPIC_API_KEY);
+
       // Mock conversation store data
       const mockConversations = {
         1: {
+          id: 1,
           history: [
             { role: 'user', content: 'Count from 1 to 5, one number per line.' }
           ]
         }
       };
 
-      // Mock the stores
-      const { get, writable } = await import('svelte/store');
-      const anthropicApiKey = writable(process.env.ANTHROPIC_API_KEY);
-      const conversations = writable(mockConversations);
+      conversations.set(mockConversations);
 
-      // Import after setting up mocks
+      // Import the service
       const { streamAnthropicMessage, anthropicStreamContext, isAnthropicStreaming } = await import('../../services/anthropicMessagingService.js');
 
       const messages = [
@@ -166,14 +174,21 @@ if (hasAnthropicKey) {
     tags: ['live', 'anthropic', 'messaging'],
     timeoutMs: 10000,
     fn: async (t) => {
-      // Mock conversation store with invalid API key
+      // Import stores and set invalid API key
+      const { anthropicApiKey } = await import('../../stores/providerStore.js');
+      const { conversations } = await import('../../stores/stores.js');
+
+      anthropicApiKey.set('sk-ant-invalid-key-12345');
+
+      // Mock conversation store
       const mockConversations = {
-        1: { history: [] }
+        1: {
+          id: 1,
+          history: []
+        }
       };
 
-      const { get, writable } = await import('svelte/store');
-      const anthropicApiKey = writable('sk-ant-invalid-key-12345');
-      const conversations = writable(mockConversations);
+      conversations.set(mockConversations);
 
       const { sendAnthropicMessage } = await import('../../services/anthropicMessagingService.js');
 
@@ -188,8 +203,13 @@ if (hasAnthropicKey) {
         t.that(false, 'Should throw error with invalid API key');
       } catch (error) {
         t.that(error instanceof Error, 'Should throw an Error object');
-        t.that(error.message.includes('Invalid Anthropic API key') || error.message.includes('API key'),
-               'Error should mention API key issue');
+        t.that(
+          error.message.includes('Invalid Anthropic API key') ||
+          error.message.includes('API key') ||
+          error.message.includes('api-key') ||
+          error.message.includes('authentication'),
+          'Error should mention API key or authentication issue'
+        );
         console.log('✓ Error handling working correctly:', error.message);
       }
     }

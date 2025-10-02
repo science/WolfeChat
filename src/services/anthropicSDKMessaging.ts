@@ -14,6 +14,8 @@ import { createAnthropicClient } from './anthropicClientFactory.js';
 import { convertToSDKFormatWithSystem } from './anthropicSDKConverter.js';
 import { addThinkingConfigurationWithBudget, createAnthropicReasoningSupport } from './anthropicReasoning.js';
 import { getMaxOutputTokens } from './anthropicModelConfig.js';
+import { anthropicStreamContext } from './anthropicMessagingService.js';
+import { log } from '../lib/logger.js';
 
 /**
  * Send non-streaming message to Anthropic API using SDK
@@ -28,8 +30,6 @@ export async function sendAnthropicMessageSDK(
     throw new Error("Anthropic API key is missing.");
   }
 
-  let currentHistory = get(conversations)[convId].history;
-
   try {
     // Create SDK client
     const client = createAnthropicClient(apiKey);
@@ -37,7 +37,7 @@ export async function sendAnthropicMessageSDK(
     // Convert messages to SDK format
     const { messages: sdkMessages, system } = convertToSDKFormatWithSystem(messages);
 
-    console.log("Sending Anthropic SDK message request:", {
+    log.debug("Sending Anthropic SDK message request:", {
       model: config.model,
       messageCount: sdkMessages.length,
       hasSystem: !!system
@@ -68,7 +68,7 @@ export async function sendAnthropicMessageSDK(
       .map(block => (block as any).text) // Cast to any since SDK types may vary
       .join('');
 
-    console.log("Anthropic SDK response received:", {
+    log.debug("Anthropic SDK response received:", {
       model: response.model,
       textLength: responseText.length,
       usage: response.usage
@@ -81,11 +81,12 @@ export async function sendAnthropicMessageSDK(
       model: config.model
     };
 
-    const updatedHistory = [...currentHistory, assistantMessage];
+    const freshHistory = get(conversations)[convId].history;
+    const updatedHistory = [...freshHistory, assistantMessage];
     setHistory(updatedHistory, convId);
 
   } catch (error) {
-    console.error("Error in sendAnthropicMessageSDK:", error);
+    log.error("Error in sendAnthropicMessageSDK:", error);
 
     // Create user-friendly error message
     const errorMessage = error?.message || 'An error occurred while processing your request.';
@@ -98,7 +99,8 @@ export async function sendAnthropicMessageSDK(
       content: userFriendlyError,
     };
 
-    setHistory([...currentHistory, errorChatMessage], convId);
+    const freshHistory = get(conversations)[convId].history;
+    setHistory([...freshHistory, errorChatMessage], convId);
     throw error;
   }
 }
@@ -111,22 +113,29 @@ export async function streamAnthropicMessageSDK(
   convId: number,
   config: { model: string }
 ): Promise<void> {
-  console.log('[DEBUG] streamAnthropicMessageSDK CALLED with model:', config.model);
+  log.debug('[DEBUG] streamAnthropicMessageSDK CALLED with model:', config.model);
 
   const apiKey = get(anthropicApiKey);
   if (!apiKey) {
-    console.error('[DEBUG] API key missing!');
+    log.error('[DEBUG] API key missing!');
     throw new Error("Anthropic API key is missing.");
   }
 
-  console.log('[DEBUG] API key present, continuing with stream setup');
+  log.debug('[DEBUG] API key present, continuing with stream setup');
   let currentHistory = get(conversations)[convId].history;
 
-  // Buffer for batching history updates
-  let accumulatedText = '';
+  // DEBUG: Log history state at stream start
+  log.debug('[DEBUG] History at stream start:', {
+    historyLength: currentHistory.length,
+    lastMessage: currentHistory[currentHistory.length - 1],
+    userMessageCount: currentHistory.filter(m => m.role === 'user').length,
+    historyIndices: currentHistory.map((m, i) => ({ index: i, role: m.role }))
+  });
+
+  // Buffer for accumulating reasoning text
   let accumulatedReasoningText = '';
-  let lastHistoryUpdate = Date.now();
-  const historyUpdateInterval = 100; // Update history every 100ms max
+  // Buffer for accumulating response text
+  let accumulatedResponseText = '';
 
   try {
     // Create SDK client
@@ -135,7 +144,7 @@ export async function streamAnthropicMessageSDK(
     // Convert messages to SDK format
     const { messages: sdkMessages, system } = convertToSDKFormatWithSystem(messages);
 
-    console.log("Starting Anthropic SDK stream:", {
+    log.debug("Starting Anthropic SDK stream:", {
       model: config.model,
       messageCount: sdkMessages.length,
       hasSystem: !!system
@@ -156,7 +165,7 @@ export async function streamAnthropicMessageSDK(
 
     // Add thinking configuration for reasoning models
     const configuredParams = addThinkingConfigurationWithBudget(requestParams);
-    console.log('[DEBUG] Request params after thinking config:', {
+    log.debug('[DEBUG] Request params after thinking config:', {
       model: configuredParams.model,
       hasThinking: !!configuredParams.thinking,
       thinkingConfig: configuredParams.thinking
@@ -164,66 +173,69 @@ export async function streamAnthropicMessageSDK(
 
     // Get the actual conversation ID (not the index)
     const actualConvId = get(conversations)[convId]?.id;
-    console.log('[DEBUG] Conversation index:', convId, '→ Actual ID:', actualConvId);
+    log.debug('[DEBUG] Conversation index:', convId, '→ Actual ID:', actualConvId);
 
-    // Calculate anchorIndex: index of the last user message in history
-    // ReasoningInline is rendered after each user message with that index
-    const userMessageIndex = currentHistory.filter(m => m.role === 'user').length - 1;
-    console.log('[DEBUG] Anchor index (last user message):', userMessageIndex);
+    // Calculate anchorIndex: position in history array where user message was added
+    // ReasoningInline is rendered after each user message at that history index
+    // This matches how OpenAI does it: currentHistory.length - 1
+    const anchorIndex = currentHistory.length - 1;
+    log.debug('[DEBUG] Anchor index (last message position):', anchorIndex);
 
     // Create reasoning support for this conversation with anchorIndex
     const reasoningSupport = createAnthropicReasoningSupport({
       convId: actualConvId,
       model: config.model,
-      anchorIndex: userMessageIndex
+      anchorIndex: anchorIndex
     });
-    console.log('[DEBUG] Reasoning support created for conversation ID:', actualConvId, 'anchorIndex:', userMessageIndex);
-
-    // Helper function to update history with batching
-    const updateHistoryBatched = (force: boolean = false) => {
-      const now = Date.now();
-      if (force || (now - lastHistoryUpdate) >= historyUpdateInterval) {
-        if (accumulatedText.trim()) {
-          const streamingMessage: ChatMessage = {
-            role: "assistant",
-            content: accumulatedText,
-            model: config.model
-          };
-
-          setHistory([...currentHistory, streamingMessage], convId);
-          lastHistoryUpdate = now;
-        }
-      }
-    };
+    log.debug('[DEBUG] Reasoning support created for conversation ID:', actualConvId, 'anchorIndex:', anchorIndex);
 
     // Create stream using SDK with configured parameters
-    console.log('[DEBUG] Creating Anthropic SDK stream with params:', {
+    log.debug('[DEBUG] Creating Anthropic SDK stream with params:', {
       model: configuredParams.model,
       hasThinking: !!configuredParams.thinking,
       thinkingBudget: configuredParams.thinking?.budget_tokens
     });
     const stream = client.messages.stream(configuredParams);
 
-    console.log('[DEBUG] SDK stream created, registering event handlers');
+    log.debug('[DEBUG] SDK stream created, registering event handlers');
 
-    // Handle streaming events
-    stream.on('text', (text) => {
-      console.log('[DEBUG] text event fired, length:', text.length);
-      accumulatedText += text;
-      updateHistoryBatched();
+    // Handle streaming events - progressively update conversation history
+    stream.on('text', (text, _snapshot) => {
+      log.debug('[DEBUG] text event fired, delta length:', text.length);
+
+      // Accumulate response text
+      accumulatedResponseText += text;
+
+      // Update streaming context for tests and monitoring
+      anthropicStreamContext.set({
+        streamText: accumulatedResponseText,
+        convId: convId
+      });
+
+      // Progressively update conversation history for real-time UI updates
+      // IMPORTANT: Use original currentHistory, not fresh history, to avoid duplicates
+      // Each update replaces the assistant message, not appends a new one
+      const streamingMessage: ChatMessage = {
+        role: "assistant",
+        content: accumulatedResponseText,
+        model: config.model
+      };
+
+      const updatedHistory = [...currentHistory, streamingMessage];
+      setHistory(updatedHistory, convId);
     });
 
     // Track if reasoning has started
     let reasoningStarted = false;
 
     // Listen for thinking event (correct SDK event name)
-    stream.on('thinking', (thinkingDelta, thinkingSnapshot) => {
-      console.log('[DEBUG] thinking event fired!');
-      console.log('Anthropic reasoning delta:', thinkingDelta);
+    stream.on('thinking', (thinkingDelta, _thinkingSnapshot) => {
+      log.debug('[DEBUG] thinking event fired!');
+      log.debug('Anthropic reasoning delta:', thinkingDelta);
 
       // Start reasoning on first thinking event
       if (!reasoningStarted) {
-        console.log('Starting Anthropic reasoning block');
+        log.debug('Starting Anthropic reasoning block');
         reasoningSupport.startReasoning();
         reasoningStarted = true;
       }
@@ -235,28 +247,28 @@ export async function streamAnthropicMessageSDK(
 
     // Also add signature handler for thinking verification
     stream.on('signature', (signature) => {
-      console.log('[DEBUG] signature event fired');
-      console.log('Anthropic reasoning signature:', signature);
+      log.debug('[DEBUG] signature event fired');
+      log.debug('Anthropic reasoning signature:', signature);
       // Optional: Store signature for verification if needed
     });
 
     // Listen for contentBlock to detect when thinking completes
     stream.on('contentBlock', (block) => {
-      console.log('[DEBUG] contentBlock event fired, type:', block.type);
+      log.debug('[DEBUG] contentBlock event fired, type:', block.type);
 
       // When we get a text content block, thinking must be complete
       if (block.type === 'text' && reasoningStarted) {
-        console.log('Anthropic reasoning block completed (text block started)');
+        log.debug('Anthropic reasoning block completed (text block started)');
         reasoningSupport.completeReasoning();
       }
     });
 
     stream.on('error', (error) => {
-      console.error("Anthropic SDK stream error:", error);
+      log.error("Anthropic SDK stream error:", error);
       throw error;
     });
 
-    console.log('[DEBUG] All event handlers registered');
+    log.debug('[DEBUG] All event handlers registered');
 
     // Wait for stream to complete
     const finalMessage = await stream.finalMessage();
@@ -267,24 +279,48 @@ export async function streamAnthropicMessageSDK(
       .map(block => (block as any).text)
       .join('');
 
-    console.log("Anthropic SDK stream completed:", {
+    log.debug("Anthropic SDK stream completed:", {
       model: finalMessage.model,
       textLength: responseText.length,
-      usage: finalMessage.usage
+      accumulatedLength: accumulatedResponseText.length,
+      usage: finalMessage.usage,
+      stopReason: finalMessage.stop_reason,
+      contentBlocks: finalMessage.content.length,
+      contentBlockTypes: finalMessage.content.map(b => b.type)
     });
 
-    // Final history update with complete message
+    // Log if response seems truncated
+    if (finalMessage.stop_reason && finalMessage.stop_reason !== 'end_turn') {
+      log.warn(`[DEBUG] Response may be truncated! Stop reason: ${finalMessage.stop_reason}`);
+    }
+
+    // ALWAYS do final history update with complete message from API
+    // This ensures we have the complete response even if progressive updates missed some chunks
     const assistantMessage: ChatMessage = {
       role: "assistant",
       content: responseText,
       model: config.model
     };
 
+    // Use original currentHistory for consistency
     const updatedHistory = [...currentHistory, assistantMessage];
+
+    if (accumulatedResponseText !== responseText) {
+      log.warn('[DEBUG] Accumulated text mismatch - final message has different content');
+    }
+
+    log.debug('[DEBUG] Final history update:', {
+      convId,
+      originalSnapshotLength: currentHistory.length,
+      updatedHistoryLength: updatedHistory.length,
+      responseTextLength: responseText.length,
+      textMatches: accumulatedResponseText === responseText
+    });
+
     setHistory(updatedHistory, convId);
 
   } catch (error) {
-    console.error("Error in streamAnthropicMessageSDK:", error);
+    log.error("Error in streamAnthropicMessageSDK:", error);
 
     // Create user-friendly error message
     const errorMessage = error?.message || 'An error occurred while processing your request.';
@@ -297,7 +333,11 @@ export async function streamAnthropicMessageSDK(
       content: userFriendlyError,
     };
 
+    // Use original currentHistory for consistency
     setHistory([...currentHistory, errorChatMessage], convId);
     throw error;
+  } finally {
+    // Clear streaming context
+    anthropicStreamContext.set({ streamText: '', convId: null });
   }
 }

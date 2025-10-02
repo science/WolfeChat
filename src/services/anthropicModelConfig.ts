@@ -8,6 +8,8 @@
  * thinking.budget_tokens to avoid 400 errors from the API.
  */
 
+import { log } from '../lib/logger.js';
+
 // Model configuration interface
 interface ModelConfig {
   maxOutputTokens: number;
@@ -32,6 +34,13 @@ const MODEL_CONFIGS: Record<string, ModelConfig> = {
     thinkingBudgetTokens: 8000  // 25% of 32000
   },
 
+  // Sonnet 4.5 family - 64000 max tokens, supports reasoning
+  'claude-sonnet-4-5': {
+    maxOutputTokens: 64000,
+    supportsReasoning: true,
+    thinkingBudgetTokens: 16000  // 25% of 64000
+  },
+
   // Sonnet 4 family - 64000 max tokens, supports reasoning
   'claude-sonnet-4': {
     maxOutputTokens: 64000,
@@ -41,6 +50,13 @@ const MODEL_CONFIGS: Record<string, ModelConfig> = {
 
   // Sonnet 3.7 family - 64000 max tokens, supports reasoning
   'claude-3-7-sonnet': {
+    maxOutputTokens: 64000,
+    supportsReasoning: true,
+    thinkingBudgetTokens: 16000  // 25% of 64000
+  },
+
+  // Alternative Sonnet 3.7 naming pattern
+  'claude-sonnet-3.7': {
     maxOutputTokens: 64000,
     supportsReasoning: true,
     thinkingBudgetTokens: 16000  // 25% of 64000
@@ -82,7 +98,7 @@ export function getModelConfig(modelName: string): ModelConfig {
 
   // Default configuration for unknown models
   // Conservative defaults: small token limit, no reasoning
-  console.warn(`Unknown model: ${modelName}, using default configuration`);
+  log.warn(`Unknown model: ${modelName}, using default configuration`);
   return {
     maxOutputTokens: 4096,
     supportsReasoning: false,

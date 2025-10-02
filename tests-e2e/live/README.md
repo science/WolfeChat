@@ -236,6 +236,12 @@ WolfeChat includes a comprehensive network debugging system for analyzing SSE st
 
 ### Debug Levels
 
+The E2E test suite supports two separate debug logging systems:
+
+#### E2E Test Runner Logging (`DEBUG_E2E`)
+
+Controls logging from the **test runner** code (Node.js context) using `tests-e2e/debug-utils.ts`:
+
 ```bash
 # No debugging (default)
 npx playwright test tests-e2e/live/your-test.spec.ts
@@ -248,6 +254,40 @@ DEBUG_E2E=2 npx playwright test tests-e2e/live/your-test.spec.ts
 
 # Level 3: Verbose SSE event tracing
 DEBUG_E2E=3 npx playwright test tests-e2e/live/your-test.spec.ts
+```
+
+The `DEBUG_E2E` variable controls the `debugLog()` utility from `tests-e2e/debug-utils.ts`:
+- `DEBUG_E2E=0` (or unset): No output
+- `DEBUG_E2E=1`: Only errors (ERR level)
+- `DEBUG_E2E=2`: Errors and warnings (ERR + WARN)
+- `DEBUG_E2E=3`: All output (ERR + WARN + INFO)
+
+#### Browser Application Logging (`VITE_E2E_TEST`)
+
+Controls logging from the **browser application** code using `src/lib/logger.ts`:
+
+```bash
+# Enable browser debug logs during E2E tests
+VITE_E2E_TEST=true npx playwright test tests-e2e/live/your-test.spec.ts
+
+# Combine both debug systems (MOST COMPREHENSIVE)
+DEBUG_E2E=2 VITE_E2E_TEST=true npx playwright test tests-e2e/live/your-test.spec.ts
+```
+
+The browser logger (`src/lib/logger.ts`) provides:
+- `log.debug()` - Only logged when `VITE_E2E_TEST=true` or in dev mode
+- `log.info()` - Only logged when `VITE_E2E_TEST=true` or in dev mode
+- `log.warn()` - Always logged
+- `log.error()` - Always logged
+
+**Key Difference:**
+- `DEBUG_E2E`: Controls test helper/runner output in terminal
+- `VITE_E2E_TEST`: Enables debug logs inside the browser application
+
+**Best Practice for Debugging:**
+```bash
+# Full visibility - see both test runner and browser logs
+DEBUG_E2E=2 VITE_E2E_TEST=true npx playwright test tests-e2e/live/your-test.spec.ts --headed
 ```
 
 ### Debug Infrastructure Components

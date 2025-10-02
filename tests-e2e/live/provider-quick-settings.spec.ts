@@ -15,7 +15,7 @@ import { debugInfo } from '../debug-utils';
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
 const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
-
+test.describe.configure({ mode: 'serial' });
 
 (test as any)[hasOpenAIKey ? 'describe' : 'skip']('Provider Quick Settings Integration', () => {
   test.beforeEach(async ({ page }) => {
@@ -25,6 +25,9 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
       localStorage.clear();
     });
     await page.reload();
+    await page.waitForLoadState('networkidle');
+    // Additional wait to ensure stores are fully reset
+    await page.waitForTimeout(500);
   });
 
   test('Quick Settings shows models with provider indicators when both providers configured', async ({ page }) => {
