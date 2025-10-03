@@ -1471,15 +1471,32 @@ export async function getModelDropdownState(
     // Step 1.4: Wait for models to load if requested
     if (opts.waitForModels) {
       const deadline = Date.now() + 10000;
+      let stableCount = 0;
+      let lastCount = 0;
+
       while (Date.now() < deadline) {
         const options = modelSelect.locator('option:not([disabled])');
         const count = await options.count();
+
+        // Check if we have models and they're not loading placeholders
         if (count > 0) {
           const firstText = await options.first().textContent();
           if (firstText && !firstText.match(/no models|loading/i)) {
-            break; // Models are loaded
+            // Models exist - now wait for count to stabilize
+            if (count === lastCount) {
+              stableCount++;
+              // If count has been stable for 3 consecutive checks (600ms), we're done
+              if (stableCount >= 3) {
+                break;
+              }
+            } else {
+              // Count changed - reset stability counter
+              stableCount = 0;
+              lastCount = count;
+            }
           }
         }
+
         await page.waitForTimeout(200);
       }
     }
