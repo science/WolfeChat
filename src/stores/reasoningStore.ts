@@ -405,4 +405,16 @@ if (typeof window !== 'undefined') {
   (window as any).appendReasoningText = appendReasoningText;
   (window as any).setReasoningText = setReasoningText;
   (window as any).completeReasoningPanel = completeReasoningPanel;
+
+  // Expose stores for E2E testing (as getter functions to get current state)
+  (window as any).__getReasoningPanels = () => {
+    let current: ReasoningPanel[] = [];
+    reasoningPanels.subscribe(val => { current = val; })();
+    return current;
+  };
+  (window as any).__getReasoningWindows = () => {
+    let current: ReasoningWindow[] = [];
+    reasoningWindows.subscribe(val => { current = val; })();
+    return current;
+  };
 }
