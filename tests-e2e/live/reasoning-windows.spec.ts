@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootstrapLiveAPI, selectReasoningModelInQuickSettings } from './helpers';
+import { bootstrapLiveAPI, selectReasoningModelInQuickSettings, waitForAssistantDone } from './helpers';
 
 async function sendPrompt(page: import('@playwright/test').Page, text: string) {
   const textarea = page.getByRole('textbox', { name: /chat input/i });
@@ -155,15 +155,33 @@ function panelStatus(panel: import('@playwright/test').Locator) {
    await selectReasoningModelInQuickSettings(page);
  
    const ensureDoneAndMinimized = async () => {
-     const details = reasoningRegion(page);
+     // Wait for the stream to complete first
+     await waitForAssistantDone(page);
+
+     // Get the LAST reasoning window (most recent)
+     const allDetails = reasoningRegion(page);
+     const count = await allDetails.count();
+     expect(count).toBeGreaterThan(0);
+     const details = allDetails.last();
      await expect(details).toBeVisible({ timeout: 30000 });
+
+     // Expand details if it's collapsed to check panel visibility
+     const summary = details.locator('summary');
+     let isOpen = await details.getAttribute('open');
+     if (!isOpen || isOpen === null) {
+       await summary.click();
+       // Wait for the details to actually open
+       await expect(details).toHaveAttribute('open', '', { timeout: 5000 });
+     }
+
      const panels = panelsIn(details);
      const firstPanel = panels.first();
+     // Wait for at least one panel to exist before checking visibility
+     await expect(panels).not.toHaveCount(0, { timeout: 30000 });
      await expect(firstPanel).toBeVisible({ timeout: 30000 });
      const status = panelStatus(firstPanel);
      await expect(status).toContainText(/done/i, { timeout: 75000 });
- 
-     const summary = details.locator('summary');
+
      const deadline = Date.now() + 30000;
      while (Date.now() < deadline) {
        const hasOpen = await details.getAttribute('open');

@@ -1,6 +1,6 @@
-# WolfeChat - a Multi-Provider Chat UI
+# WolfeChat - Multi-Provider AI Chat UI
 
-WolfeChat supports both OpenAI and Anthropic AI providers, giving you access to GPT and Claude models in a single interface.
+A browser-based chat interface for OpenAI (GPT-4, o1) and Anthropic (Claude) models. Use your own API keys with a clean, familiar UI—no subscriptions, pay only for what you use.
 
 ## Build notes
 
@@ -78,78 +78,54 @@ This project evolves the UI/UX, features, and codebase organization to fit Wolfe
 
 ## Multi-Provider Support
 
-WolfeChat now supports both OpenAI and Anthropic AI providers:
-
 **Supported Providers:**
-- **OpenAI**: GPT models, vision capabilities, reasoning models (o1), TTS, DALL-E
-- **Anthropic**: Claude models with vision support
+- **OpenAI**: GPT-4, GPT-3.5, o1/o3 reasoning models, vision, TTS, DALL-E
+- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus/Haiku, vision support
 
-**Key Features:**
-- Configure separate API keys for each provider in Settings
-- Automatic provider switching based on selected model
-- Combined model lists when both providers are configured
-- Provider-specific validation and error handling
-- Seamless switching between GPT and Claude models in conversations
+**Features:**
+- Dual API key support—configure one or both providers
+- Automatic provider routing based on model selection
+- Seamless model switching within conversations
+- Reasoning window display for o1 and Claude models
+- Quick Settings for per-conversation model/parameter overrides
 
 **Setup:**
-1. Go to Settings
-2. Select your preferred provider (OpenAI or Anthropic)
-3. Enter the corresponding API key
-4. Optionally configure both providers for access to all models
+1. Click Settings → Select provider (OpenAI or Anthropic)
+2. Enter API key(s)
+3. Start chatting—switch models anytime via Quick Settings
 
 ## Security
 
 **Anthropic API Browser Access:**
 This application uses the `anthropic-dangerous-direct-browser-access: true` header for direct browser communication with Anthropic's API. This implementation has been reviewed and approved by internal security teams and is authorized as secure for this specific use case. The header is required for browser-based applications to access Anthropic's API directly.
 
-## APP IMPROVEMENTS:
+## Key Features
 
-### Responsive
-The app is upgraded to work better on phones (tested on Firefox/Android).
+### Multi-Model Support
+- **Dual Providers**: OpenAI and Anthropic in one interface
+- **Quick Settings**: Switch models mid-conversation with per-chat overrides
+- **Reasoning Models**: o1/o3 (OpenAI) and Claude reasoning with dedicated display windows
 
-### Quick Settings
-Added a Quick Settings menu to make it easy to switch between different models in the same conversation. Also, when using a Reasoning model like GPT-5, it is quick to increase or decrease the reasoning and verbosity settings in a single conversation.
+### Enhanced UX
+- **Mobile-Friendly**: Responsive design tested on Firefox/Android
+- **Message Management**: Copy, delete, or fork conversations at any point
+- **Smart Autoscroll**: Scroll freely during streaming without disruption
+- **Safe Stream Control**: Stop incoming responses cleanly without breaking state
 
-### Support for Reasoning Models like GPT-5
-Reasoning, Verbosity, and Summary are all configurable when using GPT-5
-Reasoning data from server is displayed in the chat, when available. The reasoning text is _not_ sent back to the AI model as context during conversations
+### Modern API Integration
+- **OpenAI Responses API**: SSE streaming with reasoning window support
+- **Anthropic SDK**: Native Claude integration with progressive streaming
+- **Browser-Based**: Direct API calls—no backend, all data in browser storage
 
-### More Settings Options
-"Enter" key behavior can be configured to either "send messages" or "add linefeeds to the chat message."
+### Conversation Features
+- **Auto-Generated Titles**: Multi-provider fallback for smart naming
+- **Custom Titles**: Edit conversation names anytime
+- **Image Vision**: Upload images for GPT-4 Vision and Claude analysis
+- **Enter Key Config**: Choose "send" or "newline" behavior
 
-### Message Management
-- A copy button is now present on any message.
-- A delete button lets you remove any message, either user or AI messages.
-- A delete all below button lets you fork the chat from that point in the conversation.
+## Data Storage
 
-### Using new OpenAI Responses API
-Deprecated ChatResponses API, which enables extensibility and Reasoning window streaming.
-
-### Improved Autoscroll
-- The conversation now allows the user to safely scroll up while text is streaming in. Also provided are up/down buttons in Quick Settings to jump between long prompts (especially useful on phones)
-
-### Improved UI
-- The UI more closely resembles the official ChatGPT interface, with better icons, avatars, and expanding text areas.
-
-### Improved Incoming Data Handling
-- The API is supposed to send JSON packets for the app to render as incoming text, but sometimes it sends multiple JSON packets in a burst. When multiple JSON packets arrive at once, the original code would error out. Now, the app gracefully unpacks and separates the JSON packets so the text continues to flow.
-
-### Safely Stop Incoming Data
-- While the AI is talking to the user and data is streaming in, the UI won't allow the user to submit a new message. If the user wants to stop the API from talking, they can click the stop button and safely stop the incoming stream.
-
-### Improved Conversation Titles
-- In the background, the app will request the API to generate a title for the conversation after the first message is sent. This hidden prompt is now improved so the title is more meaningful and useful.
-
-### Conversation Title Editing
-- The user can now click the edit button on a conversation title and give it a custom title.
-
-## NOTE:
-
-The original version had special buttons for "send without history" and "summarize". I removed these as accounting for these edge cases made modularizing the code quite difficult. I also didn't find myself ever making use of them. To "send without history" you can simply start a new conversation. To "summarize" you can simply ask the AI to summarize the conversation. However, now that the code is robustly modularized, someone could add them back in if desired.
-
-Just like the original version, the conversations are stored in the browser cache, and will be lost if the cache is wiped.
-
-I don't necessarily plan to actively support requests, as I forked the original just to improve it for my own needs. Feel free to let me know about bugs, and I might get to it. Otherwise, feel free to fork this or the original and make further improvements.
+Conversations are stored in browser localStorage—no server, no tracking. If you clear browser data, conversations are lost. You can download/restore sessions locally via Settings.
 
 *** 
 

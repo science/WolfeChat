@@ -126,7 +126,8 @@ if (hasAnthropicKey) {
       conversations.set(mockConversations);
 
       // Import the service
-      const { streamAnthropicMessage, anthropicStreamContext, isAnthropicStreaming } = await import('../../services/anthropicMessagingService.js');
+      const { streamAnthropicMessage, anthropicStreamContext } = await import('../../services/anthropicMessagingService.js');
+      const { isStreaming } = await import('../../stores/stores.js');
 
       const messages = [
         { role: 'user' as const, content: 'Count from 1 to 5, one number per line.' }
@@ -139,7 +140,7 @@ if (hasAnthropicKey) {
         let receivedText = false;
 
         // Monitor streaming state
-        const unsubscribeStreaming = isAnthropicStreaming.subscribe(value => {
+        const unsubscribeStreaming = isStreaming.subscribe(value => {
           if (value) streamingStarted = true;
         });
 

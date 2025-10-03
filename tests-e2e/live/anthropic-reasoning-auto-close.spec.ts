@@ -102,11 +102,11 @@ test.describe('Anthropic Reasoning Auto-Close', () => {
     };
 
     debugInfo('Sending message 1...');
-    await sendMessage(page, '1+1');
+    await sendMessage(page, 'Explain the Monty Hall problem in one sentence.');
     await verifyAutoClose(1);
 
     debugInfo('Sending message 2...');
-    await sendMessage(page, '2+2');
+    await sendMessage(page, 'Why does the prisoner dilemma matter in game theory?');
     await verifyAutoClose(2);
   });
 });

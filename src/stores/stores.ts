@@ -153,7 +153,7 @@ selectedModel.subscribe(value => {
   export const clearFileInputSignal = writable(false);
 
 
-  export const isStreaming = writable(false);  
+  export const isStreaming = writable(false);
   export const userRequestedStreamClosure = writable(false);  
 
   export const streamContext = writable({ streamText: '', convId: null });  
