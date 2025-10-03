@@ -101,13 +101,14 @@ test.describe('Reasoning Windows Placement', () => {
     await operateQuickSettings(page, {
       mode: 'ensure-open',
       model: 'gpt-5-nano',
-      reasoning: 'medium',
+      reasoning: 'low',
       closeAfter: true
     });
 
     // Send reasoning prompt and wait for reasoning to complete
     debugInfo('Sending Monte Hall prompt for stability test...');
     await sendMessage(page, REASONING_PROMPT);
+    await waitForAssistantDone(page);
 
     // Wait for reasoning windows with content
     await waitForReasoningWithContent(page, 1);
@@ -131,11 +132,11 @@ test.describe('Reasoning Windows Placement', () => {
     debugInfo(`Initial reasoning window position: ${JSON.stringify(initialPosition)}`);
 
     // Add more messages to test stability
-    await sendMessage(page, 'Can you elaborate more?');
-    await page.waitForTimeout(2000); // Wait for response
+    await sendMessage(page, 'In one sentence, summarize the key insight.');
+    await waitForAssistantDone(page);
 
-    await sendMessage(page, 'What about other probability puzzles?');
-    await page.waitForTimeout(2000); // Wait for response
+    await sendMessage(page, 'Thank you');
+    await waitForAssistantDone(page);
 
     // Verify the first reasoning window position hasn't shifted significantly
     const finalPosition = await page.evaluate(() => {
@@ -187,12 +188,13 @@ test.describe('Reasoning Windows Placement', () => {
     await operateQuickSettings(page, {
       mode: 'ensure-open',
       model: 'gpt-5-nano',
-      reasoning: 'medium',
+      reasoning: 'low',
       closeAfter: true
     });
 
     debugInfo('Sending Monte Hall prompt to reasoning model...');
     await sendMessage(page, REASONING_PROMPT);
+    await waitForAssistantDone(page);
 
     // Wait for reasoning windows to appear with content
     const reasoningCount = await waitForReasoningWithContent(page, 1);

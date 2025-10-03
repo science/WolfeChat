@@ -15,9 +15,9 @@ registerTest({
   fn: async (t) => {
     const {
       anthropicStreamContext,
-      isAnthropicStreaming,
       closeAnthropicStream
     } = await import('../../services/anthropicMessagingService.js');
+    const { isStreaming } = await import('../../stores/stores.js');
 
     const { get } = await import('svelte/store');
 
@@ -25,7 +25,7 @@ registerTest({
     const initialContext = get(anthropicStreamContext);
     t.that(initialContext.streamText === '', 'Initial stream text should be empty');
     t.that(initialContext.convId === null, 'Initial conv ID should be null');
-    t.that(get(isAnthropicStreaming) === false, 'Should not be streaming initially');
+    t.that(get(isStreaming) === false, 'Should not be streaming initially');
 
     // Test context updates
     anthropicStreamContext.set({ streamText: 'Hello', convId: 1 });
@@ -34,11 +34,11 @@ registerTest({
     t.that(updatedContext.convId === 1, 'Conv ID should update');
 
     // Test stream closure
-    isAnthropicStreaming.set(true);
+    isStreaming.set(true);
     closeAnthropicStream();
 
     const finalContext = get(anthropicStreamContext);
-    t.that(get(isAnthropicStreaming) === false, 'Should not be streaming after close');
+    t.that(get(isStreaming) === false, 'Should not be streaming after close');
 
     console.log('✓ Stream context management working correctly');
   }

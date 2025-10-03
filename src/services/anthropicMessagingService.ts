@@ -2,7 +2,9 @@ import { get, writable } from 'svelte/store';
 import type { ChatMessage } from "../stores/stores.js";
 import { anthropicApiKey } from "../stores/providerStore.js";
 import {
-  conversations
+  conversations,
+  isStreaming,
+  userRequestedStreamClosure
 } from "../stores/stores.js";
 import {
   setHistory
@@ -47,7 +49,7 @@ type AnthropicResponse = {
 let globalAnthropicAbortController: AbortController | null = null;
 
 // Streaming state management
-export const isAnthropicStreaming = writable(false);
+// NOTE: Using unified isStreaming from stores.ts to ensure App.svelte sees the same state
 export const userRequestedAnthropicStreamClosure = writable(false);
 export const anthropicStreamContext = writable<{ streamText: string; convId: number | null }>({ streamText: '', convId: null });
 
@@ -94,7 +96,7 @@ export function closeAnthropicStream() {
     log.warn('closeAnthropicStream abort failed:', e);
   } finally {
     globalAnthropicAbortController = null;
-    isAnthropicStreaming.set(false);
+    isStreaming.set(false);
   }
 }
 
@@ -200,13 +202,13 @@ export async function streamAnthropicMessage(
   // Use SDK implementation if feature flag is enabled
   if (USE_ANTHROPIC_SDK) {
     log.debug("Using Anthropic SDK for streaming message");
-    isAnthropicStreaming.set(true);
+    isStreaming.set(true);
     userRequestedAnthropicStreamClosure.set(false);
 
     try {
       await streamAnthropicMessageSDK(messages, convId, config);
     } finally {
-      isAnthropicStreaming.set(false);
+      isStreaming.set(false);
       userRequestedAnthropicStreamClosure.set(false);
     }
     return;
@@ -219,7 +221,7 @@ export async function streamAnthropicMessage(
   }
 
   let currentHistory = get(conversations)[convId].history;
-  isAnthropicStreaming.set(true);
+  isStreaming.set(true);
   userRequestedAnthropicStreamClosure.set(false);
 
   // Buffer for batching history updates
@@ -300,16 +302,16 @@ export async function streamAnthropicMessage(
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) break;
-
         // Check if user requested stream closure
-        if (get(userRequestedAnthropicStreamClosure)) {
-          log.debug('User requested stream closure');
+        if (get(userRequestedStreamClosure)) {
+          log.debug('Anthropic: User requested stream closure');
           streamInterrupted = true;
           break;
         }
+
+        const { done, value } = await reader.read();
+
+        if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
@@ -368,7 +370,7 @@ export async function streamAnthropicMessage(
       }
     } finally {
       reader.releaseLock();
-      isAnthropicStreaming.set(false);
+      isStreaming.set(false);
       globalAnthropicAbortController = null;
 
       // Clear streaming context
@@ -385,7 +387,7 @@ export async function streamAnthropicMessage(
 
   } catch (error) {
     log.error("Error in streamAnthropicMessage:", error);
-    isAnthropicStreaming.set(false);
+    isStreaming.set(false);
     globalAnthropicAbortController = null;
     anthropicStreamContext.set({ streamText: '', convId: null });
 

@@ -7,7 +7,9 @@ import {
   selectedModel,
   selectedSize,
   selectedQuality,
-  defaultAssistantRole
+  defaultAssistantRole,
+  isStreaming,
+  userRequestedStreamClosure
 } from "../stores/stores.js";
 import { openaiApiKey } from "../stores/providerStore.js";
 import { reasoningEffort, verbosity, summary } from "../stores/reasoningSettings.js";
@@ -59,14 +61,24 @@ export function appendErrorToHistory(error: any, currentHistory: ChatCompletionR
   setHistory([...currentHistory, errorChatMessage], convId);
 }
 
-// Gracefully stop an in-flight streaming response
+// Gracefully stop an in-flight streaming response (works for both OpenAI and Anthropic)
 export function closeStream() {
   try {
+    // Set closure flags for both providers
     userRequestedStreamClosure.set(true);
+
+    // Try to abort OpenAI stream
     const ctrl = globalAbortController;
     if (ctrl) {
       ctrl.abort();
     }
+
+    // Also try to close Anthropic stream
+    import('./anthropicMessagingService.js').then(({ closeAnthropicStream }) => {
+      closeAnthropicStream();
+    }).catch(() => {
+      // Ignore if module fails to load (not using Anthropic)
+    });
   } catch (e) {
     log.warn('closeStream abort failed:', e);
   } finally {
@@ -77,8 +89,7 @@ export function closeStream() {
 
 
 // Streaming state management
-export const isStreaming = writable(false);
-export const userRequestedStreamClosure = writable(false);
+// NOTE: isStreaming and userRequestedStreamClosure are now imported from stores.ts
 export const streamContext = writable<{ streamText: string; convId: number | null }>({ streamText: '', convId: null });
 
 // ChatCompletions SDK removed; using fetch-based Responses API only
@@ -1240,49 +1251,75 @@ export async function streamResponseViaResponsesAPI(
     }
   }
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) {
-      debugLog.sseParser('stream_reader_done', {
-        totalChunksProcessed: buffer.length
+  try {
+    while (true) {
+      // Check if user requested stream closure
+      if (get(userRequestedStreamClosure)) {
+        log.debug('[SSE] User requested stream closure, stopping reader loop');
+        debugLog.sseParser('stream_user_aborted', {
+          partialTextLength: finalText.length
+        }, convIdCtx);
+        break;
+      }
+
+      const { value, done } = await reader.read();
+      if (done) {
+        debugLog.sseParser('stream_reader_done', {
+          totalChunksProcessed: buffer.length
+        }, convIdCtx);
+        break;
+      }
+      const decoded = decoder.decode(value, { stream: true });
+
+      debugLog.sseParser('raw_chunk_received', {
+        chunkLength: decoded.length,
+        chunkSnippet: decoded.slice(0, 50)
       }, convIdCtx);
-      break;
+
+      // Log raw chunk if SSE debugging is active
+      if (apiCallLog) {
+        apiCallLog.response.summary.totalChunks++;
+        const eventLog = {
+          timestamp: new Date().toISOString(),
+          rawChunk: decoded,
+          parsed: null,
+          reasoningStoreReceived: false
+        };
+        apiCallLog.response.streamEvents.push(eventLog);
+      }
+
+      buffer += decoded;
+
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop() || '';
+      for (const p of parts) {
+        if (p.trim()) processSSEBlock(p);
+      }
     }
-    const decoded = decoder.decode(value, { stream: true });
-
-    debugLog.sseParser('raw_chunk_received', {
-      chunkLength: decoded.length,
-      chunkSnippet: decoded.slice(0, 50)
-    }, convIdCtx);
-
-    // Log raw chunk if SSE debugging is active
-    if (apiCallLog) {
-      apiCallLog.response.summary.totalChunks++;
-      const eventLog = {
-        timestamp: new Date().toISOString(),
-        rawChunk: decoded,
-        parsed: null,
-        reasoningStoreReceived: false
-      };
-      apiCallLog.response.streamEvents.push(eventLog);
-    }
-
-    buffer += decoded;
-
-    const parts = buffer.split('\n\n');
-    buffer = parts.pop() || '';
-    for (const p of parts) {
-      if (p.trim()) processSSEBlock(p);
+    if (buffer.trim()) processSSEBlock(buffer);
+  } catch (err) {
+    // Handle abort errors gracefully
+    if (err.name === 'AbortError' || get(userRequestedStreamClosure)) {
+      log.debug('[SSE] Stream aborted by user or fetch abort');
+      debugLog.sseParser('stream_aborted', {
+        errorName: err.name,
+        partialTextLength: finalText.length
+      }, convIdCtx);
+    } else {
+      // Re-throw unexpected errors
+      log.error('[SSE] Unexpected error during stream reading:', err);
+      throw err;
     }
   }
-  if (buffer.trim()) processSSEBlock(buffer);
 
   // If the stream ended without explicit completion, emit a synthetic completion
   if (!completedEmitted) {
+    const wasAborted = get(userRequestedStreamClosure);
     log.warn('[SSE] Stream ended without response.completed or [DONE]. Emitting synthetic completion.', {
       model: resolvedModel,
       payloadShape: Object.keys(payload || {}),
-      partialFinalTextLen: finalText.length
+      partialFinalTextLen: finalText.length,
+      userAborted: wasAborted
     });
     // finalize any panels and collapse window
     for (const [kind, panelId] of panelTracker.entries()) {
@@ -1291,7 +1328,11 @@ export async function streamResponseViaResponsesAPI(
     }
     panelTracker.clear();
     panelTextTracker.clear();
-    callbacks?.onCompleted?.(finalText, { type: 'response.completed', synthetic: true, reason: 'eof_without_terminal_event' });
+    callbacks?.onCompleted?.(finalText, {
+      type: 'response.completed',
+      synthetic: true,
+      reason: wasAborted ? 'user_aborted' : 'eof_without_terminal_event'
+    });
     completedEmitted = true;
     if (responseWindowId) collapseReasoningWindow(responseWindowId);
   }

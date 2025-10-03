@@ -240,30 +240,46 @@ test.describe.configure({ mode: 'serial' });
     // Check Quick Settings shows GPT models
     await operateQuickSettings(page, { mode: 'ensure-open' });
 
-    let quickModelSelect = page.locator('select').filter({ hasText: /gpt|claude/i }).first();
-    if (await quickModelSelect.isVisible().catch(() => false)) {
-      let options = await quickModelSelect.locator('option').allTextContents();
-      let hasGptModels = options.some(m => m.toLowerCase().includes('gpt'));
-      expect(hasGptModels).toBe(true);
-    }
+    const quickModelSelect = page.locator('#current-model-select');
+    await expect(quickModelSelect).toBeVisible();
+
+    let options = await quickModelSelect.locator('option').allTextContents();
+    let hasGptModels = options.some(m => m.toLowerCase().includes('gpt'));
+    expect(hasGptModels).toBe(true);
 
     await operateQuickSettings(page, { mode: 'ensure-closed' });
 
     if (hasAnthropicKey) {
       const anthropicKey = process.env.ANTHROPIC_API_KEY!;
 
-      // Switch to Anthropic in Settings
+      // Switch to Anthropic in Settings (this adds Anthropic, doesn't remove OpenAI)
       await setProviderApiKey(page, 'Anthropic', anthropicKey);
 
-      // Quick Settings should now show Claude models
+      // Quick Settings should now show BOTH GPT and Claude models (both providers configured)
       await operateQuickSettings(page, { mode: 'ensure-open' });
 
-      quickModelSelect = page.locator('select').filter({ hasText: /gpt|claude/i }).first();
-      if (await quickModelSelect.isVisible().catch(() => false)) {
-        let options = await quickModelSelect.locator('option').allTextContents();
-        let hasClaudeModels = options.some(m => m.toLowerCase().includes('claude'));
-        expect(hasClaudeModels).toBe(true);
-      }
+      // Use the specific Quick Settings model select
+      const quickModelSelectDirect = page.locator('#current-model-select');
+      await expect(quickModelSelectDirect).toBeVisible();
+
+      // Wait for models to actually load in Quick Settings (store reactivity may take time)
+      await page.waitForFunction(
+        () => {
+          const select = document.querySelector('#current-model-select') as HTMLSelectElement;
+          if (!select) return false;
+          const options = Array.from(select.options).map(o => o.textContent?.toLowerCase() || '');
+          const hasGpt = options.some(o => o.includes('gpt'));
+          const hasClaude = options.some(o => o.includes('claude'));
+          return hasGpt && hasClaude;
+        },
+        { timeout: 10000, polling: 200 }
+      );
+
+      let options = await quickModelSelectDirect.locator('option').allTextContents();
+      let hasGptModels = options.some(m => m.toLowerCase().includes('gpt'));
+      let hasClaudeModels = options.some(m => m.toLowerCase().includes('claude'));
+      expect(hasGptModels).toBe(true); // Should still have GPT models
+      expect(hasClaudeModels).toBe(true); // Should now also have Claude models
     }
   });
 });

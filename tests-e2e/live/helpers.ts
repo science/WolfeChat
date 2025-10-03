@@ -1072,6 +1072,30 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
       debugWarn('[WAIT-ASSISTANT] UI completion failed but stream completion succeeded - likely reasoning events bug');
     }
 
+    // Additional check: Ensure isStreaming is false by checking the UI state
+    // This is critical for reasoning models where stream completion may lag
+    const finalCheckResult = await page.waitForFunction(
+      () => {
+        const win = window as any;
+        // Check the monitor
+        const monitorStreaming = win.__streamMonitor?.isStreaming ?? false;
+
+        // Also check if the Wait icon is NOT visible (which indicates streaming)
+        const waitIcon = document.querySelector('img[alt="Wait"]') as HTMLImageElement;
+        const waitIconVisible = waitIcon && waitIcon.offsetParent !== null;
+
+        return !monitorStreaming && !waitIconVisible;
+      },
+      { timeout: 5000, polling: 100 }
+    ).catch((err) => {
+      debugWarn('[WAIT-ASSISTANT] Final streaming check timed out - stream may still be active');
+      return null;
+    });
+
+    if (!finalCheckResult) {
+      throw new Error('Stream did not complete - Wait icon still visible or stream monitor indicates streaming');
+    }
+
     // Additional stabilization if needed
     if (stabilizationTime > 0) {
       await page.waitForTimeout(stabilizationTime);
