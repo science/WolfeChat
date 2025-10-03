@@ -4,7 +4,7 @@ import { conversations, chosenConversationId, combinedTokens, createNewConversat
 import { selectedModel, selectedVoice, base64Images } from '../stores/stores.js';
 import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore.js';
 import { addRecentModel } from '../stores/recentModelsStore.js';
-import { reasoningWindows } from '../stores/reasoningStore.js';
+import { reasoningWindows, reasoningPanels } from '../stores/reasoningStore.js';
 
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService.js";
 import { streamAnthropicMessage } from "../services/anthropicMessagingService.js";
@@ -129,14 +129,36 @@ export function deleteAllMessagesBelow(messageIndex: number) {
     return updated;
   });
   
-  // Clean up reasoning windows for deleted messages
+  // Clean up reasoning windows and panels for deleted messages
+  // First, collect the IDs of windows that will be deleted
+  const deletedWindowIds = new Set<string>();
   reasoningWindows.update(windows => {
-    // Remove windows anchored to messages that were deleted
-    return windows.filter(w => {
+    // Identify windows that will be deleted
+    const remainingWindows = windows.filter(w => {
       // Use strict equality on string IDs; if a window has no convId, keep it
       if (!w.convId || w.convId !== conversationUniqueId) return true;
-      // Keep windows anchored at or before messageIndex
-      return (w.anchorIndex ?? Number.NEGATIVE_INFINITY) <= messageIndex;
+
+      // Reasoning windows are anchored to the USER message that triggered the assistant response
+      // If anchorIndex > messageIndex: window is for a message we're deleting
+      // If anchorIndex < messageIndex: window is for a message we're keeping
+      // If anchorIndex == messageIndex: window is for the assistant response AFTER messageIndex
+      //   Since we're deleting all messages after messageIndex, the assistant response doesn't exist
+      const shouldKeep = (w.anchorIndex ?? Number.NEGATIVE_INFINITY) < messageIndex;
+      if (!shouldKeep) {
+        deletedWindowIds.add(w.id);
+      }
+      return shouldKeep;
+    });
+    return remainingWindows;
+  });
+
+  // Remove panels whose responseId matches deleted windows
+  reasoningPanels.update(panels => {
+    return panels.filter(p => {
+      // Keep panels from other conversations
+      if (!p.convId || p.convId !== conversationUniqueId) return true;
+      // Remove panels linked to deleted windows
+      return !p.responseId || !deletedWindowIds.has(p.responseId);
     });
   });
 }
