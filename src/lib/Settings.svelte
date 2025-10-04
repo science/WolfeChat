@@ -628,7 +628,7 @@ handleClose();
               <div class="mt-4">
                 <label for="show-tokens-toggle" class="flex items-center cursor-pointer">
                   <div class="relative">
-                    <input type="checkbox" id="show-tokens-toggle" class="sr-only" bind:checked={showTokensToggle} on:change={handleShowTokensToggleChange}>
+                    <input type="checkbox" id="show-tokens-toggle" class="sr-only" aria-label="Show estimated tokens in sidebar" bind:checked={showTokensToggle} on:change={handleShowTokensToggleChange}>
                     <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
                     <div class="dot absolute left-1 top-1 bg-gray-100 w-6 h-6 rounded-full transition"></div>
                   </div>

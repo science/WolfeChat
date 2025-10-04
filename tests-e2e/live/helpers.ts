@@ -192,6 +192,31 @@ export async function withSettings(page: Page, action: () => Promise<void>) {
   }
 }
 
+/**
+ * Enables the "Show estimated tokens in sidebar" setting
+ */
+export async function enableTokenDisplay(page: Page) {
+  await withSettings(page, async () => {
+    // Use semantic selector - checkbox has aria-label
+    const checkbox = page.getByRole('checkbox', { name: /show estimated tokens in sidebar/i });
+    const isChecked = await checkbox.isChecked();
+
+    if (!isChecked) {
+      await checkbox.check();
+    }
+  });
+}
+
+/**
+ * Gets the token count displayed in the sidebar for the current conversation
+ */
+export async function getTokenCount(page: Page): Promise<number> {
+  const tokenDisplay = page.locator('.conversation .tokens').first();
+  await expect(tokenDisplay).toBeVisible({ timeout: 5000 });
+  const tokenText = await tokenDisplay.textContent();
+  return parseInt(tokenText?.trim() || '0', 10);
+}
+
 export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthropic' = 'OpenAI') {
   const key = provider === 'OpenAI'
     ? process.env.OPENAI_API_KEY
