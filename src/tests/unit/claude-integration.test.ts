@@ -5,6 +5,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'claude-model-detection',
@@ -43,7 +44,7 @@ registerTest({
       t.that(!isAnthropicModel(model), `${model} should NOT be detected as Anthropic model`);
     }
 
-    console.log('✓ Claude model detection working correctly');
+    debugInfo('✓ Claude model detection working correctly');
   }
 });
 
@@ -83,7 +84,7 @@ registerTest({
     const noSystemExtracted = extractSystemMessage(noSystem);
     t.that(noSystemExtracted === undefined, 'Should return undefined when no system message');
 
-    console.log('✓ Message format conversion working correctly');
+    debugInfo('✓ Message format conversion working correctly');
   }
 });
 
@@ -106,7 +107,7 @@ registerTest({
       t.that(typeof anthropicMessaging.streamAnthropicMessage === 'function', 'streamAnthropicMessage should be a function');
       t.that(typeof anthropicMessaging.sendAnthropicMessage === 'function', 'sendAnthropicMessage should be a function');
 
-      console.log('✓ All Anthropic service imports working correctly');
+      debugInfo('✓ All Anthropic service imports working correctly');
     } catch (error) {
       t.that(false, `Import error: ${error.message}`);
     }

@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'test-harness-quiet-success-format',
@@ -66,10 +67,10 @@ registerTest({
     assert.that(!output.includes('First passing test'),
       'Passing tests should not show names (Rails-style compression)');
 
-    // Should have compressed checkmarks
-    const checkmarkCount = (output.match(/✓/g) || []).length;
-    assert.that(checkmarkCount === 3,
-      'Should have 3 checkmarks for 3 passing tests');
+    // Should have compressed dots (Rails-style)
+    const dotCount = (output.match(/\./g) || []).length;
+    assert.that(dotCount >= 3,
+      'Should have 3 dots for 3 passing tests');
   }
 });
 
@@ -191,18 +192,18 @@ registerTest({
     const output = formatSuiteResultsText(mockSuiteResult);
     const lines = output.split('\n');
 
-    // Count how many lines have checkmarks
-    const checkmarkLines = lines.filter(line => line.includes('✓')).length;
+    // Count how many lines have dots
+    const dotLines = lines.filter(line => line.includes('.')).length;
 
     // Should compress into fewer lines than number of tests
-    // Rails style: ✓✓✓✓✓✓✓✓✓✓ on one line instead of 10 lines
-    assert.that(checkmarkLines < 10,
+    // Rails style: .......... on one line instead of 10 lines
+    assert.that(dotLines < 10,
       'Should compress 10 passing tests into fewer than 10 lines (Rails style)');
 
-    // Should have at least one line with multiple checkmarks
-    const hasCompressedLine = lines.some(line => (line.match(/✓/g) || []).length > 1);
+    // Should have at least one line with multiple dots
+    const hasCompressedLine = lines.some(line => (line.match(/\./g) || []).length > 1);
     assert.that(hasCompressedLine,
-      'Should have at least one line with multiple checkmarks (e.g., ✓✓✓)');
+      'Should have at least one line with multiple dots (e.g., ...)');
   }
 });
 
@@ -261,21 +262,21 @@ registerTest({
     assert.that(output.includes('Test failed'),
       'Should show error message');
 
-    // Passing tests should be compressed (checkmarks without verbose details)
-    const totalCheckmarks = output.match(/✓/g)?.length || 0;
-    assert.that(totalCheckmarks === 2,
-      'Should have 2 checkmarks for 2 passing tests');
+    // Passing tests should be compressed (dots without verbose details)
+    const totalDots = output.match(/\./g)?.length || 0;
+    assert.that(totalDots >= 2,
+      'Should have 2 dots for 2 passing tests');
 
-    // Should NOT have verbose test names for passing tests (like "✓ Test name")
-    assert.that(!output.includes('✓ First passing test'),
+    // Should NOT have verbose test names for passing tests (like ". Test name")
+    assert.that(!output.includes('. First passing test'),
       'Should not show full test name for passing tests');
 
-    assert.that(!output.includes('✓ Third passing test'),
+    assert.that(!output.includes('. Third passing test'),
       'Should not show full test name for passing tests');
 
-    // Just checkmarks (compressed), not "✓ Test Name" (verbose)
-    const hasVerbosePassingOutput = output.match(/✓\s+\w+\s+\w+\s+test/i);
+    // Just dots (compressed), not ". Test Name" (verbose)
+    const hasVerbosePassingOutput = output.match(/\.\s+\w+\s+\w+\s+test/i);
     assert.that(!hasVerbosePassingOutput,
-      'Passing tests should show just ✓, not "✓ Test Name"');
+      'Passing tests should show just ., not ". Test Name"');
   }
 });

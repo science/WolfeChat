@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'anthropic-sdk-import-basic',
@@ -34,7 +35,7 @@ registerTest({
       throw new Error('Anthropic SDK default export is not a constructor function');
     }
 
-    console.log('✓ Anthropic SDK imported successfully');
+    debugInfo('✓ Anthropic SDK imported successfully');
   }
 });
 
@@ -69,7 +70,7 @@ registerTest({
       throw new Error(`Expected API key 'test-api-key-12345', got '${client.apiKey}'`);
     }
 
-    console.log('✓ Anthropic client created successfully with browser config');
+    debugInfo('✓ Anthropic client created successfully with browser config');
   }
 });
 
@@ -100,6 +101,6 @@ registerTest({
       throw new Error(`Expected error message to contain 'browser', got: ${browserError.message}`);
     }
 
-    console.log('✓ Properly requires dangerouslyAllowBrowser for browser use');
+    debugInfo('✓ Properly requires dangerouslyAllowBrowser for browser use');
   }
 });

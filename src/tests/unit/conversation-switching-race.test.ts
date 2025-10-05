@@ -1,6 +1,7 @@
 import { registerTest } from '../testHarness.js';
 import { conversations, chosenConversationId } from '../../stores/stores.js';
 import { get } from 'svelte/store';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'conversation-switching-race',
@@ -48,7 +49,7 @@ registerTest({
     // it might use the OLD chosenConversationId value!
 
     // Simulate the E2E test scenario more closely
-    console.log('Testing E2E scenario:');
+    debugInfo('Testing E2E scenario:');
 
     // E2E test has conversations in reverse order (newest first)
     // So conv3 is at index 0, conv2 at index 1, conv1 at index 2
@@ -72,12 +73,12 @@ registerTest({
     // The E2E test expects to be sending to conv-3, but if there's any delay
     // or race condition, it might send to the wrong conversation.
 
-    console.log('Race condition scenario:');
-    console.log('- Test clicks conversation at index 0 (conv-3)');
-    console.log('- chosenConversationId.set(0) is called');
-    console.log('- processMessage() runs immediately');
-    console.log('- If store update hasn\'t propagated, processMessage uses old index');
-    console.log('- Message goes to wrong conversation!');
+    debugInfo('Race condition scenario:');
+    debugInfo('- Test clicks conversation at index 0 (conv-3)');
+    debugInfo('- chosenConversationId.set(0) is called');
+    debugInfo('- processMessage() runs immediately');
+    debugInfo('- If store update hasn\'t propagated, processMessage uses old index');
+    debugInfo('- Message goes to wrong conversation!');
 
     // The real issue: processMessage in App.svelte uses $chosenConversationId
     // which is reactive, but if called immediately after setting, might not be updated

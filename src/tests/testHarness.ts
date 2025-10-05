@@ -202,7 +202,7 @@ export function formatSuiteResultsText(suite: SuiteResult): string {
   for (const r of suite.results) {
     if (r.success) {
       // Passing tests: accumulate as dots (Rails style)
-      passingDots += '✓';
+      passingDots += '.';
 
       // Break line after N dots for readability
       if (passingDots.length >= DOTS_PER_LINE) {
@@ -218,7 +218,7 @@ export function formatSuiteResultsText(suite: SuiteResult): string {
       }
 
       // Failing tests: show full details
-      lines.push(`- [FAIL] ${r.name} (${r.durationMs.toFixed(0)}ms)`);
+      lines.push(`- [x] ${r.name} (${r.durationMs.toFixed(0)}ms)`);
       if (r.details) {
         lines.push(r.details);
       }

@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'settings-only-openai-key-configured',
@@ -47,10 +48,10 @@ registerTest({
 
     // Should have models (not zero)
     if (filteredModels.length === 0) {
-      console.log('DEBUG: No models after filtering');
-      console.log('Raw models:', rawModelsStore);
-      console.log('OpenAI key exists:', !!openaiApiKey);
-      console.log('Anthropic key exists:', !!anthropicApiKey);
+      debugInfo('DEBUG: No models after filtering');
+      debugInfo('Raw models:', rawModelsStore);
+      debugInfo('OpenAI key exists:', !!openaiApiKey);
+      debugInfo('Anthropic key exists:', !!anthropicApiKey);
       throw new Error('Expected to have filtered models, got 0');
     }
 
@@ -77,7 +78,7 @@ registerTest({
       throw new Error('Should not show provider indicators when only one provider is configured');
     }
 
-    console.log('✅ TDD Test passed: Correct filtering with only OpenAI key');
+    debugInfo('✅ TDD Test passed: Correct filtering with only OpenAI key');
   }
 });
 
@@ -132,7 +133,7 @@ registerTest({
       throw new Error('Should show provider indicators when both providers are configured');
     }
 
-    console.log('✅ TDD Test passed: Correct filtering with both providers');
+    debugInfo('✅ TDD Test passed: Correct filtering with both providers');
   }
 });
 
@@ -163,7 +164,7 @@ registerTest({
       throw new Error(`Expected 0 models when store is empty, got ${filteredModels.length}`);
     }
 
-    console.log('✅ TDD Test passed: Empty models store handled correctly');
+    debugInfo('✅ TDD Test passed: Empty models store handled correctly');
   }
 });
 
@@ -200,7 +201,7 @@ registerTest({
     // ASSERT: Should get only the 2 chat models (gpt-4 and gpt-3.5-turbo)
     // Should exclude gpt-4-vision-preview, dall-e-3, tts-1
     if (filteredModels.length !== 2) {
-      console.log('Filtered models:', filteredModels.map(m => m.id));
+      debugInfo('Filtered models:', filteredModels.map(m => m.id));
       throw new Error(`Expected 2 chat models, got ${filteredModels.length}`);
     }
 
@@ -212,6 +213,6 @@ registerTest({
       throw new Error(`Expected models [${expectedSorted.join(', ')}], got [${actualModels.join(', ')}]`);
     }
 
-    console.log('✅ TDD Test passed: Real-world model structure handled correctly');
+    debugInfo('✅ TDD Test passed: Real-world model structure handled correctly');
   }
 });

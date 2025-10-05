@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 // UNCOMMENT TO SEE FAILURE OUTPUT:
 /*
@@ -47,9 +48,9 @@ registerTest({
 
     const output = formatSuiteResultsText(failureResult);
 
-    // Should show [FAIL] marker
-    assert.that(output.includes('[FAIL]'),
-      'Should have [FAIL] marker for failing tests');
+    // Should show [x] marker (Rails-style)
+    assert.that(output.includes('[x]'),
+      'Should have [x] marker for failing tests');
 
     // Should show the test name
     assert.that(output.includes('Example failing test'),

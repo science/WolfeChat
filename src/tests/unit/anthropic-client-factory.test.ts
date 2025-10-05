@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'anthropic-client-factory-creation',
@@ -41,7 +42,7 @@ registerTest({
       throw new Error(`Expected API key 'test-api-key-factory', got '${client.apiKey}'`);
     }
 
-    console.log('✓ Client factory creates SDK clients successfully');
+    debugInfo('✓ Client factory creates SDK clients successfully');
   }
 });
 
@@ -74,7 +75,7 @@ registerTest({
       throw new Error(`Expected client type 'Anthropic', got '${clientType}'`);
     }
 
-    console.log('✓ Client factory includes proper browser configuration');
+    debugInfo('✓ Client factory includes proper browser configuration');
   }
 });
 
@@ -101,10 +102,10 @@ registerTest({
       if (!thrownError.message.toLowerCase().includes('api key')) {
         throw new Error(`Expected error about API key, got: ${thrownError.message}`);
       }
-      console.log('✓ Factory throws descriptive error for missing API key');
+      debugInfo('✓ Factory throws descriptive error for missing API key');
     } else {
       // If it doesn't throw, it should still create a valid client
-      console.log('✓ Factory handles missing API key gracefully (deferred validation)');
+      debugInfo('✓ Factory handles missing API key gracefully (deferred validation)');
     }
   }
 });

@@ -1,5 +1,6 @@
 import { test } from '../testHarness.js';
 import { shouldSendOnEnter, type EnterBehaviorOption } from '../../utils/keyboard.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 test({
   id: 'ctrl-enter-send-basic',

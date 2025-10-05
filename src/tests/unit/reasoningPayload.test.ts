@@ -2,6 +2,7 @@ import type { Test } from '../testHarness.js';
 import type { Assert } from '../testHarness.js';
 import { buildResponsesPayload, supportsReasoning } from '../../services/openaiService.js';
 import { reasoningEffort, verbosity, summary } from '../../stores/reasoningSettings.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 function makeInput() {
   return [

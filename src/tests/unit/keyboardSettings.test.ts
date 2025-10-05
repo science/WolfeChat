@@ -2,6 +2,7 @@ import { registerTest } from '../testHarness.js';
 import { enterBehavior } from '../../stores/keyboardSettings.js';
 import { get } from 'svelte/store';
 import { shouldSendOnEnter } from '../../utils/keyboard.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'enter-behavior-send',

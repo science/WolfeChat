@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 // Test: Reasoning service uses model-specific thinking budget
 registerTest({
@@ -40,7 +41,7 @@ registerTest({
       throw new Error(`Expected thinking budget ${expectedBudget}, got ${configuredParams.thinking.budget_tokens}`);
     }
 
-    console.log('✓ Reasoning service uses model-specific thinking budget correctly');
+    debugInfo('✓ Reasoning service uses model-specific thinking budget correctly');
   }
 });
 
@@ -74,7 +75,7 @@ registerTest({
       throw new Error('max_tokens parameter should be preserved');
     }
 
-    console.log('✓ Non-reasoning models correctly skip thinking configuration');
+    debugInfo('✓ Non-reasoning models correctly skip thinking configuration');
   }
 });
 
@@ -111,7 +112,7 @@ registerTest({
       }
     }
 
-    console.log('✓ Reasoning detection works correctly with model config');
+    debugInfo('✓ Reasoning detection works correctly with model config');
   }
 });
 
@@ -140,6 +141,6 @@ registerTest({
       throw new Error(`Expected custom budget ${customBudget}, got ${configuredParams.thinking.budget_tokens}`);
     }
 
-    console.log('✓ Custom budget override works correctly');
+    debugInfo('✓ Custom budget override works correctly');
   }
 });

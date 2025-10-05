@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'anthropic-reasoning-model-detection',
@@ -59,7 +60,7 @@ registerTest({
       }
     }
 
-    console.log('✓ Claude reasoning model detection works correctly');
+    debugInfo('✓ Claude reasoning model detection works correctly');
   }
 });
 
@@ -121,7 +122,7 @@ registerTest({
       throw new Error('Thinking config should not be added to non-reasoning models');
     }
 
-    console.log('✓ Thinking configuration added correctly');
+    debugInfo('✓ Thinking configuration added correctly');
   }
 });
 
@@ -168,6 +169,6 @@ registerTest({
       throw new Error('Should have completeReasoning method');
     }
 
-    console.log('✓ Reasoning window integration works correctly');
+    debugInfo('✓ Reasoning window integration works correctly');
   }
 });

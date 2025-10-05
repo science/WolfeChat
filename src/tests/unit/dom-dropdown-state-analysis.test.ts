@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'dom-dropdown-states',
@@ -65,12 +66,12 @@ registerTest({
       }
     ];
 
-    console.log('=== DOM Dropdown State Analysis ===');
+    debugInfo('=== DOM Dropdown State Analysis ===');
 
     dropdownStates.forEach((state, index) => {
-      console.log(`\nState ${index + 1}: ${state.name}`);
-      console.log(`  Description: ${state.description}`);
-      console.log(`  Options: ${state.options.length}`);
+      debugInfo(`\nState ${index + 1}: ${state.name}`);
+      debugInfo(`  Description: ${state.description}`);
+      debugInfo(`  Options: ${state.options.length}`);
 
       // Test logic to determine if dropdown is "ready"
       const realOptions = state.options.filter(opt =>
@@ -83,16 +84,16 @@ registerTest({
 
       const isReady = realOptions.length > 0;
 
-      console.log(`  Real options: ${realOptions.length}`);
-      console.log(`  Is ready: ${isReady}`);
-      console.log(`  Expected ready: ${state.expectedReady}`);
+      debugInfo(`  Real options: ${realOptions.length}`);
+      debugInfo(`  Is ready: ${isReady}`);
+      debugInfo(`  Expected ready: ${state.expectedReady}`);
 
       if (isReady !== state.expectedReady) {
         throw new Error(`State "${state.name}" failed: expected ready=${state.expectedReady}, got ${isReady}`);
       }
     });
 
-    console.log('\n✅ All dropdown states analyzed correctly');
+    debugInfo('\n✅ All dropdown states analyzed correctly');
   }
 });
 
@@ -102,7 +103,7 @@ registerTest({
   fn: () => {
     // Test different strategies for knowing when a dropdown is ready
 
-    console.log('=== DOM Mutation Detection Strategies ===');
+    debugInfo('=== DOM Mutation Detection Strategies ===');
 
     // Strategy 1: Count non-placeholder options
     const testCountStrategy = (options) => {
@@ -170,16 +171,16 @@ registerTest({
     ];
 
     testCases.forEach(testCase => {
-      console.log(`\nTesting: ${testCase.name}`);
+      debugInfo(`\nTesting: ${testCase.name}`);
 
       const strategy1Result = testCountStrategy(testCase.options);
       const strategy2Result = testPatternStrategy(testCase.options);
       const strategy3Result = testNoLoadingStrategy(testCase.options);
 
-      console.log(`  Count strategy: ${strategy1Result}`);
-      console.log(`  Pattern strategy: ${strategy2Result}`);
-      console.log(`  No-loading strategy: ${strategy3Result}`);
-      console.log(`  Expected: ${testCase.expectedReady}`);
+      debugInfo(`  Count strategy: ${strategy1Result}`);
+      debugInfo(`  Pattern strategy: ${strategy2Result}`);
+      debugInfo(`  No-loading strategy: ${strategy3Result}`);
+      debugInfo(`  Expected: ${testCase.expectedReady}`);
 
       // All strategies should agree and match expected
       if (strategy1Result !== testCase.expectedReady ||
@@ -189,7 +190,7 @@ registerTest({
       }
     });
 
-    console.log('\n✅ All detection strategies work correctly');
+    debugInfo('\n✅ All detection strategies work correctly');
   }
 });
 
@@ -199,7 +200,7 @@ registerTest({
   fn: () => {
     // Test the conditions that E2E tests can actually observe
 
-    console.log('=== Observable DOM Conditions ===');
+    debugInfo('=== Observable DOM Conditions ===');
 
     // This simulates what a MutationObserver or waitForFunction could check
     const checkDropdownReady = (selectElement) => {
@@ -207,10 +208,10 @@ registerTest({
       const allOptions = selectElement.options || [];
       const optionCount = allOptions.length;
 
-      console.log(`  Total options: ${optionCount}`);
+      debugInfo(`  Total options: ${optionCount}`);
 
       if (optionCount === 0) {
-        console.log('  ❌ No options - not ready');
+        debugInfo('  ❌ No options - not ready');
         return false;
       }
 
@@ -231,15 +232,15 @@ registerTest({
         return true;
       });
 
-      console.log(`  Real options: ${realOptions.length}`);
-      console.log(`  Real option texts: [${realOptions.map(o => o.text || o.textContent).join(', ')}]`);
+      debugInfo(`  Real options: ${realOptions.length}`);
+      debugInfo(`  Real option texts: [${realOptions.map(o => o.text || o.textContent).join(', ')}]`);
 
       if (realOptions.length === 0) {
-        console.log('  ❌ No real options - not ready');
+        debugInfo('  ❌ No real options - not ready');
         return false;
       }
 
-      console.log('  ✅ Has real options - ready!');
+      debugInfo('  ✅ Has real options - ready!');
       return true;
     };
 
@@ -282,7 +283,7 @@ registerTest({
     ];
 
     testStates.forEach(state => {
-      console.log(`\nTesting state: ${state.name}`);
+      debugInfo(`\nTesting state: ${state.name}`);
       const result = checkDropdownReady(state.selectElement);
 
       if (result !== state.expectedReady) {
@@ -290,11 +291,11 @@ registerTest({
       }
     });
 
-    console.log('\n✅ All observable conditions work correctly');
+    debugInfo('\n✅ All observable conditions work correctly');
 
     // Output the final condition for E2E tests to use
-    console.log('\n📋 RECOMMENDED E2E CONDITION:');
-    console.log('Wait for: select#model-selection option[value]:not([value=""]):not(:disabled)');
-    console.log('Count: > 0');
+    debugInfo('\n📋 RECOMMENDED E2E CONDITION:');
+    debugInfo('Wait for: select#model-selection option[value]:not([value=""]):not(:disabled)');
+    debugInfo('Count: > 0');
   }
 });

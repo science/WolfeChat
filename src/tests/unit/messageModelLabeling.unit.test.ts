@@ -19,6 +19,7 @@ function resetConversations() {
 
 // Stub streaming by monkey-patching streamResponseViaResponsesAPI to synchronously call callbacks
 import * as svc from '../../services/openaiService.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 async function withMockedStreamResponse(fn: () => Promise<void>) {
   // Use a wrapper that leverages the real function signature by temporarily stubbing fetch to deliver SSE-like chunks is complex.

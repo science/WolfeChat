@@ -1,5 +1,6 @@
 import { registerTest } from '../testHarness.js';
 import { buildResponsesPayload, buildResponsesInputFromMessages } from '../../services/openaiService.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 // Define a local mirror of the internal message type we expect post-refactor
 interface ChatMessage { role: 'system'|'user'|'assistant'; content: any }
