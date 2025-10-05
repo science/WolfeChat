@@ -194,7 +194,13 @@ log.error('API request failed:', error);
 
 **Build-Time Tree-Shaking:** Vite automatically removes `log.debug()` and `log.info()` calls during production builds, resulting in zero runtime overhead. The logger checks `import.meta.env.DEV` which Vite statically evaluates during bundling.
 
-**E2E Test Logging:** For E2E tests, set `VITE_E2E_TEST=true` environment variable to enable debug logs in the browser context. E2E test runner code uses the separate `debugLog()` system from `tests-e2e/debug-utils.ts` controlled by `DEBUG_E2E` environment variable.
+**Test Logging:**
+- For E2E tests, set `VITE_E2E_TEST=true` environment variable to enable debug logs in the browser context. E2E test runner code uses the `debugLog()` system from `tests-e2e/debug-utils.ts` controlled by `DEBUG` environment variable.
+- For unit tests, use the `debugLog()` system from `src/tests/utils/debugLog.ts` controlled by `DEBUG` environment variable.
+- `DEBUG=0` or unset: No output (default)
+- `DEBUG=1`: Only errors (ERR level)
+- `DEBUG=2`: Errors and warnings (ERR + WARN levels)
+- `DEBUG=3`: All output (ERR + WARN + INFO levels)
 
 **Migration from console.log:** All production service code should use the logger instead of direct `console.*` calls. This has been implemented in:
 - All service files (`src/services/`)

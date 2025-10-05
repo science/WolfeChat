@@ -2,7 +2,7 @@
 // This test demonstrates Issue #12: reasoning panels persist after "delete all below"
 //
 // DEBUG:
-//   DEBUG_E2E=2 npx playwright test tests-e2e/live/reasoning-panels-delete-bug.spec.ts
+//   DEBUG=2 npx playwright test tests-e2e/live/reasoning-panels-delete-bug.spec.ts
 
 import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI, operateQuickSettings, waitForAssistantDone } from './helpers';

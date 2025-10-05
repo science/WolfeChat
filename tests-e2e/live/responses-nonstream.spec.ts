@@ -58,7 +58,7 @@ test.describe('Live API: Responses API non-streaming', () => {
     expect(result.outputText).toBeTruthy();
     expect(result.outputText.trim()).not.toBe('');
 
-    // Optional debug output gated by DEBUG_E2E>=2
+    // Optional debug output gated by DEBUG>=2
     debugInfo('[TEST] Non-streaming API test succeeded');
     debugInfo('[TEST] Output text:', { outputText: typeof result.outputText === 'string' ? result.outputText : result.outputText });
   });

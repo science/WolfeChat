@@ -5,7 +5,7 @@ import { debugInfo, debugErr } from '../debug-utils';
 test.setTimeout(45_000);
 
 test('Live: per-conversation Quick Settings persist across switches', async ({ page }) => {
-  const DEBUG_LVL = Number.parseInt(process.env.DEBUG_E2E || '0', 10) || 0;
+  const DEBUG_LVL = Number.parseInt(process.env.DEBUG || '0', 10) || 0;
   if (DEBUG_LVL >= 2) {
     page.on('console', msg => {
       const t = msg.text();
@@ -13,7 +13,7 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
     });
     page.on('pageerror', err => debugErr('[BROWSER-PAGEERROR]', { message: err.message }));
   }
-  if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL);
+  if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG = lvl; }, DEBUG_LVL);
 
   await page.goto('/');
   await page.waitForSelector('#app', { state: 'attached' });

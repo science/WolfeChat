@@ -1,0 +1,136 @@
+
+> wolfechat@0.0.0 test:browser-live
+> npx playwright test --project=live
+
+
+Running 98 tests using 10 workers
+
+  ✓   5 [live] › tests-e2e/live/clear-new-chat-input.spec.ts:33:5 › Clear/New Chat Input Box Behavior › Clear Chat Button Tests › should clear input when clicking Clear Chat button in sidebar (2.4s)
+  ✓   3 [live] › tests-e2e/live/browser-live-smoke.spec.ts:7:3 › live API basics › can type text into input field (2.5s)
+  ✓   1 [live] › tests-e2e/live/model-selection-payload.spec.ts:19:3 › Model selection drives request payload.model › gpt-3.5-turbo then gpt-5-nano reflected in payload.model (3.7s)
+  ✓  10 [live] › tests-e2e/live/new-chat-preserves-input.spec.ts:107:5 › New Chat Button Input Preservation Bug Tests › Basic New Chat Functionality › TEST 1: Basic New Chat Button Preserves Input  (3.9s)
+  ✓  11 [live] › tests-e2e/live/clear-new-chat-input.spec.ts:49:5 › Clear/New Chat Input Box Behavior › Clear Chat Button Tests › should clear input when clicking Clear Chat button in QuickSettings (1.7s)
+  ✓   9 [live] › tests-e2e/live/anthropic-sdk-nonstreaming.spec.ts:29:3 › Anthropic SDK Non-Streaming › should send non-streaming message via SDK with claude-3-haiku (4.1s)
+  ✓  12 [live] › tests-e2e/live/browser-live-smoke.spec.ts:28:3 › live API basics › can set API key and send a prompt (3.2s)
+  ✓  14 [live] › tests-e2e/live/new-chat-preserves-input.spec.ts:149:5 › New Chat Button Input Preservation Bug Tests › Basic New Chat Functionality › TEST 2: Multiple Conversations Input Preservation  (1.8s)
+  ✓  15 [live] › tests-e2e/live/clear-new-chat-input.spec.ts:72:5 › Clear/New Chat Input Box Behavior › Clear Chat Button Tests › should clear input with partially typed message (1.9s)
+  ✓   4 [live] › tests-e2e/live/api-error-preserves-conversation.spec.ts:12:3 › API Error Handling › Invalid API key preserves conversation history (6.8s)
+  ✓   6 [live] › tests-e2e/live/anthropic-system-prompt.spec.ts:29:3 › Anthropic System Prompt Integration › should include default system prompt in Anthropic API request (6.9s)
+  ✓  13 [live] › tests-e2e/live/openai-system-prompt.spec.ts:21:3 › OpenAI System Prompt Integration › should include default system prompt in OpenAI API request (3.2s)
+  ✓  17 [live] › tests-e2e/live/provider-api-validation.spec.ts:18:3 › Provider API Validation › validates OpenAI API key successfully (1.4s)
+  ✓  16 [live] › tests-e2e/live/anthropic-sdk-nonstreaming.spec.ts:79:3 › Anthropic SDK Non-Streaming › should handle errors gracefully with invalid model via SDK (3.4s)
+  ✓  19 [live] › tests-e2e/live/clear-new-chat-input.spec.ts:87:5 › Clear/New Chat Input Box Behavior › Clear Chat Button Tests › should clear input with multi-line text (1.7s)
+  ✓  18 [live] › tests-e2e/live/new-chat-preserves-input.spec.ts:196:5 › New Chat Button Input Preservation Bug Tests › New Chat vs Clear Chat Behavior › TEST 3: New Chat vs Clear Chat Behavior Difference  (2.1s)
+  ✓  23 [live] › tests-e2e/live/provider-api-validation.spec.ts:53:3 › Provider API Validation › shows error for invalid OpenAI API key (839ms)
+  ✓  25 [live] › tests-e2e/live/clear-new-chat-input.spec.ts:104:5 › Clear/New Chat Input Box Behavior › New Chat Button Tests › should clear input when clicking New Chat button in sidebar (1.7s)
+  ✓  27 [live] › tests-e2e/live/provider-api-validation.spec.ts:77:51 › Provider API Validation › validates Anthropic API key successfully (2.5s)
+  ✓  24 [live] › tests-e2e/live/provider-model-management.spec.ts:34:3 › Provider Model Management - User Behavior › user can access models when single provider is configured (3.4s)
+  ✓  28 [live] › tests-e2e/live/clear-new-chat-input.spec.ts:120:5 › Clear/New Chat Input Box Behavior › New Chat Button Tests › should clear input when clicking New Chat button in mobile topbar (1.6s)
+  ✓  29 [live] › tests-e2e/live/provider-api-validation.spec.ts:127:51 › Provider API Validation › shows error for invalid Anthropic API key (758ms)
+  ✓  32 [live] › tests-e2e/live/provider-api-validation.spec.ts:151:3 › Provider API Validation › check API button is present and clickable for both providers (440ms)
+  ✓  26 [live] › tests-e2e/live/new-chat-preserves-input.spec.ts:242:5 › New Chat Button Input Preservation Bug Tests › Draft System Integration › TEST 4: Draft Persistence Through New Chat  (3.8s)
+  ✓  22 [live] › tests-e2e/live/openai-system-prompt.spec.ts:82:3 › OpenAI System Prompt Integration › should include custom conversation system prompt in OpenAI API request (5.5s)
+  ✓  33 [live] › tests-e2e/live/provider-api-validation.spec.ts:168:3 › Provider API Validation › API validation maintains provider context (1.4s)
+  ✓  36 [live] › tests-e2e/live/provider-api-validation.spec.ts:228:3 › Provider API Validation › empty API key shows appropriate state (399ms)
+  ✓   2 [live] › tests-e2e/live/anthropic_two_messages_simple.spec.ts:20:3 › Anthropic Two Messages Test › Two Anthropic reasoning messages with adequate wait (14.0s)
+  ✓  31 [live] › tests-e2e/live/clear-new-chat-input.spec.ts:139:5 › Clear/New Chat Input Box Behavior › New Chat Button Tests › should clear input after conversation with messages (2.9s)
+  ✓  30 [live] › tests-e2e/live/provider-model-management.spec.ts:55:51 › Provider Model Management - User Behavior › user can access models from multiple providers (3.5s)
+  ✓  21 [live] › tests-e2e/live/anthropic-system-prompt.spec.ts:86:3 › Anthropic System Prompt Integration › should include custom conversation system prompt in Anthropic API request (8.0s)
+  ✓  34 [live] › tests-e2e/live/new-chat-preserves-input.spec.ts:303:5 › New Chat Button Input Preservation Bug Tests › Edge Cases › TEST 5: Rapid New Chat Clicking  (3.5s)
+  ✓  39 [live] › tests-e2e/live/clear-new-chat-input.spec.ts:166:5 › Clear/New Chat Input Box Behavior › Edge Cases › should clear input with special characters and emojis (1.6s)
+  ✓  43 [live] › tests-e2e/live/clear-new-chat-input.spec.ts:181:5 › Clear/New Chat Input Box Behavior › Edge Cases › should maintain input box state after rapid button clicks (2.2s)
+  ✓  37 [live] › tests-e2e/live/provider-api-validation.spec.ts:256:3 › Provider API Validation › API validation error messages are provider-specific (4.5s)
+  ✓  42 [live] › tests-e2e/live/new-chat-preserves-input.spec.ts:346:5 › New Chat Button Input Preservation Bug Tests › Edge Cases › TEST 6: Complex Text Preservation  (2.9s)
+  ✓  44 [live] › tests-e2e/live/provider-switching.spec.ts:18:3 › Provider Switching UI › provider dropdown has correct options and default selection (437ms)
+  ✓  47 [live] › tests-e2e/live/provider-switching.spec.ts:34:3 › Provider Switching UI › API key field label changes based on selected provider (406ms)
+  ✓  40 [live] › tests-e2e/live/provider-model-management.spec.ts:85:3 › Provider Model Management - User Behavior › user can select and use models for conversation (4.3s)
+  ✓  48 [live] › tests-e2e/live/provider-switching.spec.ts:53:3 › Provider Switching UI › API key field maintains separate values for each provider (612ms)
+  ✓  35 [live] › tests-e2e/live/openai-system-prompt.spec.ts:140:3 › OpenAI System Prompt Integration › should send system prompt with reasoning models (GPT-5 nano) (6.9s)
+  ✓  50 [live] › tests-e2e/live/provider-switching.spec.ts:84:3 › Provider Switching UI › provider settings persist across page reloads (652ms)
+  ✓  38 [live] › tests-e2e/live/provider-quick-settings.spec.ts:33:3 › Provider Quick Settings Integration › Quick Settings shows models with provider indicators when both providers configured (6.5s)
+  ✓  52 [live] › tests-e2e/live/provider-switching.spec.ts:117:3 › Provider Switching UI › visual grouping container exists around provider settings (451ms)
+  ✓  54 [live] › tests-e2e/live/provider-switching.spec.ts:137:3 › Provider Switching UI › mode selection dropdown is not visible (413ms)
+  ✓  46 [live] › tests-e2e/live/new-chat-preserves-input.spec.ts:385:5 › New Chat Button Input Preservation Bug Tests › Cross-Platform New Chat Buttons › TEST 7: Topbar New Chat Button  (3.0s)
+  ✓  41 [live] › tests-e2e/live/anthropic-system-prompt.spec.ts:139:3 › Anthropic System Prompt Integration › should send system prompt with reasoning models (Claude Sonnet 4) (6.4s)
+  ✓  55 [live] › tests-e2e/live/provider-switching.spec.ts:149:3 › Provider Switching UI › provider switching preserves other settings (485ms)
+  ✓  56 [live] › tests-e2e/live/quick-settings-recent-models.spec.ts:8:3 › Live: Quick Settings model dropdown recent models functionality › initial state has no recent models, all models in main list (2.0s)
+  ✓  51 [live] › tests-e2e/live/quick-settings-per-conversation-live.spec.ts:7:1 › Live: per-conversation Quick Settings persist across switches (4.0s)
+  ✓  49 [live] › tests-e2e/live/provider-model-management.spec.ts:109:51 › Provider Model Management - User Behavior › user can switch between providers dynamically (6.7s)
+  ✓  20 [live] › tests-e2e/live/api-error-preserves-conversation.spec.ts:117:3 › API Error Handling › Network error during streaming preserves conversation (19.8s)
+  ✓  61 [live] › tests-e2e/live/provider-model-management.spec.ts:156:3 › Provider Model Management - User Behavior › user sees appropriate feedback when no providers configured (1.4s)
+  ✓   7 [live] › tests-e2e/live/anthropic-reasoning-auto-close.spec.ts:28:3 › Anthropic Reasoning Auto-Close › should auto-close reasoning window when assistant message starts (27.4s)
+  ✓  53 [live] › tests-e2e/live/provider-quick-settings.spec.ts:84:3 › Provider Quick Settings Integration › can switch models between providers in Quick Settings (7.4s)
+  ✓  59 [live] › tests-e2e/live/quick-settings-recent-models.spec.ts:70:3 › Live: Quick Settings model dropdown recent models functionality › sending message with selected model adds it to recent models section (5.0s)
+  ✓  63 [live] › tests-e2e/live/provider-model-management.spec.ts:178:3 › Provider Model Management - User Behavior › user experience remains consistent when provider keys are invalid (4.0s)
+  ✓   8 [live] › tests-e2e/live/delete-all-below.spec.ts:90:3 › Delete All Below - live UAT › deletes messages below pivot and remains usable (31.2s)
+  ✓  62 [live] › tests-e2e/live/reasoning-windows-placement.spec.ts:54:3 › Reasoning Windows Placement › RW appear with reasoning content and bind to correct message (6.1s)
+  ✓  65 [live] › tests-e2e/live/provider-quick-settings.spec.ts:121:3 › Provider Quick Settings Integration › recent models include both providers when both are used (7.3s)
+  ✓  58 [live] › tests-e2e/live/reasoning-sse-events-simple.spec.ts:10:3 › Simple SSE Event Capture for gpt-5-nano › Capture exact SSE events for gpt-5-nano reasoning model (14.5s)
+  ✓  66 [live] › tests-e2e/live/quick-settings-recent-models.spec.ts:209:3 › Live: Quick Settings model dropdown recent models functionality › switching models and sending messages builds recent models list (8.2s)
+  ✓  71 [live] › tests-e2e/live/responses-nonstream.spec.ts:10:3 › Live API: Responses API non-streaming › returns text via non-streaming Responses API (3.0s)
+  ✓  70 [live] › tests-e2e/live/provider-quick-settings.spec.ts:163:3 › Provider Quick Settings Integration › Quick Settings model selection persists per conversation (4.0s)
+  ✓  72 [live] › tests-e2e/live/responses-streaming.spec.ts:10:3 › Live API: Responses API streaming › streams tokens via streaming Responses API (3.2s)
+  ✓  67 [live] › tests-e2e/live/provider-model-management.spec.ts:210:51 › Provider Model Management - User Behavior › user can switch between different model types (10.6s)
+  ✓  73 [live] › tests-e2e/live/sse-events-live.spec.ts:128:1 › Live SSE: output completion and stream done (response.completed or [DONE]) (2.6s)
+Reasoning panels before deletion: 1
+Store before deletion: {
+  "panelCount": 5,
+  "windowCount": 1,
+  "windows": [
+    {
+      "id": "1759518678012-v4ppcil50ko-win-conv-1759518672129-1k8vviank",
+      "convId": "conv-1759518672129-1k8vviank",
+      "anchorIndex": 0
+    }
+  ]
+}
+Messages before deletion: 2
+Deleting all messages below index 0 (the user message that triggered reasoning)...
+Messages after deletion: 1
+Store AFTER deletion: {
+  "panelCount": 0,
+  "windowCount": 0,
+  "windows": [],
+  "panels": []
+}
+Reasoning panels visible in UI after deletion: 0
+Panels in store after deletion: 0
+Windows in store after deletion: 0
+  ✓  57 [live] › tests-e2e/live/reasoning-panels-delete-bug.spec.ts:79:3 › Issue #12: Reasoning panels should be deleted with messages › reasoning panels should be removed when delete-all-below is clicked (20.9s)
+  ✓  68 [live] › tests-e2e/live/reasoning-windows.spec.ts:42:2 › Reasoning (live): window renders and panel reaches done (11.0s)
+  ✓  74 [live] › tests-e2e/live/provider-quick-settings.spec.ts:209:3 › Provider Quick Settings Integration › Quick Settings reflects global model selection changes (3.2s)
+  ✓  75 [live] › tests-e2e/live/stop-button.spec.ts:24:3 › Stop Button Functionality › OpenAI: Stop button should appear during streaming (3.1s)
+  ✓  76 [live] › tests-e2e/live/provider-model-management.spec.ts:251:3 › Provider Model Management - User Behavior › user model selection persists across UI operations (3.0s)
+  ✓  77 [live] › tests-e2e/live/sse-events-live.spec.ts:150:1 › Live SSE: output completion for a very short answer (3.3s)
+  ✓  80 [live] › tests-e2e/live/provider-quick-settings.spec.ts:234:3 › Provider Quick Settings Integration › provider switching in Settings updates Quick Settings model list (3.7s)
+  ✓  83 [live] › tests-e2e/live/sse-events-live.spec.ts:165:1 › Live SSE: hook-based waits for reasoning and completion (2.5s)
+  ✓  81 [live] › tests-e2e/live/stop-button.spec.ts:76:3 › Stop Button Functionality › OpenAI: Stop button should abort stream when clicked (5.9s)
+  ✓  60 [live] › tests-e2e/live/reasoning-window-conversation-id-bug-tdd.spec.ts:8:3 › TDD: Reasoning Window Conversation ID Bug › reasoning window appears but shows "0 messages" due to conversation ID race condition (26.5s)
+  ✓  84 [live] › tests-e2e/live/title-update.spec.ts:10:3 › Live API: Title Update › conversation title updates after first message (4.5s)
+  ✓  82 [live] › tests-e2e/live/title-generation-async-timing.spec.ts:10:3 › Live API: Title Generation Async Timing › title generation should not block main message response (6.6s)
+  ✓  85 [live] › tests-e2e/live/stop-button.spec.ts:187:3 › Stop Button Functionality › Anthropic: Stop button should appear during streaming (2.6s)
+  ✓  78 [live] › tests-e2e/live/test-dropdown-helper.spec.ts:24:3 › Model Dropdown Helper Tests › helper correctly identifies empty dropdown state (11.8s)
+  ✓  87 [live] › tests-e2e/live/test-dropdown-helper.spec.ts:35:3 › Model Dropdown Helper Tests › helper detects single provider models (3.5s)
+  ✓  88 [live] › tests-e2e/live/test-dropdown-helper.spec.ts:52:3 › Model Dropdown Helper Tests › helper detects multiple providers with optgroups (4.5s)
+  ✓  89 [live] › tests-e2e/live/test-dropdown-helper.spec.ts:81:3 › Model Dropdown Helper Tests › helper correctly identifies selected model and provider (3.8s)
+  ✓  90 [live] › tests-e2e/live/test-dropdown-helper.spec.ts:95:3 › Model Dropdown Helper Tests › helper works with Settings dropdown (4.6s)
+  ✓  45 [live] › tests-e2e/live/quick-settings-conversation-state-bug.spec.ts:14:3 › Live API: Quick Settings per-conversation settings honored on submit › Live: settings persist and are honored when submitting (53.8s)
+  ✓  91 [live] › tests-e2e/live/test-dropdown-helper.spec.ts:119:3 › Model Dropdown Helper Tests › checkApiKeysFromState utility works correctly (5.6s)
+  ✓  64 [live] › tests-e2e/live/anthropic-reasoning-auto-close.spec.ts:73:3 › Anthropic Reasoning Auto-Close › should auto-close for multiple consecutive Anthropic messages (49.0s)
+  ✓  69 [live] › tests-e2e/live/reasoning-windows-placement.spec.ts:97:3 › Reasoning Windows Placement › RW placement remains stable when new messages are added (46.0s)
+  ✓  92 [live] › tests-e2e/live/test-dropdown-helper.spec.ts:141:3 › Model Dropdown Helper Tests › helper handles captureHtml option for debugging (3.5s)
+  ✓  79 [live] › tests-e2e/live/reasoning-windows.spec.ts:75:2 › Reasoning (live): auto-minimizes after assistant starts replying (38.1s)
+  ✓  94 [live] › tests-e2e/live/test-dropdown-helper.spec.ts:157:3 › Model Dropdown Helper Tests › helper detectProvider function works correctly (3.5s)
+  ✓  96 [live] › tests-e2e/live/test-dropdown-helper.spec.ts:187:3 › Model Dropdown Helper Tests › helper closeAfter option works correctly (4.9s)
+  ✓  95 [live] › tests-e2e/live/reasoning-windows.spec.ts:126:2 › Reasoning (live): longer prompt streams content and reaches done (7.9s)
+  ✓  97 [live] › tests-e2e/live/test-dropdown-helper.spec.ts:215:3 › Model Dropdown Helper Tests › helper handles allModels flat array correctly (5.7s)
+  ✓  86 [live] › tests-e2e/live/reasoning-window-conversation-id-bug-tdd.spec.ts:90:3 › TDD: Reasoning Window Conversation ID Bug › reasoning window shows content when created quickly (not empty due to race condition) (44.0s)
+  ✓  93 [live] › tests-e2e/live/reasoning-windows-placement.spec.ts:168:3 › Reasoning Windows Placement › Non-reasoning model shows no RW, reasoning model shows RW (45.7s)
+  ✓  98 [live] › tests-e2e/live/reasoning-windows.spec.ts:151:2 › Reasoning (live): consecutive messages reopen and minimize correctly (43.9s)
+
+  98 passed (2.2m)
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

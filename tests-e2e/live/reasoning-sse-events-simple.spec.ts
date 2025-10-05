@@ -95,7 +95,7 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
 
     // Enable debug logging
     await page.evaluate(() => {
-      (window as any).__DEBUG_E2E = 2;
+      (window as any).__DEBUG = 2;
     });
     debugInfo('[TEST] Debug logging enabled');
 

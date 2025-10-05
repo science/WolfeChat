@@ -27,7 +27,7 @@ test.describe('OpenAI System Prompt Integration', () => {
           const postData = request.postDataJSON();
           openaiRequests.push(postData);
 
-          if (process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+          if (process.env.DEBUG === '2' || process.env.DEBUG === '3') {
             console.log('[DEBUG] OpenAI API Request captured:', JSON.stringify(postData, null, 2));
           }
         } catch (e) {
@@ -73,7 +73,7 @@ test.describe('OpenAI System Prompt Integration', () => {
     expect(textContent.text).toBeTruthy();
     expect(textContent.text.length).toBeGreaterThan(0);
 
-    if (process.env.DEBUG_E2E === '1' || process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+    if (process.env.DEBUG === '1' || process.env.DEBUG === '2' || process.env.DEBUG === '3') {
       console.log('✓ System prompt present in OpenAI request');
       console.log('  System prompt:', textContent.text);
     }
@@ -89,7 +89,7 @@ test.describe('OpenAI System Prompt Integration', () => {
           const postData = request.postDataJSON();
           openaiRequests.push(postData);
 
-          if (process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+          if (process.env.DEBUG === '2' || process.env.DEBUG === '3') {
             console.log('[DEBUG] OpenAI API Request with custom prompt:', JSON.stringify(postData, null, 2));
           }
         } catch (e) {
@@ -130,7 +130,7 @@ test.describe('OpenAI System Prompt Integration', () => {
     expect(textContent).toBeDefined();
     expect(textContent.text).toBe(customSystemPrompt);
 
-    if (process.env.DEBUG_E2E === '1' || process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+    if (process.env.DEBUG === '1' || process.env.DEBUG === '2' || process.env.DEBUG === '3') {
       console.log('✓ Custom conversation system prompt present in OpenAI request');
       console.log('  Expected:', customSystemPrompt);
       console.log('  Actual:', textContent.text);
@@ -146,7 +146,7 @@ test.describe('OpenAI System Prompt Integration', () => {
           const postData = request.postDataJSON();
           openaiRequests.push(postData);
 
-          if (process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+          if (process.env.DEBUG === '2' || process.env.DEBUG === '3') {
             console.log('[DEBUG] OpenAI reasoning model request:', JSON.stringify(postData, null, 2));
           }
         } catch (e) {
@@ -189,7 +189,7 @@ test.describe('OpenAI System Prompt Integration', () => {
     expect(request).toHaveProperty('reasoning');
     expect(request.reasoning).toHaveProperty('effort');
 
-    if (process.env.DEBUG_E2E === '1' || process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+    if (process.env.DEBUG === '1' || process.env.DEBUG === '2' || process.env.DEBUG === '3') {
       console.log('✓ System prompt present with reasoning model');
       console.log('  System prompt:', textContent.text);
       console.log('  Reasoning config:', request.reasoning);

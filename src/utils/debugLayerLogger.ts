@@ -42,7 +42,7 @@ let globalSequenceId = 0;
 // Helper to check if debug mode is enabled
 export function isDebugMode(): boolean {
   return typeof window !== 'undefined' &&
-         ((window as any).__DEBUG_E2E >= 2 || (window as any).DEBUG_E2E === 2 || (window as any).DEBUG_E2E === '2');
+         ((window as any).__DEBUG >= 2 || (window as any).__DEBUG === 2 || (window as any).__DEBUG === '2');
 }
 
 // Initialize debug data structure on window

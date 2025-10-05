@@ -28,7 +28,7 @@ npx playwright test tests-e2e/live-regression
 npx playwright test tests-e2e/live-regression/anthropic-sdk-streaming.spec.ts
 
 # Run with debugging
-DEBUG_E2E=2 VITE_E2E_TEST=true npx playwright test tests-e2e/live-regression --headed
+DEBUG=2 VITE_E2E_TEST=true npx playwright test tests-e2e/live-regression --headed
 ```
 
 ## Test Organization

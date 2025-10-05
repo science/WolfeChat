@@ -13,7 +13,7 @@
     "test:regression": "npx playwright test --project=live-regression",
     "pretest:live": "vite build",
     "test:live": "node run-tests.mjs --live",
-    "test:all": "node run-tests.mjs --suite all && npx playwright test",
+    "test:all": "bash -c 'node run-tests.mjs; UNIT=$?; npx playwright test; PW=$?; exit $((UNIT + PW))'",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {

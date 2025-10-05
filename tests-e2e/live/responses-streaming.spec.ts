@@ -8,7 +8,7 @@ test.describe('Live API: Responses API streaming', () => {
   test.setTimeout(45000);
 
   test('streams tokens via streaming Responses API', async ({ page }) => {
-    const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0');
+    const DEBUG_LVL = Number(process.env.DEBUG || '0');
     
     // Set up console and network logging if debug level >= 2
     if (DEBUG_LVL >= 2) {
@@ -36,7 +36,7 @@ test.describe('Live API: Responses API streaming', () => {
     // Propagate debug level into the page if needed
     if (DEBUG_LVL) {
       await page.evaluate(lvl => { 
-        window.__DEBUG_E2E = lvl; 
+        window.__DEBUG = lvl; 
       }, DEBUG_LVL);
     }
     
@@ -51,7 +51,7 @@ test.describe('Live API: Responses API streaming', () => {
       import { testResponsesStreamingAPI } from '/src/utils/debugUtils.ts';
       
       window.__testResponsesStreamingAPI = async function() {
-        const debug = window.__DEBUG_E2E || 0;
+        const debug = window.__DEBUG || 0;
         try {
           if (debug >= 2) console.log('[TEST] Starting streaming API test');
           const result = await testResponsesStreamingAPI();
@@ -79,7 +79,7 @@ test.describe('Live API: Responses API streaming', () => {
     expect(result.finalText).toBeTruthy();
     expect(result.finalText.trim()).not.toBe('');
 
-    // Debug output only if DEBUG_E2E >= 2
+    // Debug output only if DEBUG >= 2
     if (DEBUG_LVL >= 2) {
       debugInfo('[TEST] Streaming API test succeeded');
       debugInfo('[TEST] Events count:', { eventsCount: result.eventsCount });

@@ -12,7 +12,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
   test.setTimeout(60_000);  // Reduced from 120s - should be sufficient with improved timeout logic
 
   test('Live: settings persist and are honored when submitting', async ({ page }) => {
-    const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
+    const DEBUG_LVL = Number(process.env.DEBUG || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
         const t = msg.text();
@@ -24,7 +24,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     }
 
     await page.goto(APP_URL);
-    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL);
+    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG = lvl; }, DEBUG_LVL);
 
     await bootstrapLiveAPI(page);
 
@@ -53,7 +53,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
       };
 
       // Monitor reasoning store events
-      if (win.__DEBUG_E2E && typeof win.reasoningSSEEvents?.subscribe === 'function') {
+      if (win.__DEBUG && typeof win.reasoningSSEEvents?.subscribe === 'function') {
         win.reasoningSSEEvents.subscribe((events: any[]) => {
           const latest = events[events.length - 1];
           if (latest) {
@@ -398,7 +398,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
             return {
               layerDebugData,
               browserDebugData,
-              debugMode: win.__DEBUG_E2E,
+              debugMode: win.__DEBUG,
               hasGetDebugData: typeof win.getDebugData === 'function'
             };
           });
