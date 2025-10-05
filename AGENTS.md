@@ -30,16 +30,16 @@
 
 To keep CI logs quiet but allow deep diagnostics locally, e2e tests can gate verbose browser and SSE logs behind an env-controlled debug level.
 
-- Set DEBUG_E2E to control verbosity:
+- Set DEBUG to control verbosity:
   - 0 (default): silent
   - 2: show browser console errors, pre-flight diagnostics, and OpenAI request/response summaries
   - 3: include high-volume SSE event names (debug spam)
 
 Usage examples:
 - Run one test with network/console logs:
-  - `DEBUG_E2E=2 npx playwright test tests-e2e/live/sse-events-live.spec.ts -g "hook-based"`
+  - `DEBUG=2 npx playwright test tests-e2e/live/sse-events-live.spec.ts -g "hook-based"`
 - Include SSE event spam:
-  - `DEBUG_E2E=3 npx playwright test tests-e2e/live/sse-events-live.spec.ts -g "hook-based"`
+  - `DEBUG=3 npx playwright test tests-e2e/live/sse-events-live.spec.ts -g "hook-based"`
 
 ### Test utilities and live setup
 

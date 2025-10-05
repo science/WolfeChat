@@ -2,6 +2,7 @@ import { test } from '../testHarness.js';
 import { createReasoningWindow, reasoningWindows, clearAllReasoning } from '../../stores/reasoningStore.js';
 import { conversations } from '../../stores/stores.js';
 import { get } from 'svelte/store';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 test({
   id: 'hello-world-test',

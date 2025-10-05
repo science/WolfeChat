@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { chromium, Browser, Page } from 'playwright';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 // Note: This integration test requires the dev server to be running
 // Run with: npm run dev &amp;&amp; npm run test src/tests/unit/test-helpers-integration.spec.ts
@@ -15,7 +16,7 @@ describe('Helper Functions Integration Tests', () => {
       await page.goto('http://localhost:5173');
       await page.waitForLoadState('networkidle');
     } catch (error) {
-      console.warn('Could not connect to dev server. Make sure it is running on http://localhost:5173');
+      debugWarn('Could not connect to dev server. Make sure it is running on http://localhost:5173');
       throw error;
     }
   });

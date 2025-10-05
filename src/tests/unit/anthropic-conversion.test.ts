@@ -8,6 +8,7 @@
 import { registerTest } from '../testHarness.js';
 import { convertMessagesToAnthropicFormat, extractSystemMessage } from '../../services/anthropicMessagingService.js';
 import type { ChatMessage } from '../../stores/stores.js';
+import { debugInfo, debugWarn } from '../utils/debugLog.js';
 
 registerTest({
   id: 'anthropic-message-conversion-basic',
@@ -20,8 +21,8 @@ registerTest({
 
     const result = convertMessagesToAnthropicFormat(messages);
 
-    console.log('Input messages:', JSON.stringify(messages, null, 2));
-    console.log('Converted result:', JSON.stringify(result, null, 2));
+    debugInfo('Input messages: ' + JSON.stringify(messages, null, 2));
+    debugInfo('Converted result: ' + JSON.stringify(result, null, 2));
 
     // Check basic structure
     if (result.length !== 2) {
@@ -50,8 +51,8 @@ registerTest({
 
     const result = convertMessagesToAnthropicFormat(messages);
 
-    console.log('Input with system message:', JSON.stringify(messages, null, 2));
-    console.log('Filtered result:', JSON.stringify(result, null, 2));
+    debugInfo('Input with system message: ' + JSON.stringify(messages, null, 2));
+    debugInfo('Filtered result: ' + JSON.stringify(result, null, 2));
 
     // Should have filtered out system message
     if (result.length !== 2) {
@@ -77,15 +78,15 @@ registerTest({
 
     const result = convertMessagesToAnthropicFormat(messages);
 
-    console.log('Input with empty content:', JSON.stringify(messages, null, 2));
-    console.log('Result with empty content:', JSON.stringify(result, null, 2));
+    debugInfo('Input with empty content: ' + JSON.stringify(messages, null, 2));
+    debugInfo('Result with empty content: ' + JSON.stringify(result, null, 2));
 
     // Check if we have empty content that would cause Anthropic API errors
     const emptyMessages = result.filter(msg => !msg.content || msg.content.trim().length === 0);
 
     if (emptyMessages.length > 0) {
-      console.log('🚨 FOUND THE BUG: Empty content messages that will cause Anthropic API errors:', emptyMessages);
-      console.log(`Empty message at index: ${result.findIndex(msg => !msg.content || msg.content.trim().length === 0)}`);
+      debugWarn('🚨 FOUND THE BUG: Empty content messages that will cause Anthropic API errors: ' + JSON.stringify(emptyMessages));
+      debugWarn(`Empty message at index: ${result.findIndex(msg => !msg.content || msg.content.trim().length === 0)}`);
     }
 
     // This test is meant to expose the problem, not fix it
@@ -108,8 +109,8 @@ registerTest({
 
     const result = convertMessagesToAnthropicFormat(messages);
 
-    console.log('Provider switch scenario input:', JSON.stringify(messages, null, 2));
-    console.log('Provider switch scenario result:', JSON.stringify(result, null, 2));
+    debugInfo('Provider switch scenario input: ' + JSON.stringify(messages, null, 2));
+    debugInfo('Provider switch scenario result: ' + JSON.stringify(result, null, 2));
 
     // All messages should have non-empty content
     result.forEach((msg, index) => {
@@ -118,7 +119,7 @@ registerTest({
       }
     });
 
-    console.log('✅ All messages have non-empty content in provider switch scenario');
+    debugInfo('✅ All messages have non-empty content in provider switch scenario');
   }
 });
 

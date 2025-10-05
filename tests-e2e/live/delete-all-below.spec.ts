@@ -1,7 +1,7 @@
 // Live UAT for Delete All Below using Playwright
 // DEBUG:
-//   DEBUG_E2E=2 npx playwright test tests-e2e/live/delete-all-below.spec.ts
-//   DEBUG_E2E=3 adds verbose SSE/browser logs via helpers
+//   DEBUG=2 npx playwright test tests-e2e/live/delete-all-below.spec.ts
+//   DEBUG=3 adds verbose SSE/browser logs via helpers
 
 import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI, selectReasoningModelInQuickSettings, waitForAssistantDone } from './helpers';

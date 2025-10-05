@@ -42,7 +42,7 @@ let globalSequenceId = 0;
 // Helper to check if debug mode is enabled
 export function isDebugMode(): boolean {
   return typeof window !== 'undefined' &&
-         ((window as any).__DEBUG_E2E >= 2 || (window as any).DEBUG_E2E === 2 || (window as any).DEBUG_E2E === '2');
+         ((window as any).__DEBUG >= 2 || (window as any).__DEBUG === 2 || (window as any).__DEBUG === '2');
 }
 
 // Initialize debug data structure on window
@@ -138,15 +138,26 @@ export function logDebugEvent(
     }
 
     // Console log for immediate visibility during development
-    console.log(`[DEBUG-${layer.toUpperCase()}] ${event}`, {
-      seq: entry.sequenceId,
-      convId: conversationId,
-      respId: responseId,
-      data: data
-    });
+    // In test environment, respect DEBUG env var (only log if DEBUG >= 3)
+    const isTestEnv = typeof process !== 'undefined' && process.env;
+    const shouldLog = !isTestEnv || Number(process.env.DEBUG || 0) >= 3;
+
+    if (shouldLog) {
+      console.log(`[DEBUG-${layer.toUpperCase()}] ${event}`, {
+        seq: entry.sequenceId,
+        convId: conversationId,
+        respId: responseId,
+        data: data
+      });
+    }
 
   } catch (error) {
-    console.error('Failed to log debug event:', error);
+    // Only log errors if DEBUG >= 1 in test environment
+    const isTestEnv = typeof process !== 'undefined' && process.env;
+    const shouldLogError = !isTestEnv || Number(process.env.DEBUG || 0) >= 1;
+    if (shouldLogError) {
+      console.error('Failed to log debug event:', error);
+    }
   }
 }
 
@@ -254,6 +265,12 @@ export function analyzeEventTiming(): { gaps: any[]; rapidSequences: any[] } {
 // Debug dump function for test failures
 export function dumpDebugData(): void {
   const data = getDebugData();
+
+  // In test environment, only dump if DEBUG >= 3
+  const isTestEnv = typeof process !== 'undefined' && process.env;
+  const shouldDump = !isTestEnv || Number(process.env.DEBUG || 0) >= 3;
+  if (!shouldDump) return;
+
   if (!data) {
     console.log('[DEBUG-DUMP] No debug data available');
     return;

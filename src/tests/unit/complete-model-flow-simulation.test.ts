@@ -6,12 +6,13 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'complete-flow-api-to-dom',
   name: 'Simulate complete flow: API response → store → filtering → DOM',
   fn: () => {
-    console.log('=== Testing Complete Model Flow ===');
+    debugInfo('=== Testing Complete Model Flow ===');
 
     // STEP 1: Simulate OpenAI API response (what fetchModels receives)
     const openaiApiResponse = {
@@ -24,9 +25,9 @@ registerTest({
       ]
     };
 
-    console.log('Step 1 - Raw API response:');
-    console.log('  Model count:', openaiApiResponse.data.length);
-    console.log('  Model IDs:', openaiApiResponse.data.map(m => m.id));
+    debugInfo('Step 1 - Raw API response:');
+    debugInfo('  Model count:', openaiApiResponse.data.length);
+    debugInfo('  Model IDs:', openaiApiResponse.data.map(m => m.id));
 
     // STEP 2: Simulate what fetchModels() should do - add provider field
     const processedModels = openaiApiResponse.data.map(model => ({
@@ -34,25 +35,25 @@ registerTest({
       provider: 'openai'
     }));
 
-    console.log('Step 2 - Processed for store:');
-    console.log('  Processed count:', processedModels.length);
-    console.log('  Have provider field:', processedModels.every(m => m.provider === 'openai'));
+    debugInfo('Step 2 - Processed for store:');
+    debugInfo('  Processed count:', processedModels.length);
+    debugInfo('  Have provider field:', processedModels.every(m => m.provider === 'openai'));
 
     // STEP 3: Simulate modelsStore.set(processedModels)
     let modelsStore = processedModels;
 
-    console.log('Step 3 - Stored in modelsStore:');
-    console.log('  Store count:', modelsStore.length);
+    debugInfo('Step 3 - Stored in modelsStore:');
+    debugInfo('  Store count:', modelsStore.length);
 
     // STEP 4: Simulate Settings.svelte reactive state
     const openaiApiKey = 'sk-test123';
     const anthropicApiKey = null;
     const mode = 'GPT'; // or whatever the current mode is
 
-    console.log('Step 4 - Component state:');
-    console.log('  Mode:', mode);
-    console.log('  OpenAI key exists:', !!openaiApiKey);
-    console.log('  Anthropic key exists:', !!anthropicApiKey);
+    debugInfo('Step 4 - Component state:');
+    debugInfo('  Mode:', mode);
+    debugInfo('  OpenAI key exists:', !!openaiApiKey);
+    debugInfo('  Anthropic key exists:', !!anthropicApiKey);
 
     // STEP 5: Simulate updateFilteredModels() being called
     const availableModels = modelsStore.filter(model => {
@@ -61,9 +62,9 @@ registerTest({
       return true;
     });
 
-    console.log('Step 5 - Available models (provider filtered):');
-    console.log('  Available count:', availableModels.length);
-    console.log('  Available IDs:', availableModels.map(m => m.id));
+    debugInfo('Step 5 - Available models (provider filtered):');
+    debugInfo('  Available count:', availableModels.length);
+    debugInfo('  Available IDs:', availableModels.map(m => m.id));
 
     // STEP 6: Simulate mode-specific filtering (GPT mode = chat models only)
     const filteredModels = availableModels.filter(model => {
@@ -75,9 +76,9 @@ registerTest({
       return true;
     });
 
-    console.log('Step 6 - Mode filtered models:');
-    console.log('  Chat model count:', filteredModels.length);
-    console.log('  Chat model IDs:', filteredModels.map(m => m.id));
+    debugInfo('Step 6 - Mode filtered models:');
+    debugInfo('  Chat model count:', filteredModels.length);
+    debugInfo('  Chat model IDs:', filteredModels.map(m => m.id));
 
     // STEP 7: Simulate getVisibleModels() - what appears in DOM
     const shouldShowProviderIndicators = !!(openaiApiKey && anthropicApiKey);
@@ -97,18 +98,18 @@ registerTest({
       });
     });
 
-    console.log('Step 7 - DOM options:');
-    console.log('  Total options:', visibleOptions.length);
-    console.log('  Option texts:', visibleOptions.map(o => o.text));
+    debugInfo('Step 7 - DOM options:');
+    debugInfo('  Total options:', visibleOptions.length);
+    debugInfo('  Option texts:', visibleOptions.map(o => o.text));
 
     // STEP 8: Simulate what E2E test looks for
     const realOptions = visibleOptions.filter(opt =>
       opt.value && opt.value !== '' && opt.text !== 'Select a model...'
     );
 
-    console.log('Step 8 - What E2E test sees:');
-    console.log('  Real options count:', realOptions.length);
-    console.log('  Real option texts:', realOptions.map(o => o.text));
+    debugInfo('Step 8 - What E2E test sees:');
+    debugInfo('  Real options count:', realOptions.length);
+    debugInfo('  Real option texts:', realOptions.map(o => o.text));
 
     // ASSERTIONS: This should match E2E expectations
     if (realOptions.length === 0) {
@@ -127,15 +128,15 @@ registerTest({
       throw new Error(`❌ FLOW ISSUE: Expected [${expectedModels.join(', ')}], E2E would see [${actualModelTexts.join(', ')}]`);
     }
 
-    console.log('✅ Complete flow simulation successful - E2E should see models');
+    debugInfo('✅ Complete flow simulation successful - E2E should see models');
 
     // OUTPUT: Critical checkpoints for debugging real flow
-    console.log('\n🔍 DEBUGGING CHECKPOINTS FOR REAL E2E:');
-    console.log('1. Check if modelsStore contains models after API call');
-    console.log('2. Check if provider field is added to models');
-    console.log('3. Check if API keys are properly detected');
-    console.log('4. Check if updateFilteredModels() is actually called');
-    console.log('5. Check if DOM updates after filteredModels changes');
+    debugInfo('\n🔍 DEBUGGING CHECKPOINTS FOR REAL E2E:');
+    debugInfo('1. Check if modelsStore contains models after API call');
+    debugInfo('2. Check if provider field is added to models');
+    debugInfo('3. Check if API keys are properly detected');
+    debugInfo('4. Check if updateFilteredModels() is actually called');
+    debugInfo('5. Check if DOM updates after filteredModels changes');
   }
 });
 
@@ -143,7 +144,7 @@ registerTest({
   id: 'debug-missing-provider-field',
   name: 'DEBUG: What happens if models lack provider field?',
   fn: () => {
-    console.log('=== Testing Missing Provider Field Scenario ===');
+    debugInfo('=== Testing Missing Provider Field Scenario ===');
 
     // Simulate if fetchModels() fails to add provider field
     const modelsWithoutProvider = [
@@ -155,30 +156,30 @@ registerTest({
     const openaiApiKey = 'sk-test123';
     const anthropicApiKey = null;
 
-    console.log('Models in store (no provider field):', modelsWithoutProvider);
+    debugInfo('Models in store (no provider field):', modelsWithoutProvider);
 
     // Test provider filtering with missing provider field
     const availableModels = modelsWithoutProvider.filter(model => {
-      console.log(`Checking model ${model.id}: provider="${model.provider}"`);
+      debugInfo(`Checking model ${model.id}: provider="${model.provider}"`);
 
       if (model.provider === 'openai' && !openaiApiKey) {
-        console.log(`  Filtered out: OpenAI model but no key`);
+        debugInfo(`  Filtered out: OpenAI model but no key`);
         return false;
       }
       if (model.provider === 'anthropic' && !anthropicApiKey) {
-        console.log(`  Filtered out: Anthropic model but no key`);
+        debugInfo(`  Filtered out: Anthropic model but no key`);
         return false;
       }
 
-      console.log(`  Kept: provider check passed`);
+      debugInfo(`  Kept: provider check passed`);
       return true;
     });
 
-    console.log('Available after provider filtering:', availableModels.length);
+    debugInfo('Available after provider filtering:', availableModels.length);
 
     if (availableModels.length === 0) {
-      console.log('🚨 FOUND POTENTIAL ROOT CAUSE: Missing provider field causes all models to be filtered out!');
-      console.log('E2E test would see 0 models because provider filtering fails');
+      debugInfo('🚨 FOUND POTENTIAL ROOT CAUSE: Missing provider field causes all models to be filtered out!');
+      debugInfo('E2E test would see 0 models because provider filtering fails');
     }
 
     // Since model.provider is undefined, the conditions:
@@ -187,7 +188,7 @@ registerTest({
     // Both return false, so return true - models should pass through
 
     if (availableModels.length === modelsWithoutProvider.length) {
-      console.log('✅ Models without provider field pass provider filtering');
+      debugInfo('✅ Models without provider field pass provider filtering');
     }
 
     // Continue with mode filtering
@@ -196,12 +197,12 @@ registerTest({
       return isGptChat;
     });
 
-    console.log('Chat models after mode filtering:', chatModels.length);
+    debugInfo('Chat models after mode filtering:', chatModels.length);
 
     if (chatModels.length === 2) {
-      console.log('✅ Missing provider field is NOT the root cause');
+      debugInfo('✅ Missing provider field is NOT the root cause');
     } else {
-      console.log('🚨 Missing provider field affects mode filtering somehow');
+      debugInfo('🚨 Missing provider field affects mode filtering somehow');
     }
   }
 });
@@ -210,7 +211,7 @@ registerTest({
   id: 'debug-api-key-detection',
   name: 'DEBUG: API key detection edge cases',
   fn: () => {
-    console.log('=== Testing API Key Detection Edge Cases ===');
+    debugInfo('=== Testing API Key Detection Edge Cases ===');
 
     // Test various API key states that might occur in E2E
     const testCases = [
@@ -247,7 +248,7 @@ registerTest({
     ];
 
     testCases.forEach(testCase => {
-      console.log(`\nTesting: ${testCase.name}`);
+      debugInfo(`\nTesting: ${testCase.name}`);
 
       // Simulate the key detection logic from Settings.svelte
       const detectedOpenAIKey = testCase.storeKey ||
@@ -255,10 +256,10 @@ registerTest({
 
       const detectedAnthropicKey = null; // For simplicity, assume no Anthropic key
 
-      console.log(`  Store key: ${testCase.storeKey}`);
-      console.log(`  Local key: ${testCase.localKey}`);
-      console.log(`  Selected provider: ${testCase.selectedProvider}`);
-      console.log(`  Detected OpenAI key: ${detectedOpenAIKey}`);
+      debugInfo(`  Store key: ${testCase.storeKey}`);
+      debugInfo(`  Local key: ${testCase.localKey}`);
+      debugInfo(`  Selected provider: ${testCase.selectedProvider}`);
+      debugInfo(`  Detected OpenAI key: ${detectedOpenAIKey}`);
 
       // Test model filtering with this key detection
       const testModels = [
@@ -272,13 +273,13 @@ registerTest({
         return true;
       });
 
-      console.log(`  Filtered models: ${filteredModels.length} (${filteredModels.map(m => m.id).join(', ')})`);
+      debugInfo(`  Filtered models: ${filteredModels.length} (${filteredModels.map(m => m.id).join(', ')})`);
 
       if (detectedOpenAIKey && filteredModels.length === 0) {
-        console.log(`  🚨 ISSUE: Have OpenAI key but no models passed filtering`);
+        debugInfo(`  🚨 ISSUE: Have OpenAI key but no models passed filtering`);
       }
     });
 
-    console.log('\n✅ API key detection edge cases tested');
+    debugInfo('\n✅ API key detection edge cases tested');
   }
 });

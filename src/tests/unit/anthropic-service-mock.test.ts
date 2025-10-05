@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'anthropic-stream-context-management',
@@ -40,7 +41,7 @@ registerTest({
     const finalContext = get(anthropicStreamContext);
     t.that(get(isStreaming) === false, 'Should not be streaming after close');
 
-    console.log('✓ Stream context management working correctly');
+    debugInfo('✓ Stream context management working correctly');
   }
 });
 
@@ -80,7 +81,7 @@ registerTest({
     const noSystemExtracted = extractSystemMessage([]);
     t.that(noSystemExtracted === undefined, 'Should return undefined for empty array');
 
-    console.log('✓ Message conversion edge cases handled correctly');
+    debugInfo('✓ Message conversion edge cases handled correctly');
   }
 });
 

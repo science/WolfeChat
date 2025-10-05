@@ -6,7 +6,7 @@ test.describe('TDD: Reasoning Window Conversation ID Bug', () => {
   test.setTimeout(120_000);
 
   test('reasoning window appears but shows "0 messages" due to conversation ID race condition', async ({ page }) => {
-    const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
+    const DEBUG_LVL = Number(process.env.DEBUG || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
         const t = msg.text();
@@ -18,7 +18,7 @@ test.describe('TDD: Reasoning Window Conversation ID Bug', () => {
     }
 
     await page.goto('/');
-    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL);
+    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG = lvl; }, DEBUG_LVL);
 
     // CRITICAL: Clear localStorage to trigger potential race condition
     await page.evaluate(() => {

@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 // Test: Opus 4.1 Model Configuration
 registerTest({
@@ -41,7 +42,7 @@ registerTest({
       throw new Error(`getMaxOutputTokens should return 32000, got ${getMaxOutputTokens(modelName)}`);
     }
 
-    console.log('✓ Opus 4.1 configuration test passed');
+    debugInfo('✓ Opus 4.1 configuration test passed');
   }
 });
 
@@ -67,7 +68,7 @@ registerTest({
       throw new Error(`Expected thinkingBudgetTokens 16000, got ${config.thinkingBudgetTokens}`);
     }
 
-    console.log('✓ Sonnet 4 configuration test passed');
+    debugInfo('✓ Sonnet 4 configuration test passed');
   }
 });
 
@@ -101,7 +102,7 @@ registerTest({
       throw new Error(`getThinkingBudget should return 0, got ${getThinkingBudget(modelName)}`);
     }
 
-    console.log('✓ Haiku 3 configuration test passed');
+    debugInfo('✓ Haiku 3 configuration test passed');
   }
 });
 
@@ -136,7 +137,7 @@ registerTest({
       }
     }
 
-    console.log('✓ Token constraint validation passed - 400 errors should be fixed!');
+    debugInfo('✓ Token constraint validation passed - 400 errors should be fixed!');
   }
 });
 
@@ -162,6 +163,6 @@ registerTest({
       throw new Error(`Expected thinkingBudgetTokens 0 for unknown model, got ${config.thinkingBudgetTokens}`);
     }
 
-    console.log('✓ Unknown model safety test passed');
+    debugInfo('✓ Unknown model safety test passed');
   }
 });

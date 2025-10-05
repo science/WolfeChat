@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 // Test: SDK messaging uses model-specific max_tokens
 registerTest({
@@ -61,7 +62,7 @@ registerTest({
         throw new Error(`CRITICAL: max_tokens (${maxTokensValue}) must be > thinking_budget (${thinkingBudget})`);
       }
 
-      console.log(`✓ Constraint satisfied: max_tokens (${maxTokensValue}) > thinking_budget (${thinkingBudget})`);
+      debugInfo(`✓ Constraint satisfied: max_tokens (${maxTokensValue}) > thinking_budget (${thinkingBudget})`);
     }
 
     // Verify we're using model-specific max_tokens
@@ -69,7 +70,7 @@ registerTest({
       throw new Error(`Expected max_tokens 64000 for sonnet-4, got ${finalParams.max_tokens}`);
     }
 
-    console.log('✓ SDK messaging uses dynamic max_tokens correctly');
+    debugInfo('✓ SDK messaging uses dynamic max_tokens correctly');
   }
 });
 
@@ -91,7 +92,7 @@ registerTest({
 
     // Verify old scenario would fail
     if (oldProblematicParams.max_tokens <= oldProblematicParams.thinking.budget_tokens) {
-      console.log(`✓ OLD scenario correctly identified as problematic: ${oldProblematicParams.max_tokens} <= ${oldProblematicParams.thinking.budget_tokens}`);
+      debugInfo(`✓ OLD scenario correctly identified as problematic: ${oldProblematicParams.max_tokens} <= ${oldProblematicParams.thinking.budget_tokens}`);
     } else {
       throw new Error('Old scenario should have been problematic');
     }
@@ -109,7 +110,7 @@ registerTest({
 
     // Verify new scenario satisfies constraint
     if (newFixedParams.max_tokens > newFixedParams.thinking.budget_tokens) {
-      console.log(`✓ NEW scenario satisfies constraint: ${newFixedParams.max_tokens} > ${newFixedParams.thinking.budget_tokens}`);
+      debugInfo(`✓ NEW scenario satisfies constraint: ${newFixedParams.max_tokens} > ${newFixedParams.thinking.budget_tokens}`);
     } else {
       throw new Error(`New scenario should satisfy constraint: ${newFixedParams.max_tokens} > ${newFixedParams.thinking.budget_tokens}`);
     }
@@ -117,12 +118,12 @@ registerTest({
     // Verify 25% allocation
     const expectedBudget = newFixedParams.max_tokens * 0.25;
     if (newFixedParams.thinking.budget_tokens === expectedBudget) {
-      console.log(`✓ Correct 25% allocation: ${newFixedParams.thinking.budget_tokens} = 25% of ${newFixedParams.max_tokens}`);
+      debugInfo(`✓ Correct 25% allocation: ${newFixedParams.thinking.budget_tokens} = 25% of ${newFixedParams.max_tokens}`);
     } else {
       throw new Error(`Expected 25% allocation (${expectedBudget}), got ${newFixedParams.thinking.budget_tokens}`);
     }
 
-    console.log('✓ 400 error scenario is resolved with new configuration');
+    debugInfo('✓ 400 error scenario is resolved with new configuration');
   }
 });
 
@@ -143,6 +144,6 @@ registerTest({
       throw new Error('Non-reasoning models should not have thinking parameter');
     }
 
-    console.log('✓ Non-reasoning models handled correctly without thinking');
+    debugInfo('✓ Non-reasoning models handled correctly without thinking');
   }
 });

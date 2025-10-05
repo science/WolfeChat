@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 // Test 1: Models should filter by provider when only one API key is set
 registerTest({

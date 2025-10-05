@@ -15,10 +15,10 @@ import {
   resetDebugData
 } from '../../utils/debugLayerLogger.js';
 
-// Mock window.DEBUG_E2E for testing
+// Mock window.__DEBUG for testing
 function mockDebugMode(enabled: boolean) {
   if (typeof window !== 'undefined') {
-    (window as any).__DEBUG_E2E = enabled ? 2 : undefined;
+    (window as any).__DEBUG = enabled ? 2 : undefined;
   }
 }
 
@@ -36,11 +36,11 @@ registerTest({
   fn: (t) => {
     // Test debug mode disabled
     mockDebugMode(false);
-    t.that(!isDebugMode(), 'Debug mode should be disabled when window.__DEBUG_E2E is not 2');
+    t.that(!isDebugMode(), 'Debug mode should be disabled when window.__DEBUG is not 2');
 
     // Test debug mode enabled
     mockDebugMode(true);
-    t.that(isDebugMode(), 'Debug mode should be enabled when window.__DEBUG_E2E is 2');
+    t.that(isDebugMode(), 'Debug mode should be enabled when window.__DEBUG is 2');
 
     // Test when window is undefined (SSR scenario)
     const restoreWindow = mockWindowUndefined();

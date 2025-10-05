@@ -302,7 +302,7 @@ npx playwright test --reporter=html
 
 ```bash
 # Enable E2E debugging
-DEBUG_E2E=2 npm run test src/tests/unit/test-helpers-integration.spec.ts
+DEBUG=2 npm run test src/tests/unit/test-helpers-integration.spec.ts
 
 # Run integration tests with browser visible
 npm run test:headed src/tests/unit/test-helpers-integration.spec.ts

@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'anthropic-sdk-stream-handler-creation',
@@ -22,9 +23,9 @@ registerTest({
 
       // Create a stream handler instance
       handler = new StreamHandler({
-        onTextDelta: (text: string) => console.log('Text delta:', text),
-        onCompleted: () => console.log('Stream completed'),
-        onError: (error: Error) => console.log('Stream error:', error)
+        onTextDelta: (text: string) => debugInfo('Text delta:', text),
+        onCompleted: () => debugInfo('Stream completed'),
+        onError: (error: Error) => debugInfo('Stream error:', error)
       });
     } catch (error) {
       handlerError = error as Error;
@@ -38,7 +39,7 @@ registerTest({
       throw new Error('Stream handler should be created');
     }
 
-    console.log('✓ SDK stream handler created successfully');
+    debugInfo('✓ SDK stream handler created successfully');
   }
 });
 
@@ -60,7 +61,7 @@ registerTest({
           accumulatedText += text;
         },
         onCompleted: () => {
-          console.log('Stream completed with text:', accumulatedText);
+          debugInfo('Stream completed with text:', accumulatedText);
         },
         onError: (error: Error) => {
           eventError = error;
@@ -103,7 +104,7 @@ registerTest({
       throw new Error(`Expected 'Hello World!', got '${accumulatedText}'`);
     }
 
-    console.log('✓ Content block events processed correctly');
+    debugInfo('✓ Content block events processed correctly');
   }
 });
 
@@ -132,10 +133,10 @@ registerTest({
           thinkingText += text;
         },
         onReasoningComplete: () => {
-          console.log('Reasoning completed with text:', thinkingText);
+          debugInfo('Reasoning completed with text:', thinkingText);
         },
         onCompleted: () => {
-          console.log('Stream completed');
+          debugInfo('Stream completed');
         },
         onError: (error: Error) => {
           thinkingError = error;
@@ -175,6 +176,6 @@ registerTest({
       throw new Error(`Expected thinking text, got '${thinkingText}'`);
     }
 
-    console.log('✓ Thinking block events processed correctly');
+    debugInfo('✓ Thinking block events processed correctly');
   }
 });

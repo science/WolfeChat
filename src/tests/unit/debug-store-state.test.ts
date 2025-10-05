@@ -7,6 +7,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'debug-store-flow-simulation',
@@ -19,16 +20,16 @@ registerTest({
     let openaiApiKey = null;
     let anthropicApiKey = null;
 
-    console.log('STEP 1 - Initial state:');
-    console.log('  modelsStore:', modelsStore.length, 'models');
-    console.log('  openaiApiKey:', !!openaiApiKey);
-    console.log('  anthropicApiKey:', !!anthropicApiKey);
+    debugInfo('STEP 1 - Initial state:');
+    debugInfo('  modelsStore:', modelsStore.length, 'models');
+    debugInfo('  openaiApiKey:', !!openaiApiKey);
+    debugInfo('  anthropicApiKey:', !!anthropicApiKey);
 
     // Step 2: User sets OpenAI API key and clicks "Check API"
     openaiApiKey = 'sk-test123';
 
-    console.log('STEP 2 - API key set:');
-    console.log('  openaiApiKey:', !!openaiApiKey);
+    debugInfo('STEP 2 - API key set:');
+    debugInfo('  openaiApiKey:', !!openaiApiKey);
 
     // Step 3: API call succeeds, models are fetched (simulating fetchModels)
     const fetchedModels = [
@@ -41,10 +42,10 @@ registerTest({
     // Models get stored in modelsStore
     modelsStore = fetchedModels;
 
-    console.log('STEP 3 - Models fetched:');
-    console.log('  modelsStore:', modelsStore.length, 'models');
-    console.log('  Model IDs:', modelsStore.map(m => m.id));
-    console.log('  Model providers:', modelsStore.map(m => m.provider));
+    debugInfo('STEP 3 - Models fetched:');
+    debugInfo('  modelsStore:', modelsStore.length, 'models');
+    debugInfo('  Model IDs:', modelsStore.map(m => m.id));
+    debugInfo('  Model providers:', modelsStore.map(m => m.provider));
 
     // Step 4: updateFilteredModels() is called (GPT mode)
     const mode = "GPT";
@@ -62,9 +63,9 @@ registerTest({
       return true;
     });
 
-    console.log('STEP 4 - Models filtered for GPT mode:');
-    console.log('  filteredModels:', filteredModels.length, 'models');
-    console.log('  Filtered IDs:', filteredModels.map(m => m.id));
+    debugInfo('STEP 4 - Models filtered for GPT mode:');
+    debugInfo('  filteredModels:', filteredModels.length, 'models');
+    debugInfo('  Filtered IDs:', filteredModels.map(m => m.id));
 
     // Step 5: Check what would be visible in getVisibleModels()
     // This simulates what the E2E test sees
@@ -79,10 +80,10 @@ registerTest({
       opt.text && opt.text !== 'Select a model...' && opt.text.trim() !== ''
     );
 
-    console.log('STEP 5 - What E2E test would see:');
-    console.log('  All options:', visibleOptions.map(o => o.text));
-    console.log('  Real options:', realOptions.map(o => o.text));
-    console.log('  Real options count:', realOptions.length);
+    debugInfo('STEP 5 - What E2E test would see:');
+    debugInfo('  All options:', visibleOptions.map(o => o.text));
+    debugInfo('  Real options:', realOptions.map(o => o.text));
+    debugInfo('  Real options count:', realOptions.length);
 
     // ASSERTIONS - This should match the expected E2E behavior
     if (filteredModels.length === 0) {
@@ -101,7 +102,7 @@ registerTest({
       throw new Error(`Expected [${expectedChatModels.join(', ')}], got [${actualChatModels.join(', ')}]`);
     }
 
-    console.log('✅ DEBUG: Store flow simulation successful - filtering works as expected');
+    debugInfo('✅ DEBUG: Store flow simulation successful - filtering works as expected');
   }
 });
 
@@ -112,7 +113,7 @@ registerTest({
     // Test what happens if OpenAI API returns models without 'provider' field
     // (this might be what's happening in the real E2E test)
 
-    console.log('TESTING: OpenAI models missing provider field');
+    debugInfo('TESTING: OpenAI models missing provider field');
 
     const modelsFromOpenAIAPI = [
       { id: 'gpt-4', object: 'model', created: 1687882411, owned_by: 'openai' },
@@ -123,8 +124,8 @@ registerTest({
     // Simulate what fetchModels() should do - add provider field
     const processedModels = modelsFromOpenAIAPI.map(model => ({ ...model, provider: 'openai' }));
 
-    console.log('Raw API models:', modelsFromOpenAIAPI);
-    console.log('Processed models:', processedModels);
+    debugInfo('Raw API models:', modelsFromOpenAIAPI);
+    debugInfo('Processed models:', processedModels);
 
     // Now test filtering
     const openaiApiKey = 'sk-test123';
@@ -142,7 +143,7 @@ registerTest({
       return true;
     });
 
-    console.log('Filtered processed models:', filteredModels);
+    debugInfo('Filtered processed models:', filteredModels);
 
     if (filteredModels.length !== 2) {
       throw new Error(`Expected 2 processed models, got ${filteredModels.length}`);
@@ -161,13 +162,13 @@ registerTest({
       return true;
     });
 
-    console.log('Filtered raw models (no provider field):', filteredRawModels);
+    debugInfo('Filtered raw models (no provider field):', filteredRawModels);
 
     if (filteredRawModels.length === 0) {
-      console.log('🚨 FOUND POTENTIAL ISSUE: Raw models with no provider field get filtered out!');
-      console.log('This could explain why E2E test sees 0 models');
+      debugInfo('🚨 FOUND POTENTIAL ISSUE: Raw models with no provider field get filtered out!');
+      debugInfo('This could explain why E2E test sees 0 models');
     }
 
-    console.log('✅ DEBUG: API response structure test completed');
+    debugInfo('✅ DEBUG: API response structure test completed');
   }
 });

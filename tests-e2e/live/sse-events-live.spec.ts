@@ -20,7 +20,7 @@ async function bindWrapper(page: Page) {
       const doneP = bus.waitForAllDone(60000);
       // Propagate stream errors to the bus so tests never hang
       streamResponseViaResponsesAPI(prompt, undefined, callbacks).catch(err => {
-        try { if ((window).__DEBUG_E2E >= 1) console.error('[TEST] stream error in __runBoundStream', err); } catch {}
+        try { if ((window).__DEBUG >= 1) console.error('[TEST] stream error in __runBoundStream', err); } catch {}
         try { callbacks?.onError?.(err); } catch {}
         try { callbacks?.onCompleted?.('', { type: 'error', synthetic: true, error: String(err) }); } catch {}
       });
@@ -37,7 +37,7 @@ async function bindWrapper(page: Page) {
   async function bindHookedRunner(page: Page) {
     await page.addScriptTag({ content: `window.__runHookedStream = async () => ({ summary: null, reasoning: null, completed: { finalText: 'stub' } });` });
     await page.addScriptTag({ type: 'module', content: `/* __runHookedStream injection (fixed) */
-      try { (window as any).__DEBUG_E2E = (window as any).__DEBUG_E2E || 0; } catch {}
+      try { (window as any).__DEBUG = (window as any).__DEBUG || 0; } catch {}
 
       // Define function first; do dynamic imports inside to avoid top-level await
       // Wire debug level from Node env via a window flag if set by the test
@@ -55,7 +55,7 @@ async function bindWrapper(page: Page) {
           try {
             modelFromStore = get(win.stores.selectedModel);
           } catch (e) {
-            try { if ((window as any).__DEBUG_E2E >= 2) console.warn('[TEST] Failed to get model from store, will use DOM fallback:', e); } catch {}
+            try { if ((window as any).__DEBUG >= 2) console.warn('[TEST] Failed to get model from store, will use DOM fallback:', e); } catch {}
           }
 
           // DOM fallback for model
@@ -63,8 +63,8 @@ async function bindWrapper(page: Page) {
           const isReasoning = supportsReasoning(model || '');
 
           const { callbacks, bus } = bindToCallbacks({
-            onEvent: (e) => { try { if ((window as any).__DEBUG_E2E >= 3) console.debug('[TEST] SSE event', e?.type || 'unknown'); } catch {} },
-            onError: (err) => { try { if ((window as any).__DEBUG_E2E >= 2) console.debug('[TEST] SSE error', String(err)); } catch {} }
+            onEvent: (e) => { try { if ((window as any).__DEBUG >= 3) console.debug('[TEST] SSE event', e?.type || 'unknown'); } catch {} },
+            onError: (err) => { try { if ((window as any).__DEBUG >= 2) console.debug('[TEST] SSE error', String(err)); } catch {} }
           });
 
           const summaryP = (isReasoning ? bus.waitForReasoningSummaryDone(20000) : Promise.resolve(null)).catch(() => null);
@@ -75,7 +75,7 @@ async function bindWrapper(page: Page) {
           // Start stream with explicit model if available (stabilizes behavior when stores aren't imported)
           const chosenModel = model || undefined;
           streamResponseViaResponsesAPI(prompt, chosenModel, callbacks).catch(err => {
-            try { if ((window as any).__DEBUG_E2E >= 1) console.error('[TEST] stream error in __runHookedStream', err); } catch {}
+            try { if ((window as any).__DEBUG >= 1) console.error('[TEST] stream error in __runHookedStream', err); } catch {}
             try { callbacks?.onError?.(err); } catch {}
             try { callbacks?.onCompleted?.('', { type: 'error', synthetic: true, error: String(err) }); } catch {}
           });
@@ -85,14 +85,14 @@ async function bindWrapper(page: Page) {
           try {
             completed = await completedP;
           } catch (e) {
-            try { if ((window as any).__DEBUG_E2E >= 1) console.error('[TEST] Timeout waiting for output completion. Summary/text states:', { summaryLen: (summary||'')?.length || 0, textLen: (text||'')?.length || 0 }); } catch {}
+            try { if ((window as any).__DEBUG >= 1) console.error('[TEST] Timeout waiting for output completion. Summary/text states:', { summaryLen: (summary||'')?.length || 0, textLen: (text||'')?.length || 0 }); } catch {}
             try { await allDoneP; } catch {}
             return { summary, reasoning: text, completed: null };
           }
           try { await allDoneP; } catch {}
           return { summary, reasoning: text, completed };
         } catch (e) {
-          try { if ((window as any).__DEBUG_E2E >= 1) console.error('[TEST] Error in __runHookedStream', e); } catch {}
+          try { if ((window as any).__DEBUG >= 1) console.error('[TEST] Error in __runHookedStream', e); } catch {}
           throw e;
         }
       };
@@ -165,8 +165,8 @@ test('Live SSE: output completion for a very short answer', async ({ page }) => 
 test('Live SSE: hook-based waits for reasoning and completion', async ({ page }) => {
   test.setTimeout(45_000);
 
-  // Console and network diagnostics (suppressed unless DEBUG_E2E >= 2)
-  const DEBUG_LVL_3 = Number(process.env.DEBUG_E2E || '0');
+  // Console and network diagnostics (suppressed unless DEBUG >= 2)
+  const DEBUG_LVL_3 = Number(process.env.DEBUG || '0');
   if (DEBUG_LVL_3 >= 2) {
     page.on('console', msg => {
       const text = msg.text();
@@ -179,8 +179,8 @@ test('Live SSE: hook-based waits for reasoning and completion', async ({ page })
 
   await page.goto(APP_URL);
   // propagate debug level into the page
-  const DEBUG_LVL_4 = Number(process.env.DEBUG_E2E || '0');
-  if (DEBUG_LVL_4) await page.evaluate((lvl) => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL_4);
+  const DEBUG_LVL_4 = Number(process.env.DEBUG || '0');
+  if (DEBUG_LVL_4) await page.evaluate((lvl) => { (window as any).__DEBUG = lvl; }, DEBUG_LVL_4);
   await bootstrapLiveAPI(page);
   await selectReasoningModelInQuickSettings(page);
   await bindHookedRunner(page);

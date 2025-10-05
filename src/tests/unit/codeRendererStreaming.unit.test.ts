@@ -2,6 +2,7 @@
 // Keeps the simple Code shim test in Node/JSDOM
 import Code from './svelte-code-shim.js';
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 function sleep(ms: number) { return new Promise<void>(r => setTimeout(r, ms)); }
 

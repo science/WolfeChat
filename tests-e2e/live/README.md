@@ -8,7 +8,7 @@ Browser tests that call real external APIs; requires OPENAI_API_KEY.
 npx playwright test tests-e2e/live
 
 # Run specific test with debugging
-DEBUG_E2E=2 npx playwright test tests-e2e/live/specific-test.spec.ts --headed
+DEBUG=2 npx playwright test tests-e2e/live/specific-test.spec.ts --headed
 ```
 
 ## Test Helpers
@@ -227,7 +227,7 @@ model: /claude-3\.5-sonnet/i
 ### Error Handling
 All helpers provide detailed diagnostics on timeout. Enable debugging:
 ```bash
-DEBUG_E2E=2 npx playwright test tests-e2e/live/your-test.spec.ts
+DEBUG=2 npx playwright test tests-e2e/live/your-test.spec.ts
 ```
 
 ## Network Test Debug Infrastructure
@@ -238,7 +238,7 @@ WolfeChat includes a comprehensive network debugging system for analyzing SSE st
 
 The E2E test suite supports two separate debug logging systems:
 
-#### E2E Test Runner Logging (`DEBUG_E2E`)
+#### E2E Test Runner Logging (`DEBUG`)
 
 Controls logging from the **test runner** code (Node.js context) using `tests-e2e/debug-utils.ts`:
 
@@ -247,20 +247,20 @@ Controls logging from the **test runner** code (Node.js context) using `tests-e2
 npx playwright test tests-e2e/live/your-test.spec.ts
 
 # Level 1: Basic test output
-DEBUG_E2E=1 npx playwright test tests-e2e/live/your-test.spec.ts
+DEBUG=1 npx playwright test tests-e2e/live/your-test.spec.ts
 
 # Level 2: Network and layer debugging (RECOMMENDED)
-DEBUG_E2E=2 npx playwright test tests-e2e/live/your-test.spec.ts
+DEBUG=2 npx playwright test tests-e2e/live/your-test.spec.ts
 
 # Level 3: Verbose SSE event tracing
-DEBUG_E2E=3 npx playwright test tests-e2e/live/your-test.spec.ts
+DEBUG=3 npx playwright test tests-e2e/live/your-test.spec.ts
 ```
 
-The `DEBUG_E2E` variable controls the `debugLog()` utility from `tests-e2e/debug-utils.ts`:
-- `DEBUG_E2E=0` (or unset): No output
-- `DEBUG_E2E=1`: Only errors (ERR level)
-- `DEBUG_E2E=2`: Errors and warnings (ERR + WARN)
-- `DEBUG_E2E=3`: All output (ERR + WARN + INFO)
+The `DEBUG` variable controls the `debugLog()` utility from `tests-e2e/debug-utils.ts`:
+- `DEBUG=0` (or unset): No output
+- `DEBUG=1`: Only errors (ERR level)
+- `DEBUG=2`: Errors and warnings (ERR + WARN)
+- `DEBUG=3`: All output (ERR + WARN + INFO)
 
 #### Browser Application Logging (`VITE_E2E_TEST`)
 
@@ -271,7 +271,7 @@ Controls logging from the **browser application** code using `src/lib/logger.ts`
 VITE_E2E_TEST=true npx playwright test tests-e2e/live/your-test.spec.ts
 
 # Combine both debug systems (MOST COMPREHENSIVE)
-DEBUG_E2E=2 VITE_E2E_TEST=true npx playwright test tests-e2e/live/your-test.spec.ts
+DEBUG=2 VITE_E2E_TEST=true npx playwright test tests-e2e/live/your-test.spec.ts
 ```
 
 The browser logger (`src/lib/logger.ts`) provides:
@@ -281,20 +281,20 @@ The browser logger (`src/lib/logger.ts`) provides:
 - `log.error()` - Always logged
 
 **Key Difference:**
-- `DEBUG_E2E`: Controls test helper/runner output in terminal
+- `DEBUG`: Controls test helper/runner output in terminal
 - `VITE_E2E_TEST`: Enables debug logs inside the browser application
 
 **Best Practice for Debugging:**
 ```bash
 # Full visibility - see both test runner and browser logs
-DEBUG_E2E=2 VITE_E2E_TEST=true npx playwright test tests-e2e/live/your-test.spec.ts --headed
+DEBUG=2 VITE_E2E_TEST=true npx playwright test tests-e2e/live/your-test.spec.ts --headed
 ```
 
 ### Debug Infrastructure Components
 
 #### Layer-Based Event Tracking
 
-When `DEBUG_E2E=2`, the app automatically enables layer-based debugging that tracks data flow through:
+When `DEBUG=2`, the app automatically enables layer-based debugging that tracks data flow through:
 
 - **sseParser**: Raw SSE events from OpenAI Responses API
 - **messageAssembly**: Message creation and content accumulation
@@ -307,7 +307,7 @@ When `DEBUG_E2E=2`, the app automatically enables layer-based debugging that tra
 ```typescript
 await page.evaluate(() => {
   // Enable comprehensive debugging
-  (window as any).__DEBUG_E2E = 2;
+  (window as any).__DEBUG = 2;
 });
 ```
 
@@ -392,7 +392,7 @@ Debug events appear in browser console with specific prefixes:
 ```typescript
 test('debug reasoning window', async ({ page }) => {
   // Enable debugging
-  await page.evaluate(() => { (window as any).__DEBUG_E2E = 2; });
+  await page.evaluate(() => { (window as any).__DEBUG = 2; });
 
   // Perform test actions...
   await sendMessage(page, 'Test message');
@@ -421,7 +421,7 @@ test('debug reasoning window', async ({ page }) => {
 
 ```typescript
 test('debug stream completion', async ({ page }) => {
-  await page.evaluate(() => { (window as any).__DEBUG_E2E = 2; });
+  await page.evaluate(() => { (window as any).__DEBUG = 2; });
 
   // Send message
   await sendMessage(page, 'Test');
@@ -491,13 +491,13 @@ When debugging is enabled, look for these patterns:
 ### Performance Considerations
 
 - Debug mode adds overhead - only enable during test development
-- `DEBUG_E2E=3` is very verbose and should be used sparingly
+- `DEBUG=3` is very verbose and should be used sparingly
 - Debug data accumulates during test runs - use `resetDebugData()` between tests for isolation
 - Console logs are captured by Playwright test output - review logs after test failures
 
 ### Best Practices
 
-1. **Always enable `DEBUG_E2E=2` when developing new tests**
+1. **Always enable `DEBUG=2` when developing new tests**
 2. **Use `resetDebugData()` between test cases** for clean state
 3. **Check debug output patterns** when tests fail unexpectedly
 4. **Correlate response IDs** across layers to identify data flow issues

@@ -355,32 +355,34 @@ async function main() {
 
     const harness = await loadTestHarness(suite, file);
     const { runAllTests, formatSuiteResultsText, clearTests } = harness;
-    
+
     await loadAllTests(suite);
-    
+
     const filter = (test) => {
       if (tag && !(test.tags || []).includes(tag)) return false;
       if (name && !test.name.toLowerCase().includes(name.toLowerCase())) return false;
       return true;
     };
-    
+
     const results = await runAllTests({ filter });
     const text = formatSuiteResultsText(results);
     console.log(text);
-    
+
     clearTests();
 
     // Clean teardown: close JSDOM window to release timers/handles keeping event loop alive
     try {
-      if (global.window && typeof global.window.close === 'function') {
-        global.window.close();
+      if (dom && dom.window && typeof dom.window.close === 'function') {
+        dom.window.close();
       }
     } catch {}
 
-    process.exitCode = results.failed > 0 ? 1 : 0;
+    // Force exit since JSDOM may keep event loop alive with resources/runScripts options
+    const exitCode = results.failed > 0 ? 1 : 0;
+    process.exit(exitCode);
   } catch (error) {
     console.error('Test runner failed:', error);
-    process.exitCode = 1;
+    process.exit(1);
   }
 }
 

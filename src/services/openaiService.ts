@@ -1221,6 +1221,11 @@ export async function streamResponseViaResponsesAPI(
         callbacks?.onTextDelta?.(deltaText);
       }
     } else if (resolvedType === 'response.completed') {
+      // Count tokens from the completion event
+      if (obj?.usage?.total_tokens) {
+        countTokens(obj.usage);
+      }
+
       // Finalize any still-open reasoning panels
       for (const [kind, panelId] of panelTracker.entries()) {
         completeReasoningPanel(panelId);

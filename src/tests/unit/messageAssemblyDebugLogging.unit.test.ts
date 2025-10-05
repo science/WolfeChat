@@ -9,7 +9,7 @@ import {
 // Mock debug mode for testing
 function mockDebugMode(enabled: boolean) {
   if (typeof window !== 'undefined') {
-    (window as any).__DEBUG_E2E = enabled ? 2 : undefined;
+    (window as any).__DEBUG = enabled ? 2 : undefined;
   }
 }
 

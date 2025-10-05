@@ -36,7 +36,7 @@ test.describe('Anthropic System Prompt Integration', () => {
           const postData = request.postDataJSON();
           anthropicRequests.push(postData);
 
-          if (process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+          if (process.env.DEBUG === '2' || process.env.DEBUG === '3') {
             console.log('[DEBUG] Anthropic API Request captured:', JSON.stringify(postData, null, 2));
           }
         } catch (e) {
@@ -77,7 +77,7 @@ test.describe('Anthropic System Prompt Integration', () => {
     expect(typeof request.system).toBe('string');
     expect(request.system.length).toBeGreaterThan(0);
 
-    if (process.env.DEBUG_E2E === '1' || process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+    if (process.env.DEBUG === '1' || process.env.DEBUG === '2' || process.env.DEBUG === '3') {
       console.log('✓ System prompt present in Anthropic request');
       console.log('  System prompt:', request.system);
     }
@@ -93,7 +93,7 @@ test.describe('Anthropic System Prompt Integration', () => {
           const postData = request.postDataJSON();
           anthropicRequests.push(postData);
 
-          if (process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+          if (process.env.DEBUG === '2' || process.env.DEBUG === '3') {
             console.log('[DEBUG] Anthropic API Request with custom prompt:', JSON.stringify(postData, null, 2));
           }
         } catch (e) {
@@ -129,7 +129,7 @@ test.describe('Anthropic System Prompt Integration', () => {
     expect(request).toHaveProperty('system');
     expect(request.system).toBe(customSystemPrompt);
 
-    if (process.env.DEBUG_E2E === '1' || process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+    if (process.env.DEBUG === '1' || process.env.DEBUG === '2' || process.env.DEBUG === '3') {
       console.log('✓ Custom conversation system prompt present in Anthropic request');
       console.log('  Expected:', customSystemPrompt);
       console.log('  Actual:', request.system);
@@ -145,7 +145,7 @@ test.describe('Anthropic System Prompt Integration', () => {
           const postData = request.postDataJSON();
           anthropicRequests.push(postData);
 
-          if (process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+          if (process.env.DEBUG === '2' || process.env.DEBUG === '3') {
             console.log('[DEBUG] Anthropic reasoning model request:', JSON.stringify(postData, null, 2));
           }
         } catch (e) {
@@ -183,7 +183,7 @@ test.describe('Anthropic System Prompt Integration', () => {
     expect(request.thinking).toHaveProperty('type', 'enabled');
     expect(request.thinking).toHaveProperty('budget_tokens');
 
-    if (process.env.DEBUG_E2E === '1' || process.env.DEBUG_E2E === '2' || process.env.DEBUG_E2E === '3') {
+    if (process.env.DEBUG === '1' || process.env.DEBUG === '2' || process.env.DEBUG === '3') {
       console.log('✓ System prompt present with reasoning model');
       console.log('  System prompt:', request.system);
       console.log('  Thinking config:', request.thinking);

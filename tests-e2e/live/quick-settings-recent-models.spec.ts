@@ -6,7 +6,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
   test.setTimeout(120_000);
 
   test('initial state has no recent models, all models in main list', async ({ page }) => {
-    const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
+    const DEBUG_LVL = Number(process.env.DEBUG || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
         const t = msg.text();
@@ -16,7 +16,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
     }
 
     await page.goto('/');
-    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL);
+    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG = lvl; }, DEBUG_LVL);
 
     // Clear any existing recent models to start fresh
     await page.evaluate(() => {
@@ -68,7 +68,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
   });
 
   test('sending message with selected model adds it to recent models section', async ({ page }) => {
-    const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
+    const DEBUG_LVL = Number(process.env.DEBUG || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
         const t = msg.text();
@@ -78,7 +78,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
     }
 
     await page.goto('/');
-    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL);
+    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG = lvl; }, DEBUG_LVL);
 
     // Clear any existing recent models to start fresh
     await page.evaluate(() => {
@@ -207,7 +207,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
   });
 
   test('switching models and sending messages builds recent models list', async ({ page }) => {
-    const DEBUG_LVL = Number(process.env.DEBUG_E2E || '0') || 0;
+    const DEBUG_LVL = Number(process.env.DEBUG || '0') || 0;
     if (DEBUG_LVL >= 2) {
       page.on('console', msg => {
         const t = msg.text();
@@ -217,7 +217,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
     }
 
     await page.goto('/');
-    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG_E2E = lvl; }, DEBUG_LVL);
+    if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG = lvl; }, DEBUG_LVL);
 
     // Clear any existing recent models to start fresh
     await page.evaluate(() => {

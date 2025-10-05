@@ -194,16 +194,46 @@ export function formatSuiteResultsText(suite: SuiteResult): string {
   lines.push(`=== Test Harness Results ===`);
   lines.push(`Total: ${suite.total} | Passed: ${suite.passed} | Failed: ${suite.failed} | Duration: ${suite.durationMs.toFixed(0)}ms`);
   lines.push('');
+
+  // Rails-style compression: collect passing tests as dots, show failures verbosely
+  let passingDots = '';
+  const DOTS_PER_LINE = 80; // Break after 80 dots for readability
+
   for (const r of suite.results) {
-    lines.push(`- [${r.success ? 'PASS' : 'FAIL'}] ${r.name} (${r.durationMs.toFixed(0)}ms)`);
-    if (r.details) {
-      lines.push(r.details);
+    if (r.success) {
+      // Passing tests: accumulate as dots (Rails style)
+      passingDots += '.';
+
+      // Break line after N dots for readability
+      if (passingDots.length >= DOTS_PER_LINE) {
+        lines.push(passingDots);
+        passingDots = '';
+      }
+    } else {
+      // Flush any accumulated passing dots before showing failure
+      if (passingDots) {
+        lines.push(passingDots);
+        passingDots = '';
+        lines.push(''); // Blank line before failure
+      }
+
+      // Failing tests: show full details
+      lines.push(`- [x] ${r.name} (${r.durationMs.toFixed(0)}ms)`);
+      if (r.details) {
+        lines.push(r.details);
+      }
+      if (r.error) {
+        lines.push(`Error: ${r.error?.message ?? String(r.error)}`);
+      }
+      lines.push('');
     }
-    if (r.error) {
-      lines.push(`Error: ${r.error?.message ?? String(r.error)}`);
-    }
-    lines.push('');
   }
+
+  // Flush any remaining passing dots
+  if (passingDots) {
+    lines.push(passingDots);
+  }
+
   return lines.join('\n');
 }
 

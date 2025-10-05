@@ -7,6 +7,7 @@
 
 import { registerTest } from '../testHarness.js';
 import type { ChatMessage } from '../../stores/stores.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'anthropic-sdk-simple-conversion',
@@ -55,7 +56,7 @@ registerTest({
       throw new Error(`Second message incorrect: ${JSON.stringify(secondMsg)}`);
     }
 
-    console.log('✓ Simple message conversion works correctly');
+    debugInfo('✓ Simple message conversion works correctly');
   }
 });
 
@@ -105,7 +106,7 @@ registerTest({
       throw new Error('System message should not be in messages array');
     }
 
-    console.log('✓ System message extraction works correctly');
+    debugInfo('✓ System message extraction works correctly');
   }
 });
 
@@ -153,6 +154,6 @@ registerTest({
       throw new Error('Complex content should be stringified');
     }
 
-    console.log('✓ Complex content structures handled correctly');
+    debugInfo('✓ Complex content structures handled correctly');
   }
 });

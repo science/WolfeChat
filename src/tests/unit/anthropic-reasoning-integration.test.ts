@@ -6,6 +6,7 @@
  */
 
 import { registerTest } from '../testHarness.js';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 registerTest({
   id: 'anthropic-reasoning-window-creation',
@@ -28,14 +29,14 @@ registerTest({
     if (!opus41Supports) {
       throw new Error('EXPECTED: claude-opus-4-1 should support reasoning');
     }
-    console.log('✓ Opus 4.1 correctly identified as reasoning model');
+    debugInfo('✓ Opus 4.1 correctly identified as reasoning model');
 
     // Test 2: Verify Haiku does NOT support reasoning
     const haikuSupports = reasoningModule.supportsAnthropicReasoning('claude-3-haiku-20240307');
     if (haikuSupports) {
       throw new Error('EXPECTED: claude-3-haiku should NOT support reasoning');
     }
-    console.log('✓ Haiku correctly identified as non-reasoning model');
+    debugInfo('✓ Haiku correctly identified as non-reasoning model');
 
     // Test 3: Create reasoning support and verify it initializes
     const reasoningSupport = reasoningModule.createAnthropicReasoningSupport({
@@ -79,7 +80,7 @@ registerTest({
       throw new Error(`EXPECTED: Reasoning text should accumulate correctly, got: ${capturedReasoningText}`);
     }
 
-    console.log('✓ Reasoning support lifecycle works correctly');
+    debugInfo('✓ Reasoning support lifecycle works correctly');
   }
 });
 
@@ -158,7 +159,7 @@ registerTest({
       }
     }
 
-    console.log('✓ SDK thinking events properly handled');
+    debugInfo('✓ SDK thinking events properly handled');
 
     // Verify accumulated text is correct
     const finalText = handler.getAllText();
@@ -171,7 +172,7 @@ registerTest({
       throw new Error(`EXPECTED: Reasoning text to accumulate, got "${reasoningText}"`);
     }
 
-    console.log('✓ Text accumulation works correctly (reasoning excluded from output)');
+    debugInfo('✓ Text accumulation works correctly (reasoning excluded from output)');
   }
 });
 
@@ -202,7 +203,7 @@ registerTest({
       throw new Error(`EXPECTED: Thinking budget should be 8000 for Opus, got ${configuredOpus.thinking.budget_tokens}`);
     }
 
-    console.log('✓ Thinking configuration added for Opus model');
+    debugInfo('✓ Thinking configuration added for Opus model');
 
     // Test 2: Haiku model should NOT get thinking configuration
     const haikuParams = {
@@ -217,7 +218,7 @@ registerTest({
       throw new Error('EXPECTED: No thinking configuration for Haiku');
     }
 
-    console.log('✓ No thinking configuration added for Haiku model');
+    debugInfo('✓ No thinking configuration added for Haiku model');
 
     // Test 3: Verify token constraint validation
     const modelConfigModule = await import('../../services/anthropicModelConfig.js');
@@ -232,7 +233,7 @@ registerTest({
       throw new Error('EXPECTED: Haiku token constraint should be valid (no thinking budget)');
     }
 
-    console.log('✓ Token constraints validated correctly');
+    debugInfo('✓ Token constraints validated correctly');
   }
 });
 
@@ -293,6 +294,6 @@ registerTest({
       throw new Error('EXPECTED: Factory-created support should have startReasoning method');
     }
 
-    console.log('✓ Reasoning store integration API is correct');
+    debugInfo('✓ Reasoning store integration API is correct');
   }
 });

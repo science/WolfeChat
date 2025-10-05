@@ -9,13 +9,18 @@ import { get } from 'svelte/store';
 import type { ChatMessage } from '../stores/stores.js';
 import { anthropicApiKey } from '../stores/providerStore.js';
 import { conversations } from '../stores/stores.js';
-import { setHistory } from '../managers/conversationManager.js';
+import { setHistory, countTokens } from '../managers/conversationManager.js';
 import { createAnthropicClient } from './anthropicClientFactory.js';
 import { convertToSDKFormatWithSystem } from './anthropicSDKConverter.js';
 import { addThinkingConfigurationWithBudget, createAnthropicReasoningSupport } from './anthropicReasoning.js';
 import { getMaxOutputTokens } from './anthropicModelConfig.js';
 import { anthropicStreamContext } from './anthropicMessagingService.js';
 import { log } from '../lib/logger.js';
+
+function countAnthropicTokens(usage: { input_tokens: number; output_tokens: number }) {
+  const total_tokens = usage.input_tokens + usage.output_tokens;
+  countTokens({ total_tokens });
+}
 
 /**
  * Send non-streaming message to Anthropic API using SDK
@@ -73,6 +78,11 @@ export async function sendAnthropicMessageSDK(
       textLength: responseText.length,
       usage: response.usage
     });
+
+    // Count tokens from response
+    if (response.usage) {
+      countAnthropicTokens(response.usage);
+    }
 
     // Add response to conversation history
     const assistantMessage: ChatMessage = {
@@ -288,6 +298,11 @@ export async function streamAnthropicMessageSDK(
       contentBlocks: finalMessage.content.length,
       contentBlockTypes: finalMessage.content.map(b => b.type)
     });
+
+    // Count tokens from final message
+    if (finalMessage.usage) {
+      countAnthropicTokens(finalMessage.usage);
+    }
 
     // Log if response seems truncated
     if (finalMessage.stop_reason && finalMessage.stop_reason !== 'end_turn') {

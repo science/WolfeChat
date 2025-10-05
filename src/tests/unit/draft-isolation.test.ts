@@ -1,6 +1,7 @@
 import { test } from '../testHarness.js';
 import { createDraftsStore } from '../../stores/draftsStore.ts';
 import AppComponent from '../../App.svelte';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 // Unit: Draft store in isolation should not be prefilled with assistant role text
 test({

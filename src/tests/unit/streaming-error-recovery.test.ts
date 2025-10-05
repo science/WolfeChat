@@ -1,5 +1,6 @@
 import { registerTest } from '../testHarness.js';
 import { get, writable } from 'svelte/store';
+import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
 // Test the error handling in sendRegularMessage and sendVisionMessage
 
@@ -91,7 +92,7 @@ import { get, writable } from 'svelte/store';
         t.that(true, 'sendRegularMessage should succeed in normal case');
       } catch (error) {
         // Without the fix, this might already be failing
-        console.log('Expected success case failed:', error);
+        debugInfo('Expected success case failed:', error);
       }
 
       // Test error case - this should fail WITHOUT the fix
@@ -140,7 +141,7 @@ import { get, writable } from 'svelte/store';
         t.that(!hasErrorHandling, 'WITHOUT fix: Error should NOT be properly handled (proving bug exists)');
 
         // This test should fail when the fix is not applied
-        console.log('✓ Test correctly identifies the bug - streaming errors are not handled properly');
+        debugInfo('✓ Test correctly identifies the bug - streaming errors are not handled properly');
       }
 
       // Verify streaming state is reset
@@ -151,7 +152,7 @@ import { get, writable } from 'svelte/store';
       (openaiService as any).streamResponseViaResponsesAPI = originalStreamResponse;
 
     } catch (setupError) {
-      console.error('Test setup failed:', setupError);
+      debugErr('Test setup failed:', setupError);
       t.that(false, `Test setup should not fail: ${setupError.message}`);
     }
   }
@@ -272,7 +273,7 @@ import { get, writable } from 'svelte/store';
       } else {
         // Fix is not in place - this demonstrates the bug
         t.that(!hasErrorHandling, 'WITHOUT fix: Vision errors should NOT be properly handled (proving bug exists)');
-        console.log('✓ Test correctly identifies the vision message bug');
+        debugInfo('✓ Test correctly identifies the vision message bug');
       }
 
       // Verify streaming state is reset
@@ -284,7 +285,7 @@ import { get, writable } from 'svelte/store';
       (imageManager as any).onSendVisionMessageComplete = originalVisionComplete;
 
     } catch (setupError) {
-      console.error('Vision test setup failed:', setupError);
+      debugErr('Vision test setup failed:', setupError);
       t.that(false, `Vision test setup should not fail: ${setupError.message}`);
     }
   }

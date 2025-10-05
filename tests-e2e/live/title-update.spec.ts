@@ -116,7 +116,7 @@ test.describe('Live API: Title Update', () => {
     expect(updatedTitle.length).toBeGreaterThan(0);
 
     // Optional debug output
-    const debugLevel = Number(process.env.DEBUG_E2E || '0');
+    const debugLevel = Number(process.env.DEBUG || '0');
     if (debugLevel >= 2) {
       debugInfo('[TEST] Title update test succeeded');
       debugInfo('[TEST] Initial title:', { initialTitle: initialTitle || '(empty)' });

@@ -1,11 +1,11 @@
 /**
- * Centralized Debug Logging for E2E Tests
+ * Centralized Debug Logging for Unit Tests
  *
- * All console output in E2E tests should go through this helper to enable
+ * All console output in unit tests should go through this helper to enable
  * centralized control of debug verbosity via DEBUG environment variable.
  *
  * Usage:
- *   import { debugLog, DEBUG_LEVELS } from './debug-utils';
+ *   import { debugLog, DEBUG_LEVELS } from '../utils/debugLog';
  *   debugLog('Setting up test data', DEBUG_LEVELS.INFO);
  *   debugLog('API call failed', DEBUG_LEVELS.ERR, { error: err });
  *
@@ -84,13 +84,13 @@ export function debugLog(
 function getLogPrefix(level: DebugLevel): string {
   switch (level) {
     case DEBUG_LEVELS.ERR:
-      return '[E2E-ERR]';
+      return '[TEST-ERR]';
     case DEBUG_LEVELS.WARN:
-      return '[E2E-WARN]';
+      return '[TEST-WARN]';
     case DEBUG_LEVELS.INFO:
-      return '[E2E-INFO]';
+      return '[TEST-INFO]';
     default:
-      return '[E2E]';
+      return '[TEST]';
   }
 }
 
