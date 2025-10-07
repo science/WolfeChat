@@ -79,15 +79,15 @@ This project evolves the UI/UX, features, and codebase organization to fit Wolfe
 ## Multi-Provider Support
 
 **Supported Providers:**
-- **OpenAI**: GPT-4, GPT-3.5, o1/o3 reasoning models, vision, TTS, DALL-E
-- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus/Haiku, vision support
+- **OpenAI**: GPT-5, GPT-4.1 families, as well as legacy models
+- **Anthropic**: Claude 4.5 Sonnet, Claude 4.1 Opus, as well as legacy models
 
 **Features:**
 - Dual API key support—configure one or both providers
 - Automatic provider routing based on model selection
-- Seamless model switching within conversations
-- Reasoning window display for o1 and Claude models
-- Quick Settings for per-conversation model/parameter overrides
+- Seamless model/provider switching within conversations
+- Reasoning window display for gpt-5 and Claude reasoning models
+- Quick Settings for per-conversation model/parameter overrides and navigation
 
 **Setup:**
 1. Click Settings → Select provider (OpenAI or Anthropic)
@@ -97,14 +97,14 @@ This project evolves the UI/UX, features, and codebase organization to fit Wolfe
 ## Security
 
 **Anthropic API Browser Access:**
-This application uses the `anthropic-dangerous-direct-browser-access: true` header for direct browser communication with Anthropic's API. This implementation has been reviewed and approved by internal security teams and is authorized as secure for this specific use case. The header is required for browser-based applications to access Anthropic's API directly.
+This application uses the `anthropic-dangerous-direct-browser-access: true` header for direct browser communication with Anthropic's API. This implementation works for my applications - please vet this approach (OpenAI uses the same technique but doesn't label it as dangerous, so ymmv). This Anthropic header is required for browser-based applications to access Anthropic's API directly.
 
 ## Key Features
 
 ### Multi-Model Support
 - **Dual Providers**: OpenAI and Anthropic in one interface
 - **Quick Settings**: Switch models mid-conversation with per-chat overrides
-- **Reasoning Models**: o1/o3 (OpenAI) and Claude reasoning with dedicated display windows
+- **Reasoning Models**: GPT-5 (OpenAI) and Claude reasoning with dedicated display windows
 
 ### Enhanced UX
 - **Mobile-Friendly**: Responsive design tested on Firefox/Android
@@ -115,13 +115,13 @@ This application uses the `anthropic-dangerous-direct-browser-access: true` head
 ### Modern API Integration
 - **OpenAI Responses API**: SSE streaming with reasoning window support
 - **Anthropic SDK**: Native Claude integration with progressive streaming
-- **Browser-Based**: Direct API calls—no backend, all data in browser storage
+- **Browser-Based**: Direct API calls — no backend, all data is held in browser storage
 
 ### Conversation Features
+- **Multiple conversations**: Vertically tabbed conversation manager, so you can maintain multiple conversations simultaneously, using different AI models in each
 - **Auto-Generated Titles**: Multi-provider fallback for smart naming
 - **Custom Titles**: Edit conversation names anytime
-- **Image Vision**: Upload images for GPT-4 Vision and Claude analysis
-- **Enter Key Config**: Choose "send" or "newline" behavior
+- **Enter Key setting**: Enter key can be set to "send" or "newline" behavior
 
 ## Data Storage
 
