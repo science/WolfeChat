@@ -710,7 +710,7 @@ export async function bootstrapBothProviders(page: Page) {
   });
 }
 
-export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-open' | 'ensure-closed' | 'open' | 'close', model?: string | RegExp, reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high', verbosity?: 'low' | 'medium' | 'high', summary?: 'auto' | 'detailed' | 'null', closeAfter?: boolean } = {}) {
+export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-open' | 'ensure-closed' | 'open' | 'close', model?: string | RegExp, reasoningEffort?: 'none' | 'minimal' | 'low' | 'medium' | 'high', verbosity?: 'low' | 'medium' | 'high', summary?: 'auto' | 'detailed' | 'null', closeAfter?: boolean } = {}) {
   const { mode = 'ensure-open', model, reasoningEffort, verbosity, summary, closeAfter = false } = opts;
 
   // Automatic conflict resolution: Close Settings if open

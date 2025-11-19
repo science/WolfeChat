@@ -663,22 +663,40 @@ export function supportsReasoning(model: string): boolean {
 }
 
 /**
+ * Check if a model is gpt-5.1 (which has different reasoning options than other reasoning models)
+ */
+export function isGpt51(model: string): boolean {
+  const m = (model || '').toLowerCase();
+  return m.includes('gpt-5.1');
+}
+
+/**
  * Build a consistent Responses payload used by all call sites.
  * Includes reasoning and verbosity fields only for reasoning-capable models.
+ * When reasoningEffort is 'none', the reasoning field is omitted while text.verbosity is still included.
+ * GPT-5.1 doesn't support "minimal" reasoning - falls back to "low".
  */
 export function buildResponsesPayload(model: string, input: any[], stream: boolean, opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }) {
   const payload: any = { model, input, store: false, stream };
 
   if (supportsReasoning(model)) {
-    const eff = (opts?.reasoningEffort ?? get(reasoningEffort)) || 'medium';
+    let eff = (opts?.reasoningEffort ?? get(reasoningEffort)) || 'medium';
     const verb = (opts?.verbosity ?? get(verbosity)) || 'medium';
     const sum = (opts?.summary ?? get(summary)) || 'auto';
+
+    // GPT-5.1 doesn't support "minimal" reasoning, fall back to "low"
+    if (isGpt51(model) && eff === 'minimal') {
+      eff = 'low';
+    }
 
     // text.verbosity only for reasoning-capable models per requirements
     payload.text = { verbosity: verb };
 
     // reasoning settings (summary: allow explicit null)
-    payload.reasoning = { effort: eff, summary: (sum === 'null' ? null : sum) };
+    // When effort is 'none', don't include the reasoning field at all
+    if (eff !== 'none') {
+      payload.reasoning = { effort: eff, summary: (sum === 'null' ? null : sum) };
+    }
   }
 
   return payload;

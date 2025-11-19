@@ -5,7 +5,7 @@
   import { recentModelsStore } from '../stores/recentModelsStore.js';
   import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
   import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore';
-  import { supportsReasoning } from '../services/openaiService.js';
+  import { supportsReasoning, isGpt51 } from '../services/openaiService.js';
   import { openaiApiKey, anthropicApiKey } from '../stores/providerStore.js';
   import { get, derived } from 'svelte/store';
 
@@ -202,7 +202,12 @@
         <div>
           <label for="reasoning-effort" class="mr-2">Reasoning:</label>
            <select id="reasoning-effort" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$currentCQ.reasoningEffort}>
-            <option value="minimal">minimal</option>
+            {#if isGpt51(effectiveModel)}
+              <option value="none">none</option>
+            {/if}
+            {#if !isGpt51(effectiveModel)}
+              <option value="minimal">minimal</option>
+            {/if}
             <option value="low">low</option>
             <option value="medium">medium</option>
             <option value="high">high</option>
