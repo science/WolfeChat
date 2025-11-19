@@ -22,6 +22,7 @@ import './src/tests/unit/debugLayerLogger.unit.test.ts';
 import './src/tests/unit/dom-dropdown-state-analysis.test.ts';
 import './src/tests/unit/draft-isolation.test.ts';
 import './src/tests/unit/e2e-helper-validation.test.ts';
+import './src/tests/unit/gpt-5.1-reasoning-none.test.ts';
 import './src/tests/unit/intentional-failure-demo.test.ts';
 import './src/tests/unit/keyboardSettings.test.ts';
 import './src/tests/unit/messageAssemblyDebugLogging.unit.test.ts';

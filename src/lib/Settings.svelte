@@ -4,7 +4,7 @@
     import { modelsStore } from '../stores/modelStore.js';
     import { recentModelsStore } from '../stores/recentModelsStore.js';
     import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
-    import { supportsReasoning } from '../services/openaiService.js';
+    import { supportsReasoning, isGpt51 } from '../services/openaiService.js';
     import { fetchAnthropicModels, isAnthropicModel } from '../services/anthropicService.js';
     import { createEventDispatcher } from 'svelte';
     import CloseIcon from "../assets/close.svg";
@@ -528,7 +528,12 @@ handleClose();
           <div>
             <label for="settings-reasoning-effort" class="block font-medium mb-1">Reasoning</label>
             <select id="settings-reasoning-effort" bind:value={$reasoningEffort} class="border text-black border-gray-300 p-2 rounded w-full">
-              <option value="minimal">minimal</option>
+              {#if isGpt51($selectedModel)}
+                <option value="none">none</option>
+              {/if}
+              {#if !isGpt51($selectedModel)}
+                <option value="minimal">minimal</option>
+              {/if}
               <option value="low">low</option>
               <option value="medium">medium</option>
               <option value="high">high</option>
