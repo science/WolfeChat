@@ -4,7 +4,9 @@
     import { modelsStore } from '../stores/modelStore.js';
     import { recentModelsStore } from '../stores/recentModelsStore.js';
     import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
+    import { reasoningAutoCollapse } from '../stores/reasoningAutoCollapseStore.js';
     import { supportsReasoning, isGpt51 } from '../services/openaiService.js';
+    import { supportsAnthropicReasoning } from '../services/anthropicReasoning.js';
     import { fetchAnthropicModels, isAnthropicModel } from '../services/anthropicService.js';
     import { createEventDispatcher } from 'svelte';
     import CloseIcon from "../assets/close.svg";
@@ -523,7 +525,7 @@ handleClose();
       <option disabled selected>No models available</option>
     {/if}
 </select>
-        {#if supportsReasoning($selectedModel)}
+        {#if supportsReasoning($selectedModel) || supportsAnthropicReasoning($selectedModel)}
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
           <div>
             <label for="settings-reasoning-effort" class="block font-medium mb-1">Reasoning</label>
@@ -555,6 +557,17 @@ handleClose();
               <option value="null">null</option>
             </select>
           </div>
+        </div>
+        <div class="mt-3">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              id="settings-reasoning-auto-collapse"
+              bind:checked={$reasoningAutoCollapse}
+              class="w-4 h-4"
+            />
+            <span class="text-sm">Auto-collapse reasoning window when complete</span>
+          </label>
         </div>
         {/if}
       </div>

@@ -13,6 +13,7 @@ import {
 } from "../stores/stores.js";
 import { openaiApiKey } from "../stores/providerStore.js";
 import { reasoningEffort, verbosity, summary } from "../stores/reasoningSettings.js";
+import { reasoningAutoCollapse } from "../stores/reasoningAutoCollapseStore.js";
 import {
   createReasoningWindow,
   collapseReasoningWindow,
@@ -932,6 +933,9 @@ export async function streamResponseViaResponsesAPI(
   const key = get(openaiApiKey);
   if (!key) throw new Error('No API key configured');
 
+  // Capture auto-collapse setting at start of stream (so it's consistent for entire response)
+  const shouldAutoCollapse = get(reasoningAutoCollapse);
+
   const liveSelected = get(selectedModel);
   const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
   const input = inputOverride || buildResponsesInputFromPrompt(prompt);
@@ -1052,7 +1056,7 @@ export async function streamResponseViaResponsesAPI(
       panelTextTracker.clear();
       callbacks?.onCompleted?.(finalText);
       completedEmitted = true;
-      if (responseWindowId) collapseReasoningWindow(responseWindowId);
+      if (responseWindowId && shouldAutoCollapse) collapseReasoningWindow(responseWindowId);
       return;
     }
 
@@ -1084,7 +1088,7 @@ export async function streamResponseViaResponsesAPI(
         panelTextTracker.clear();
         callbacks?.onCompleted?.(finalText, { type: 'parse_error', synthetic: true });
         completedEmitted = true;
-        if (responseWindowId) collapseReasoningWindow(responseWindowId);
+        if (responseWindowId && shouldAutoCollapse) collapseReasoningWindow(responseWindowId);
       }
       return;
     }
@@ -1253,7 +1257,7 @@ export async function streamResponseViaResponsesAPI(
       panelTextTracker.clear();
       callbacks?.onCompleted?.(finalText, obj);
       completedEmitted = true;
-      if (responseWindowId) collapseReasoningWindow(responseWindowId);
+      if (responseWindowId && shouldAutoCollapse) collapseReasoningWindow(responseWindowId);
     } else if (resolvedType === 'error') {
       log.warn('[SSE] error event received from stream', obj);
       callbacks?.onError?.(obj);
@@ -1269,7 +1273,7 @@ export async function streamResponseViaResponsesAPI(
         panelTextTracker.clear();
         callbacks?.onCompleted?.(finalText, { type: 'error', synthetic: true, error: obj });
         completedEmitted = true;
-        if (responseWindowId) collapseReasoningWindow(responseWindowId);
+        if (responseWindowId && shouldAutoCollapse) collapseReasoningWindow(responseWindowId);
       }
     }
   }
@@ -1357,7 +1361,7 @@ export async function streamResponseViaResponsesAPI(
       reason: wasAborted ? 'user_aborted' : 'eof_without_terminal_event'
     });
     completedEmitted = true;
-    if (responseWindowId) collapseReasoningWindow(responseWindowId);
+    if (responseWindowId && shouldAutoCollapse) collapseReasoningWindow(responseWindowId);
   }
 
   globalAbortController = null;

@@ -5,6 +5,7 @@
  * Integrates with existing reasoning window system
  */
 
+import { get } from 'svelte/store';
 import {
   createReasoningWindow,
   collapseReasoningWindow,
@@ -16,6 +17,7 @@ import {
   supportsReasoning as modelSupportsReasoning,
   getThinkingBudget as getModelThinkingBudget
 } from './anthropicModelConfig.js';
+import { reasoningAutoCollapse } from '../stores/reasoningAutoCollapseStore.js';
 import { log } from '../lib/logger.js';
 
 /**
@@ -132,7 +134,9 @@ export class AnthropicReasoningSupport {
 
     completeReasoningPanel(this.panelId);
 
-    if (this.windowId) {
+    // Check if auto-collapse is enabled before collapsing
+    const shouldAutoCollapse = get(reasoningAutoCollapse);
+    if (this.windowId && shouldAutoCollapse) {
       collapseReasoningWindow(this.windowId);
     }
 
