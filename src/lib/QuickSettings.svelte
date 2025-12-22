@@ -4,8 +4,10 @@
   import { modelsStore } from '../stores/modelStore.js';
   import { recentModelsStore } from '../stores/recentModelsStore.js';
   import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
+  import { reasoningAutoCollapse } from '../stores/reasoningAutoCollapseStore.js';
   import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore';
-  import { supportsReasoning, isGpt51 } from '../services/openaiService.js';
+  import { supportsReasoning, usesMinimalReasoning } from '../services/openaiService.js';
+  import { supportsAnthropicReasoning } from '../services/anthropicReasoning.js';
   import { openaiApiKey, anthropicApiKey } from '../stores/providerStore.js';
   import { get, derived } from 'svelte/store';
 
@@ -45,7 +47,7 @@
     return conv?.id ?? null;
   });
   $: effectiveModel = $currentCQ.model || $selectedModel || '';
-  $: isReasoningModel = supportsReasoning(effectiveModel);
+  $: isReasoningModel = supportsReasoning(effectiveModel) || supportsAnthropicReasoning(effectiveModel);
 
   // Helper function to determine when both providers are configured
   function shouldShowProviderIndicators() {
@@ -202,10 +204,10 @@
         <div>
           <label for="reasoning-effort" class="mr-2">Reasoning:</label>
            <select id="reasoning-effort" class="bg-primary text-white/80 p-1 rounded border border-gray-500" bind:value={$currentCQ.reasoningEffort}>
-            {#if isGpt51(effectiveModel)}
+            {#if !usesMinimalReasoning(effectiveModel)}
               <option value="none">none</option>
             {/if}
-            {#if !isGpt51(effectiveModel)}
+            {#if usesMinimalReasoning(effectiveModel)}
               <option value="minimal">minimal</option>
             {/if}
             <option value="low">low</option>
@@ -229,6 +231,17 @@
             <option value="null">null</option>
           </select>
         </div>
+      </div>
+      <div class="mt-2">
+        <label class="flex items-center gap-2 cursor-pointer text-sm">
+          <input
+            type="checkbox"
+            id="reasoning-auto-collapse"
+            bind:checked={$reasoningAutoCollapse}
+            class="w-4 h-4"
+          />
+          <span>Auto-collapse</span>
+        </label>
       </div>
       {/if}
 

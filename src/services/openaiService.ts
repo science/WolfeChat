@@ -13,6 +13,7 @@ import {
 } from "../stores/stores.js";
 import { openaiApiKey } from "../stores/providerStore.js";
 import { reasoningEffort, verbosity, summary } from "../stores/reasoningSettings.js";
+import { reasoningAutoCollapse } from "../stores/reasoningAutoCollapseStore.js";
 import {
   createReasoningWindow,
   collapseReasoningWindow,
@@ -656,25 +657,70 @@ function getDefaultResponsesModel() {
   return m;
 }
 
- // Only certain models (e.g., gpt-5, o1, o3, o4 family or explicit reasoning models) support "reasoning".
+// Only certain models (e.g., gpt-5+, o1, o3, o4 family or explicit reasoning models) support "reasoning".
+// This is future-proof: gpt-6, gpt-7, etc. will also be detected.
 export function supportsReasoning(model: string): boolean {
   const m = (model || '').toLowerCase();
-  return m.includes('gpt-5') || m.includes('o1-') || m.includes('o3') || m.includes('o4') || m.includes('reason');
+  // Match gpt-5, gpt-6, gpt-7, etc. (any gpt- followed by a digit 5 or higher)
+  // Also match o1-, o3, o4 and explicit "reason" models
+  return /gpt-[5-9]|gpt-\d{2,}/.test(m) || m.includes('o1-') || m.includes('o3') || m.includes('o4') || m.includes('reason');
 }
 
 /**
- * Check if a model is gpt-5.1 (which has different reasoning options than other reasoning models)
+ * Check if a model uses "minimal" as its lowest reasoning option (legacy behavior).
+ *
+ * LEGACY MODELS (use "minimal"):
+ * - gpt-5 base variants: gpt-5, gpt-5-nano, gpt-5-mini
+ * - o-series models: o1-*, o3, o3-mini, o4, o4-mini
+ *
+ * MODERN MODELS (use "none" - the new default going forward):
+ * - Versioned gpt-5: gpt-5.1, gpt-5.2, gpt-5.3, etc.
+ * - Future models: gpt-6, gpt-7, gpt-8, etc.
+ *
+ * This is future-proof: any new model not in the legacy list will use "none".
+ */
+export function usesMinimalReasoning(model: string): boolean {
+  const m = (model || '').toLowerCase();
+
+  // Legacy models that use "minimal" as their lowest option
+  // Base gpt-5 variants (NOT versioned like gpt-5.1, gpt-5.2)
+  if (/^gpt-5(-nano|-mini)?($|-)/.test(m) && !/gpt-5\.\d/.test(m)) {
+    return true;
+  }
+
+  // o-series models (o1, o3, o4 families)
+  if (m.includes('o1-') || m.includes('o3') || m.includes('o4')) {
+    return true;
+  }
+
+  // All other reasoning models use "none" as their minimum option
+  return false;
+}
+
+/**
+ * Check if a model uses "none" as its minimum reasoning option (modern behavior).
+ * This is the inverse of usesMinimalReasoning() for reasoning-capable models.
+ *
+ * Kept for backward compatibility with existing code that uses isGpt51().
+ *
+ * Returns true for: gpt-5.1, gpt-5.2, gpt-6, gpt-7, etc.
+ * Returns false for: gpt-5, gpt-5-nano, o3, o4, etc.
  */
 export function isGpt51(model: string): boolean {
-  const m = (model || '').toLowerCase();
-  return m.includes('gpt-5.1');
+  // For reasoning models, this is the inverse of usesMinimalReasoning
+  // Non-reasoning models return false
+  if (!supportsReasoning(model)) {
+    return false;
+  }
+  return !usesMinimalReasoning(model);
 }
 
 /**
  * Build a consistent Responses payload used by all call sites.
  * Includes reasoning and verbosity fields only for reasoning-capable models.
  * When reasoningEffort is 'none', the reasoning field is omitted while text.verbosity is still included.
- * GPT-5.1 doesn't support "minimal" reasoning - falls back to "low".
+ *
+ * Models that DON'T support "minimal" (modern models like gpt-5.1+, gpt-6, etc.) fall back to "low".
  */
 export function buildResponsesPayload(model: string, input: any[], stream: boolean, opts?: { reasoningEffort?: string; verbosity?: string; summary?: string }) {
   const payload: any = { model, input, store: false, stream };
@@ -684,8 +730,9 @@ export function buildResponsesPayload(model: string, input: any[], stream: boole
     const verb = (opts?.verbosity ?? get(verbosity)) || 'medium';
     const sum = (opts?.summary ?? get(summary)) || 'auto';
 
-    // GPT-5.1 doesn't support "minimal" reasoning, fall back to "low"
-    if (isGpt51(model) && eff === 'minimal') {
+    // Modern models (gpt-5.1+, gpt-6, etc.) don't support "minimal", fall back to "low"
+    // Only legacy models (gpt-5 base, o3, o4) support "minimal"
+    if (!usesMinimalReasoning(model) && eff === 'minimal') {
       eff = 'low';
     }
 
@@ -932,6 +979,9 @@ export async function streamResponseViaResponsesAPI(
   const key = get(openaiApiKey);
   if (!key) throw new Error('No API key configured');
 
+  // Capture auto-collapse setting at start of stream (so it's consistent for entire response)
+  const shouldAutoCollapse = get(reasoningAutoCollapse);
+
   const liveSelected = get(selectedModel);
   const resolvedModel = (model && typeof model === 'string' ? model : (liveSelected || getDefaultResponsesModel()));
   const input = inputOverride || buildResponsesInputFromPrompt(prompt);
@@ -1052,7 +1102,7 @@ export async function streamResponseViaResponsesAPI(
       panelTextTracker.clear();
       callbacks?.onCompleted?.(finalText);
       completedEmitted = true;
-      if (responseWindowId) collapseReasoningWindow(responseWindowId);
+      if (responseWindowId && shouldAutoCollapse) collapseReasoningWindow(responseWindowId);
       return;
     }
 
@@ -1084,7 +1134,7 @@ export async function streamResponseViaResponsesAPI(
         panelTextTracker.clear();
         callbacks?.onCompleted?.(finalText, { type: 'parse_error', synthetic: true });
         completedEmitted = true;
-        if (responseWindowId) collapseReasoningWindow(responseWindowId);
+        if (responseWindowId && shouldAutoCollapse) collapseReasoningWindow(responseWindowId);
       }
       return;
     }
@@ -1253,7 +1303,7 @@ export async function streamResponseViaResponsesAPI(
       panelTextTracker.clear();
       callbacks?.onCompleted?.(finalText, obj);
       completedEmitted = true;
-      if (responseWindowId) collapseReasoningWindow(responseWindowId);
+      if (responseWindowId && shouldAutoCollapse) collapseReasoningWindow(responseWindowId);
     } else if (resolvedType === 'error') {
       log.warn('[SSE] error event received from stream', obj);
       callbacks?.onError?.(obj);
@@ -1269,7 +1319,7 @@ export async function streamResponseViaResponsesAPI(
         panelTextTracker.clear();
         callbacks?.onCompleted?.(finalText, { type: 'error', synthetic: true, error: obj });
         completedEmitted = true;
-        if (responseWindowId) collapseReasoningWindow(responseWindowId);
+        if (responseWindowId && shouldAutoCollapse) collapseReasoningWindow(responseWindowId);
       }
     }
   }
@@ -1357,7 +1407,7 @@ export async function streamResponseViaResponsesAPI(
       reason: wasAborted ? 'user_aborted' : 'eof_without_terminal_event'
     });
     completedEmitted = true;
-    if (responseWindowId) collapseReasoningWindow(responseWindowId);
+    if (responseWindowId && shouldAutoCollapse) collapseReasoningWindow(responseWindowId);
   }
 
   globalAbortController = null;
