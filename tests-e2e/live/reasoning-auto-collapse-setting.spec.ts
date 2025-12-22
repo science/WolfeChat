@@ -12,8 +12,7 @@ import {
   saveAndCloseSettings,
   operateQuickSettings,
   sendMessage,
-  waitForAssistantDone,
-  selectReasoningModelInQuickSettings
+  waitForAssistantDone
 } from './helpers';
 
 // Robust reasoning window locator (matches multiple selector patterns)
@@ -198,17 +197,24 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
 
     await bootstrapLiveAPI(page);
 
-    // Select a reasoning model using the proven helper
-    await selectReasoningModelInQuickSettings(page);
+    // Select gpt-5-nano with settings that reliably produce reasoning events
+    // Reasoning effort "high" + complex prompt ensures reasoning window appears
+    await operateQuickSettings(page, {
+      mode: 'ensure-open',
+      model: /gpt-5-nano/i,
+      reasoningEffort: 'high',
+      verbosity: 'low',
+      summary: 'auto'
+    });
 
     // Verify auto-collapse is checked (default)
-    await operateQuickSettings(page, { mode: 'ensure-open' });
     const autoCollapseCheckbox = page.locator('#reasoning-auto-collapse');
     await expect(autoCollapseCheckbox).toBeChecked();
     await operateQuickSettings(page, { mode: 'ensure-closed' });
 
     debugInfo('Sending message to trigger reasoning...');
-    await sendMessage(page, 'What is 1+1? Think step by step.');
+    // Use a prompt that requires logical reasoning to reliably trigger reasoning events
+    await sendMessage(page, 'Explain the Monty Hall 3 door problem using logic and clear detail.');
 
     // Wait for reasoning window to appear using robust locator
     const reasoningWindow = reasoningRegion(page);
@@ -238,11 +244,17 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
 
     await bootstrapLiveAPI(page);
 
-    // Select a reasoning model using the proven helper
-    await selectReasoningModelInQuickSettings(page);
+    // Select gpt-5-nano with settings that reliably produce reasoning events
+    // Reasoning effort "high" + complex prompt ensures reasoning window appears
+    await operateQuickSettings(page, {
+      mode: 'ensure-open',
+      model: /gpt-5-nano/i,
+      reasoningEffort: 'high',
+      verbosity: 'low',
+      summary: 'auto'
+    });
 
     // Disable auto-collapse
-    await operateQuickSettings(page, { mode: 'ensure-open' });
     const autoCollapseCheckbox = page.locator('#reasoning-auto-collapse');
     await expect(autoCollapseCheckbox).toBeChecked(); // Default is checked
     await autoCollapseCheckbox.uncheck();
@@ -251,7 +263,8 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     await operateQuickSettings(page, { mode: 'ensure-closed' });
 
     debugInfo('Sending message to trigger reasoning (auto-collapse disabled)...');
-    await sendMessage(page, 'What is 2+2? Think step by step.');
+    // Use a prompt that requires logical reasoning to reliably trigger reasoning events
+    await sendMessage(page, 'Explain the Monty Hall 3 door problem using logic and clear detail.');
 
     // Wait for reasoning window to appear using robust locator
     const reasoningWindow = reasoningRegion(page);
