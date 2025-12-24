@@ -5,9 +5,11 @@
   import { recentModelsStore } from '../stores/recentModelsStore.js';
   import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
   import { reasoningAutoCollapse } from '../stores/reasoningAutoCollapseStore.js';
+  import { claudeThinkingEnabled } from '../stores/claudeReasoningSettings.js';
   import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore';
   import { supportsReasoning, usesMinimalReasoning } from '../services/openaiService.js';
   import { supportsAnthropicReasoning } from '../services/anthropicReasoning.js';
+  import { isAnthropicModel } from '../services/anthropicService.js';
   import { openaiApiKey, anthropicApiKey } from '../stores/providerStore.js';
   import { get, derived } from 'svelte/store';
 
@@ -47,7 +49,12 @@
     return conv?.id ?? null;
   });
   $: effectiveModel = $currentCQ.model || $selectedModel || '';
-  $: isReasoningModel = supportsReasoning(effectiveModel) || supportsAnthropicReasoning(effectiveModel);
+  $: isClaudeModel = isAnthropicModel(effectiveModel);
+  $: isOpenAIReasoningModel = supportsReasoning(effectiveModel) && !isClaudeModel;
+  $: isClaudeReasoningModel = supportsAnthropicReasoning(effectiveModel);
+  $: isReasoningModel = isOpenAIReasoningModel || isClaudeReasoningModel;
+  // Get effective thinking enabled state for Claude (per-conversation or global default)
+  $: effectiveThinkingEnabled = $currentCQ.thinkingEnabled ?? $claudeThinkingEnabled;
 
   // Helper function to determine when both providers are configured
   function shouldShowProviderIndicators() {
@@ -149,7 +156,7 @@
     aria-controls="quick-settings-body"
     type="button"
   >
-     <span class="font-bold">Quick Settings M: {effectiveModel || '—'}, V: {isReasoningModel ? ($currentCQ.verbosity || 'low') : '—'} | R: {isReasoningModel ? ($currentCQ.reasoningEffort || 'minimal') : '—'} | S: {isReasoningModel ? ($currentCQ.summary || 'auto') : '—'}</span>
+     <span class="font-bold">Quick Settings M: {effectiveModel || '—'}{#if isOpenAIReasoningModel}, V: {$currentCQ.verbosity || 'medium'} | R: {$currentCQ.reasoningEffort || 'medium'} | S: {$currentCQ.summary || 'auto'}{:else if isClaudeReasoningModel}, Thinking: {effectiveThinkingEnabled ? 'ON' : 'OFF'}{/if}</span>
     <span class="ml-2 text-sm">{open ? '▲' : '▼'}</span>
   </button>
 
@@ -199,7 +206,8 @@
         </select>
       </div>
 
-      {#if isReasoningModel}
+      {#if isOpenAIReasoningModel}
+      <!-- OpenAI Reasoning Settings -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
         <div>
           <label for="reasoning-effort" class="mr-2">Reasoning:</label>
@@ -231,6 +239,34 @@
             <option value="null">null</option>
           </select>
         </div>
+      </div>
+      <div class="mt-2">
+        <label class="flex items-center gap-2 cursor-pointer text-sm">
+          <input
+            type="checkbox"
+            id="reasoning-auto-collapse"
+            bind:checked={$reasoningAutoCollapse}
+            class="w-4 h-4"
+          />
+          <span>Auto-collapse</span>
+        </label>
+      </div>
+      {:else if isClaudeReasoningModel}
+      <!-- Claude Thinking Settings -->
+      <div class="mt-3">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            id="claude-thinking-enabled"
+            checked={effectiveThinkingEnabled}
+            on:change={(e) => {
+              $currentCQ.thinkingEnabled = e.currentTarget.checked;
+            }}
+            class="w-4 h-4"
+          />
+          <span class="font-medium">Extended Thinking</span>
+          <span class="text-sm text-gray-400">(allows Claude to reason through complex problems)</span>
+        </label>
       </div>
       <div class="mt-2">
         <label class="flex items-center gap-2 cursor-pointer text-sm">
