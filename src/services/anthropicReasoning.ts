@@ -211,12 +211,40 @@ export function getThinkingBudget(model?: string): number {
 }
 
 /**
+ * Options for thinking configuration
+ */
+export interface ThinkingConfigOptions {
+  thinkingEnabled?: boolean;  // Whether to enable thinking (default: true for reasoning models)
+  customBudget?: number;      // Custom thinking budget in tokens
+}
+
+/**
  * Add thinking configuration with custom budget
  *
- * Now uses model-specific thinking budget when no custom budget is provided
+ * Now uses model-specific thinking budget when no custom budget is provided.
+ * Supports thinkingEnabled option to allow users to disable thinking.
  */
-export function addThinkingConfigurationWithBudget(params: any, customBudget?: number): any {
+export function addThinkingConfigurationWithBudget(params: any, options?: ThinkingConfigOptions | number): any {
   if (!supportsAnthropicReasoning(params.model)) {
+    return params;
+  }
+
+  // Handle backward compatibility: if options is a number, treat it as customBudget
+  let thinkingEnabled: boolean | undefined;
+  let customBudget: number | undefined;
+
+  if (typeof options === 'number') {
+    // Backward compatibility: options is just a number (customBudget)
+    customBudget = options;
+    thinkingEnabled = true;
+  } else if (options) {
+    // New object format
+    thinkingEnabled = options.thinkingEnabled;
+    customBudget = options.customBudget;
+  }
+
+  // If thinking is explicitly disabled, return params without thinking config
+  if (thinkingEnabled === false) {
     return params;
   }
 
