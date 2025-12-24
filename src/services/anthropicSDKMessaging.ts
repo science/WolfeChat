@@ -23,12 +23,20 @@ function countAnthropicTokens(usage: { input_tokens: number; output_tokens: numb
 }
 
 /**
+ * Configuration options for Anthropic messaging
+ */
+export interface AnthropicMessagingConfig {
+  model: string;
+  thinkingEnabled?: boolean;  // Whether extended thinking is enabled (default: true for reasoning models)
+}
+
+/**
  * Send non-streaming message to Anthropic API using SDK
  */
 export async function sendAnthropicMessageSDK(
   messages: ChatMessage[],
   convId: number,
-  config: { model: string }
+  config: AnthropicMessagingConfig
 ): Promise<void> {
   const apiKey = get(anthropicApiKey);
   if (!apiKey) {
@@ -61,8 +69,10 @@ export async function sendAnthropicMessageSDK(
       requestParams.system = system;
     }
 
-    // Add thinking configuration for reasoning models
-    const configuredParams = addThinkingConfigurationWithBudget(requestParams);
+    // Add thinking configuration for reasoning models (respects thinkingEnabled from config)
+    const configuredParams = addThinkingConfigurationWithBudget(requestParams, {
+      thinkingEnabled: config.thinkingEnabled
+    });
 
     // Send message via SDK
     const response = await client.messages.create(configuredParams);
@@ -121,7 +131,7 @@ export async function sendAnthropicMessageSDK(
 export async function streamAnthropicMessageSDK(
   messages: ChatMessage[],
   convId: number,
-  config: { model: string }
+  config: AnthropicMessagingConfig
 ): Promise<void> {
   log.debug('[DEBUG] streamAnthropicMessageSDK CALLED with model:', config.model);
 
@@ -173,8 +183,10 @@ export async function streamAnthropicMessageSDK(
       requestParams.system = system;
     }
 
-    // Add thinking configuration for reasoning models
-    const configuredParams = addThinkingConfigurationWithBudget(requestParams);
+    // Add thinking configuration for reasoning models (respects thinkingEnabled from config)
+    const configuredParams = addThinkingConfigurationWithBudget(requestParams, {
+      thinkingEnabled: config.thinkingEnabled
+    });
     log.debug('[DEBUG] Request params after thinking config:', {
       model: configuredParams.model,
       hasThinking: !!configuredParams.thinking,

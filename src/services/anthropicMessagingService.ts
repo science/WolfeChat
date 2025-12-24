@@ -197,7 +197,7 @@ export async function sendAnthropicMessage(
 export async function streamAnthropicMessage(
   messages: ChatMessage[],
   convId: number,
-  config: { model: string }
+  config: { model: string; thinkingEnabled?: boolean }
 ): Promise<void> {
   // Use SDK implementation if feature flag is enabled
   if (USE_ANTHROPIC_SDK) {

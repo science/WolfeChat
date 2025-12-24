@@ -5,6 +5,7 @@ import { selectedModel, selectedVoice, base64Images } from '../stores/stores.js'
 import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore.js';
 import { addRecentModel } from '../stores/recentModelsStore.js';
 import { reasoningWindows, reasoningPanels } from '../stores/reasoningStore.js';
+import { claudeThinkingEnabled } from '../stores/claudeReasoningSettings.js';
 
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService.js";
 import { streamAnthropicMessage } from "../services/anthropicMessagingService.js";
@@ -256,8 +257,10 @@ export async function routeMessage(input: string, convId: string) {
           content: conversation.assistantRole
         };
         const anthropicMessages = [systemMessage, ...outgoingMessage];
-        const config = { model };
-        log.debug(`Routing Claude model ${model} to Anthropic service`);
+        // Get thinkingEnabled from per-conversation settings, or fall back to global default
+        const thinkingEnabled = perConv.thinkingEnabled ?? get(claudeThinkingEnabled);
+        const config = { model, thinkingEnabled };
+        log.debug(`Routing Claude model ${model} to Anthropic service (thinking: ${thinkingEnabled})`);
         // For now, use streaming by default for Claude models
         await streamAnthropicMessage(anthropicMessages, conversationIndex, config);
       } else {
