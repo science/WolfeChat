@@ -8,9 +8,12 @@ export type Summ = 'auto' | 'detailed' | 'null';
 
 export interface ConversationQuickSettings {
   model?: string;
+  // OpenAI reasoning settings
   reasoningEffort?: Effort;
   verbosity?: Verb;
   summary?: Summ;
+  // Claude thinking settings
+  thinkingEnabled?: boolean;  // Whether extended thinking is enabled for Claude models
 }
 
 export interface CQSettingsApi {

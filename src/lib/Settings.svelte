@@ -5,6 +5,7 @@
     import { recentModelsStore } from '../stores/recentModelsStore.js';
     import { reasoningEffort, verbosity, summary } from '../stores/reasoningSettings.js';
     import { reasoningAutoCollapse } from '../stores/reasoningAutoCollapseStore.js';
+    import { claudeThinkingEnabled } from '../stores/claudeReasoningSettings.js';
     import { supportsReasoning, usesMinimalReasoning } from '../services/openaiService.js';
     import { supportsAnthropicReasoning } from '../services/anthropicReasoning.js';
     import { fetchAnthropicModels, isAnthropicModel } from '../services/anthropicService.js';
@@ -525,7 +526,8 @@ handleClose();
       <option disabled selected>No models available</option>
     {/if}
 </select>
-        {#if supportsReasoning($selectedModel) || supportsAnthropicReasoning($selectedModel)}
+        {#if supportsReasoning($selectedModel) && !isAnthropicModel($selectedModel)}
+        <!-- OpenAI Reasoning Settings -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
           <div>
             <label for="settings-reasoning-effort" class="block font-medium mb-1">Reasoning</label>
@@ -557,6 +559,31 @@ handleClose();
               <option value="null">null</option>
             </select>
           </div>
+        </div>
+        <div class="mt-3">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              id="settings-reasoning-auto-collapse"
+              bind:checked={$reasoningAutoCollapse}
+              class="w-4 h-4"
+            />
+            <span class="text-sm">Auto-collapse reasoning window when complete</span>
+          </label>
+        </div>
+        {:else if supportsAnthropicReasoning($selectedModel)}
+        <!-- Claude Thinking Settings -->
+        <div class="mt-3">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              id="settings-claude-thinking-enabled"
+              bind:checked={$claudeThinkingEnabled}
+              class="w-4 h-4"
+            />
+            <span class="font-medium">Extended Thinking</span>
+            <span class="text-sm text-gray-400">(default for Claude reasoning models)</span>
+          </label>
         </div>
         <div class="mt-3">
           <label class="flex items-center gap-2 cursor-pointer">
