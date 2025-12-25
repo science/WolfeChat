@@ -241,7 +241,11 @@ function autoExpand(event) {
                  + event.target.scrollHeight
                  + parseInt(computed.getPropertyValue('border-bottom-width'), 10);
 
-                 event.target.style.height = `${Math.min(height, textMaxHeight)}px`; // Apply the smaller of the calculated height or maxHeight
+    event.target.style.height = `${Math.min(height, textMaxHeight)}px`; // Apply the smaller of the calculated height or maxHeight
+
+    // Fix for GitHub Issue #24: Keep textarea visible after expansion
+    // Using 'instant' to avoid animation lag during typing, 'nearest' to minimize scroll distance
+    event.target.scrollIntoView({ behavior: 'instant', block: 'nearest' });
   }
 
   function processMessage() {
