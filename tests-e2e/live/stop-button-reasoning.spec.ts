@@ -504,6 +504,142 @@ test.describe('Stop Button - Reasoning Models', () => {
     expect(totalGrowthAfterStop).toBeLessThanOrEqual(maxAcceptableGrowth);
   });
 
+  test('OpenAI: Reasoning content should stop updating after stop (robust test)', async ({ page }) => {
+    // This is a more rigorous test that waits for significant reasoning content
+    // before clicking stop, to catch potential issues with buffered data processing
+    await page.waitForLoadState('networkidle');
+    await bootstrapLiveAPI(page, 'OpenAI');
+
+    await operateQuickSettings(page, {
+      mode: 'ensure-open',
+      model: /gpt-5-nano/i,
+      reasoningEffort: 'high',
+      closeAfter: true
+    });
+
+    const sendButton = page.locator('button[aria-label="Send"]');
+    const stopIcon = sendButton.locator('img[alt="Wait"]');
+    const sendIcon = sendButton.locator('img[alt="Send"]');
+
+    // Send a message that will generate substantial reasoning content
+    await page.locator('textarea[aria-label="Chat input"]').fill(
+      'Write a detailed proof of the Pythagorean theorem using similar triangles. Show all steps carefully and explain each one thoroughly. Include diagrams in ASCII art if helpful.'
+    );
+    await sendButton.click();
+    debugInfo('Message sent to OpenAI reasoning model');
+
+    // Wait for streaming to start
+    await expect(stopIcon).toBeVisible({ timeout: 10000 });
+    debugInfo('Streaming started');
+
+    // Wait for SIGNIFICANT reasoning content before clicking stop
+    // This is crucial - we need enough content to catch buffering issues
+    const minReasoningCharsBeforeStop = 150; // Require at least 150 chars of reasoning
+    const maxWaitForReasoning = 20000; // 20 seconds max wait
+    const startWait = Date.now();
+    let reasoningTextBeforeStop = 0;
+
+    debugInfo(`Waiting for at least ${minReasoningCharsBeforeStop} chars of reasoning...`);
+
+    while (Date.now() - startWait < maxWaitForReasoning) {
+      reasoningTextBeforeStop = await getTotalReasoningTextLength(page);
+      if (reasoningTextBeforeStop >= minReasoningCharsBeforeStop) {
+        debugInfo(`Sufficient reasoning text detected: ${reasoningTextBeforeStop} chars`);
+        break;
+      }
+      await page.waitForTimeout(100);
+    }
+
+    if (reasoningTextBeforeStop < minReasoningCharsBeforeStop) {
+      debugWarn(`Only ${reasoningTextBeforeStop} chars of reasoning after ${maxWaitForReasoning}ms`);
+      debugWarn('Test may not be rigorous enough - continuing anyway');
+    }
+
+    // Also get message content before stop
+    const messagesBeforeStop = await getVisibleMessages(page);
+    const assistantBeforeStop = messagesBeforeStop.filter((m: any) => m.role === 'assistant');
+    const contentBeforeStop = assistantBeforeStop.map((m: any) => m.text).join('').length;
+    debugInfo(`Message content before stop: ${contentBeforeStop} chars`);
+
+    // Click stop
+    await sendButton.click();
+    const stopClickTime = Date.now();
+    debugInfo(`Stop clicked at ${stopClickTime} with ${reasoningTextBeforeStop} chars of reasoning`);
+
+    // Wait for UI to update
+    await expect(sendIcon).toBeVisible({ timeout: 3000 });
+    debugInfo('Send button visible - UI indicates streaming stopped');
+
+    // Capture state immediately after stop
+    const reasoningTextImmediatelyAfterStop = await getTotalReasoningTextLength(page);
+    const messagesAfterStop = await getVisibleMessages(page);
+    const assistantAfterStop = messagesAfterStop.filter((m: any) => m.role === 'assistant');
+    const contentImmediatelyAfterStop = assistantAfterStop.map((m: any) => m.text).join('').length;
+
+    debugInfo(`Immediately after stop:`);
+    debugInfo(`  - Reasoning: ${reasoningTextImmediatelyAfterStop} chars`);
+    debugInfo(`  - Message content: ${contentImmediatelyAfterStop} chars`);
+
+    // Monitor for 10 seconds to catch any delayed content
+    const monitorDuration = 10000;
+    const monitorInterval = 200;
+    let maxReasoningObserved = reasoningTextImmediatelyAfterStop;
+    let maxContentObserved = contentImmediatelyAfterStop;
+    let reasoningGrowthEvents = 0;
+    let contentGrowthEvents = 0;
+
+    debugInfo(`Monitoring for ${monitorDuration}ms...`);
+
+    for (let elapsed = 0; elapsed < monitorDuration; elapsed += monitorInterval) {
+      await page.waitForTimeout(monitorInterval);
+
+      const currentReasoning = await getTotalReasoningTextLength(page);
+      const currentMessages = await getVisibleMessages(page);
+      const currentAssistant = currentMessages.filter((m: any) => m.role === 'assistant');
+      const currentContent = currentAssistant.map((m: any) => m.text).join('').length;
+
+      if (currentReasoning > maxReasoningObserved) {
+        reasoningGrowthEvents++;
+        debugWarn(`BUG: Reasoning grew from ${maxReasoningObserved} to ${currentReasoning} after stop!`);
+        maxReasoningObserved = currentReasoning;
+      }
+
+      if (currentContent > maxContentObserved) {
+        contentGrowthEvents++;
+        debugWarn(`BUG: Content grew from ${maxContentObserved} to ${currentContent} after stop!`);
+        maxContentObserved = currentContent;
+      }
+    }
+
+    const totalReasoningGrowth = maxReasoningObserved - reasoningTextImmediatelyAfterStop;
+    const totalContentGrowth = maxContentObserved - contentImmediatelyAfterStop;
+
+    debugInfo(`Final state:`);
+    debugInfo(`  - Reasoning: ${maxReasoningObserved} chars (grew ${totalReasoningGrowth} after stop)`);
+    debugInfo(`  - Content: ${maxContentObserved} chars (grew ${totalContentGrowth} after stop)`);
+    debugInfo(`  - Reasoning growth events: ${reasoningGrowthEvents}`);
+    debugInfo(`  - Content growth events: ${contentGrowthEvents}`);
+
+    await page.screenshot({ path: 'test-results/stop-openai-reasoning-robust.png' });
+
+    // KEY ASSERTIONS:
+    // Allow small buffer for in-flight data (100 chars)
+    const maxAcceptableGrowth = 100;
+
+    if (totalReasoningGrowth > maxAcceptableGrowth) {
+      debugErr(`OPENAI STOP BUTTON BUG CONFIRMED!`);
+      debugErr(`Reasoning grew ${totalReasoningGrowth} chars after stop`);
+    }
+
+    if (totalContentGrowth > maxAcceptableGrowth) {
+      debugErr(`OPENAI STOP BUTTON BUG CONFIRMED!`);
+      debugErr(`Content grew ${totalContentGrowth} chars after stop`);
+    }
+
+    expect(totalReasoningGrowth).toBeLessThanOrEqual(maxAcceptableGrowth);
+    expect(totalContentGrowth).toBeLessThanOrEqual(maxAcceptableGrowth);
+  });
+
   test('isStreaming store should remain true until stream actually ends', async ({ page }) => {
     await page.waitForLoadState('networkidle');
     await bootstrapLiveAPI(page, 'OpenAI');
