@@ -9,7 +9,7 @@ import {
 import {
   setHistory
 } from "../managers/conversationManager.js";
-import { sendAnthropicMessageSDK, streamAnthropicMessageSDK } from "./anthropicSDKMessaging.js";
+import { sendAnthropicMessageSDK, streamAnthropicMessageSDK, abortAnthropicSDKStream } from "./anthropicSDKMessaging.js";
 import { log } from '../lib/logger.js';
 
 // Feature flag to control SDK vs fetch implementation
@@ -88,6 +88,11 @@ export function extractSystemMessage(messages: ChatMessage[]): string | undefine
 export function closeAnthropicStream() {
   try {
     userRequestedAnthropicStreamClosure.set(true);
+
+    // Abort SDK stream if using SDK implementation
+    abortAnthropicSDKStream();
+
+    // Also abort legacy fetch-based stream
     const ctrl = globalAnthropicAbortController;
     if (ctrl) {
       ctrl.abort();

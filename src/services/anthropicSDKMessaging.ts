@@ -14,8 +14,23 @@ import { createAnthropicClient } from './anthropicClientFactory.js';
 import { convertToSDKFormatWithSystem } from './anthropicSDKConverter.js';
 import { addThinkingConfigurationWithBudget, createAnthropicReasoningSupport } from './anthropicReasoning.js';
 import { getMaxOutputTokens } from './anthropicModelConfig.js';
-import { anthropicStreamContext } from './anthropicMessagingService.js';
+import { anthropicStreamContext, userRequestedAnthropicStreamClosure } from './anthropicMessagingService.js';
 import { log } from '../lib/logger.js';
+
+// Module-level abort controller for SDK streaming
+let sdkAbortController: AbortController | null = null;
+
+/**
+ * Abort the current Anthropic SDK stream if active
+ * Called by closeAnthropicStream() from anthropicMessagingService.ts
+ */
+export function abortAnthropicSDKStream() {
+  if (sdkAbortController) {
+    log.debug('[Anthropic SDK] Aborting stream');
+    sdkAbortController.abort();
+    sdkAbortController = null;
+  }
+}
 
 function countAnthropicTokens(usage: { input_tokens: number; output_tokens: number }) {
   const total_tokens = usage.input_tokens + usage.output_tokens;
@@ -141,6 +156,13 @@ export async function streamAnthropicMessageSDK(
     throw new Error("Anthropic API key is missing.");
   }
 
+  // Reset the closure flag at the start of each stream
+  userRequestedAnthropicStreamClosure.set(false);
+
+  // Create abort controller for this stream
+  sdkAbortController = new AbortController();
+  const abortSignal = sdkAbortController.signal;
+
   log.debug('[DEBUG] API key present, continuing with stream setup');
   let currentHistory = get(conversations)[convId].history;
 
@@ -156,6 +178,8 @@ export async function streamAnthropicMessageSDK(
   let accumulatedReasoningText = '';
   // Buffer for accumulating response text
   let accumulatedResponseText = '';
+  // Flag to track if stream was aborted
+  let streamAborted = false;
 
   try {
     // Create SDK client
@@ -211,18 +235,29 @@ export async function streamAnthropicMessageSDK(
     });
     log.debug('[DEBUG] Reasoning support created for conversation ID:', actualConvId, 'anchorIndex:', anchorIndex);
 
-    // Create stream using SDK with configured parameters
+    // Create stream using SDK with configured parameters AND abort signal
     log.debug('[DEBUG] Creating Anthropic SDK stream with params:', {
       model: configuredParams.model,
       hasThinking: !!configuredParams.thinking,
       thinkingBudget: configuredParams.thinking?.budget_tokens
     });
-    const stream = client.messages.stream(configuredParams);
+    const stream = client.messages.stream(configuredParams, { signal: abortSignal });
 
     log.debug('[DEBUG] SDK stream created, registering event handlers');
 
+    // Helper to check if stream should stop processing
+    const shouldStopProcessing = () => {
+      return get(userRequestedAnthropicStreamClosure) || abortSignal.aborted;
+    };
+
     // Handle streaming events - progressively update conversation history
     stream.on('text', (text, _snapshot) => {
+      // Check if stream was aborted - skip processing if so
+      if (shouldStopProcessing()) {
+        log.debug('[DEBUG] text event ignored - stream aborted');
+        return;
+      }
+
       log.debug('[DEBUG] text event fired, delta length:', text.length);
 
       // Accumulate response text
@@ -252,6 +287,12 @@ export async function streamAnthropicMessageSDK(
 
     // Listen for thinking event (correct SDK event name)
     stream.on('thinking', (thinkingDelta, _thinkingSnapshot) => {
+      // Check if stream was aborted - skip processing if so
+      if (shouldStopProcessing()) {
+        log.debug('[DEBUG] thinking event ignored - stream aborted');
+        return;
+      }
+
       log.debug('[DEBUG] thinking event fired!');
       log.debug('Anthropic reasoning delta:', thinkingDelta);
 
@@ -276,6 +317,12 @@ export async function streamAnthropicMessageSDK(
 
     // Listen for contentBlock to detect when thinking completes
     stream.on('contentBlock', (block) => {
+      // Check if stream was aborted - skip processing if so
+      if (shouldStopProcessing()) {
+        log.debug('[DEBUG] contentBlock event ignored - stream aborted');
+        return;
+      }
+
       log.debug('[DEBUG] contentBlock event fired, type:', block.type);
 
       // When we get a text content block, thinking must be complete
@@ -286,6 +333,12 @@ export async function streamAnthropicMessageSDK(
     });
 
     stream.on('error', (error) => {
+      // Ignore abort errors - they're expected when user clicks stop
+      if (error?.name === 'AbortError' || shouldStopProcessing()) {
+        log.debug('[DEBUG] Stream error is abort - marking as aborted');
+        streamAborted = true;
+        return;
+      }
       log.error("Anthropic SDK stream error:", error);
       throw error;
     });
@@ -294,6 +347,12 @@ export async function streamAnthropicMessageSDK(
 
     // Wait for stream to complete
     const finalMessage = await stream.finalMessage();
+
+    // If stream was aborted, skip the final update
+    if (streamAborted || shouldStopProcessing()) {
+      log.debug('[Anthropic SDK] Stream was aborted, skipping final history update');
+      return;
+    }
 
     // Extract final text content
     const responseText = finalMessage.content
@@ -346,7 +405,18 @@ export async function streamAnthropicMessageSDK(
 
     setHistory(updatedHistory, convId);
 
-  } catch (error) {
+  } catch (error: any) {
+    // Handle abort errors gracefully - they're expected when user clicks stop
+    if (error?.name === 'AbortError' || streamAborted || get(userRequestedAnthropicStreamClosure)) {
+      log.debug('[Anthropic SDK] Stream aborted by user', {
+        errorName: error?.name,
+        streamAborted,
+        closureRequested: get(userRequestedAnthropicStreamClosure)
+      });
+      // Don't rethrow - abort is expected behavior
+      return;
+    }
+
     log.error("Error in streamAnthropicMessageSDK:", error);
 
     // Create user-friendly error message
@@ -364,7 +434,8 @@ export async function streamAnthropicMessageSDK(
     setHistory([...currentHistory, errorChatMessage], convId);
     throw error;
   } finally {
-    // Clear streaming context
+    // Clear streaming context and abort controller
     anthropicStreamContext.set({ streamText: '', convId: null });
+    sdkAbortController = null;
   }
 }
