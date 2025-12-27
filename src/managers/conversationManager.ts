@@ -4,7 +4,7 @@ import { conversations, chosenConversationId, combinedTokens, createNewConversat
 import { selectedModel, selectedVoice, base64Images } from '../stores/stores.js';
 import { conversationQuickSettings } from '../stores/conversationQuickSettingsStore.js';
 import { addRecentModel } from '../stores/recentModelsStore.js';
-import { reasoningWindows, reasoningPanels } from '../stores/reasoningStore.js';
+import { cleanupReasoningForDeletedMessages } from '../stores/reasoningStore.js';
 import { claudeThinkingEnabled } from '../stores/claudeReasoningSettings.js';
 
 import { sendTTSMessage, sendRegularMessage, sendVisionMessage, sendRequest, sendDalleMessage } from "../services/openaiService.js";
@@ -109,56 +109,26 @@ export function deleteMessageFromConversation(messageIndex: number) {
     conversations.set(currentConversations);
 
     // Clean up reasoning windows and panels for the deleted message
-    // Collect the IDs of windows that will be deleted
-    const deletedWindowIds = new Set<string>();
-    reasoningWindows.update(windows => {
-        const remainingWindows = windows.filter(w => {
-            // Keep windows from other conversations
-            if (!w.convId || w.convId !== conversationUniqueId) return true;
-
-            // Delete windows anchored at the deleted message's index
-            if (w.anchorIndex === messageIndex) {
-                deletedWindowIds.add(w.id);
-                return false;
-            }
-
-            // Keep other windows (those at different indices)
-            return true;
+    if (conversationUniqueId) {
+        cleanupReasoningForDeletedMessages(conversationUniqueId, {
+            deleteAtIndex: messageIndex,
+            reindexAfterIndex: messageIndex
         });
-
-        // Re-index windows for messages after the deleted one
-        // Their anchorIndex needs to decrease by 1
-        return remainingWindows.map(w => {
-            if (w.convId === conversationUniqueId && w.anchorIndex !== undefined && w.anchorIndex > messageIndex) {
-                return { ...w, anchorIndex: w.anchorIndex - 1 };
-            }
-            return w;
-        });
-    });
-
-    // Remove panels whose responseId matches deleted windows
-    reasoningPanels.update(panels => {
-        return panels.filter(p => {
-            // Keep panels from other conversations
-            if (!p.convId || p.convId !== conversationUniqueId) return true;
-            // Remove panels linked to deleted windows
-            return !p.responseId || !deletedWindowIds.has(p.responseId);
-        });
-    });
+    }
 }
 
 export function deleteAllMessagesBelow(messageIndex: number) {
   const convId = get(chosenConversationId);
   const convs = get(conversations);
-  
+
   if (convId === null || convId === undefined || !convs[convId]) return;
-  
+
   const currentHistory = convs[convId].history;
   const conversationUniqueId = convs[convId].id;
-  
+
   // Keep messages from 0 to messageIndex (inclusive)
   const updatedHistory = currentHistory.slice(0, messageIndex + 1);
-  
+
   // Update conversation history
   conversations.update(allConvs => {
     const updated = [...allConvs];
@@ -168,38 +138,13 @@ export function deleteAllMessagesBelow(messageIndex: number) {
     };
     return updated;
   });
-  
+
   // Clean up reasoning windows and panels for deleted messages
-  // First, collect the IDs of windows that will be deleted
-  const deletedWindowIds = new Set<string>();
-  reasoningWindows.update(windows => {
-    // Identify windows that will be deleted
-    const remainingWindows = windows.filter(w => {
-      // Use strict equality on string IDs; if a window has no convId, keep it
-      if (!w.convId || w.convId !== conversationUniqueId) return true;
-
-      // Reasoning windows are anchored to the USER message that triggered the assistant response
-      // If anchorIndex > messageIndex: window is for a message we're deleting
-      // If anchorIndex < messageIndex: window is for a message we're keeping
-      // If anchorIndex == messageIndex: window is for the assistant response AFTER messageIndex
-      //   Since we're deleting all messages after messageIndex, the assistant response doesn't exist
-      const shouldKeep = (w.anchorIndex ?? Number.NEGATIVE_INFINITY) < messageIndex;
-      if (!shouldKeep) {
-        deletedWindowIds.add(w.id);
-      }
-      return shouldKeep;
-    });
-    return remainingWindows;
-  });
-
-  // Remove panels whose responseId matches deleted windows
-  reasoningPanels.update(panels => {
-    return panels.filter(p => {
-      // Keep panels from other conversations
-      if (!p.convId || p.convId !== conversationUniqueId) return true;
-      // Remove panels linked to deleted windows
-      return !p.responseId || !deletedWindowIds.has(p.responseId);
-    });
+  // Windows at or after messageIndex are deleted because:
+  // - anchorIndex > messageIndex: window is for a message we're deleting
+  // - anchorIndex == messageIndex: window is for assistant response AFTER messageIndex
+  cleanupReasoningForDeletedMessages(conversationUniqueId, {
+    deleteAtOrAfterIndex: messageIndex
   });
 }
 

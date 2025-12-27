@@ -352,6 +352,91 @@ export function clearAllReasoning() {
 }
 
 /**
+ * Options for cleaning up reasoning windows and panels after message deletion
+ */
+export interface ReasoningCleanupOptions {
+  /** Delete window at this exact index (for single message deletion) */
+  deleteAtIndex?: number;
+  /** Delete windows at or after this index (for delete-all-below) */
+  deleteAtOrAfterIndex?: number;
+  /** Re-index windows after this index by decrementing anchorIndex by 1 */
+  reindexAfterIndex?: number;
+}
+
+/**
+ * Clean up reasoning windows and panels for deleted message(s)
+ *
+ * This is a unified cleanup function that handles both single message deletion
+ * and "delete all messages below" operations. It:
+ * 1. Removes windows matching the deletion criteria
+ * 2. Optionally re-indexes remaining windows (for single message deletion)
+ * 3. Removes panels linked to deleted windows
+ *
+ * @param convId - Conversation ID to clean up
+ * @param options - Cleanup options specifying what to delete and re-index
+ */
+export function cleanupReasoningForDeletedMessages(
+  convId: string,
+  options: ReasoningCleanupOptions
+): void {
+  const deletedWindowIds = new Set<string>();
+
+  reasoningWindows.update(windows => {
+    // Step 1: Filter out windows to delete
+    let remaining = windows.filter(w => {
+      // Keep windows from other conversations
+      if (!w.convId || w.convId !== convId) return true;
+
+      const anchorIndex = w.anchorIndex;
+
+      // Can't match windows without an anchorIndex
+      if (anchorIndex === undefined) return true;
+
+      let shouldDelete = false;
+
+      if (options.deleteAtIndex !== undefined) {
+        // Single message deletion: exact match
+        shouldDelete = anchorIndex === options.deleteAtIndex;
+      } else if (options.deleteAtOrAfterIndex !== undefined) {
+        // Delete-all-below: range match
+        shouldDelete = anchorIndex >= options.deleteAtOrAfterIndex;
+      }
+
+      if (shouldDelete) {
+        deletedWindowIds.add(w.id);
+        return false;
+      }
+
+      return true;
+    });
+
+    // Step 2: Re-index if needed (for single message deletion)
+    if (options.reindexAfterIndex !== undefined) {
+      remaining = remaining.map(w => {
+        if (w.convId === convId &&
+            w.anchorIndex !== undefined &&
+            w.anchorIndex > options.reindexAfterIndex!) {
+          return { ...w, anchorIndex: w.anchorIndex - 1 };
+        }
+        return w;
+      });
+    }
+
+    return remaining;
+  });
+
+  // Step 3: Clean up panels linked to deleted windows
+  reasoningPanels.update(panels => {
+    return panels.filter(p => {
+      // Keep panels from other conversations
+      if (!p.convId || p.convId !== convId) return true;
+      // Remove panels linked to deleted windows
+      return !p.responseId || !deletedWindowIds.has(p.responseId);
+    });
+  });
+}
+
+/**
  * Lightweight per-conversation SSE event log for debugging reasoning.
  * Stored separately from conversation history and NEVER included in prompts.
  */
