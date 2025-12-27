@@ -32,6 +32,7 @@ import './src/tests/unit/messageAssemblyDebugLogging.unit.test.ts';
 import './src/tests/unit/messageModelLabeling.unit.test.ts';
 import './src/tests/unit/provider-model-filtering.test.ts';
 import './src/tests/unit/providerStore-json-parse.test.ts';
+import './src/tests/unit/reasoning-cleanup.test.ts';
 import './src/tests/unit/reasoning-window-conversation-id.test.ts';
 import './src/tests/unit/reasoningAutoCollapseStore.test.ts';
 import './src/tests/unit/reasoningPayload.test.ts';
