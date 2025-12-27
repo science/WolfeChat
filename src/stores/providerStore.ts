@@ -9,16 +9,29 @@ selectedProvider.subscribe((value) => {
   localStorage.setItem('selectedProvider', value);
 });
 
+// Helper to safely parse JSON from localStorage
+function safeJsonParse(value: string | null): string | null {
+  if (value === null) return null;
+  try {
+    return JSON.parse(value);
+  } catch (_) {
+    // If parsing fails, return null (treat as no stored value)
+    return null;
+  }
+}
+
 // OpenAI API Key
 let storedOpenAIKey = localStorage.getItem('openai_api_key');
-let parsedOpenAIKey = storedOpenAIKey !== null ? JSON.parse(storedOpenAIKey) : null;
+let parsedOpenAIKey = safeJsonParse(storedOpenAIKey);
 
 // Migrate existing api_key to openai_api_key if needed
 if (!parsedOpenAIKey) {
   const legacyKey = localStorage.getItem('api_key');
   if (legacyKey) {
-    parsedOpenAIKey = JSON.parse(legacyKey);
-    localStorage.setItem('openai_api_key', JSON.stringify(parsedOpenAIKey));
+    parsedOpenAIKey = safeJsonParse(legacyKey);
+    if (parsedOpenAIKey) {
+      localStorage.setItem('openai_api_key', JSON.stringify(parsedOpenAIKey));
+    }
   }
 }
 
@@ -29,7 +42,7 @@ openaiApiKey.subscribe((value) => {
 
 // Anthropic API Key
 let storedAnthropicKey = localStorage.getItem('anthropic_api_key');
-let parsedAnthropicKey = storedAnthropicKey !== null ? JSON.parse(storedAnthropicKey) : null;
+let parsedAnthropicKey = safeJsonParse(storedAnthropicKey);
 
 export const anthropicApiKey: Writable<string | null> = writable(parsedAnthropicKey);
 anthropicApiKey.subscribe((value) => {

@@ -91,7 +91,8 @@ window.addEventListener('load', () => {
     // @ts-ignore
     (window as any).__wolfeSetApiKey = async (key: string) => {
       try {
-        localStorage.setItem('api_key', key);
+        // Must use JSON.stringify to match how stores persist API keys
+        localStorage.setItem('api_key', JSON.stringify(key));
         const stores = await import('./stores/stores.js');
         if ((stores as any).apiKey) (stores as any).apiKey.set(key as any);
         log.debug('[testMode] api key set');
