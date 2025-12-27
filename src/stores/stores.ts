@@ -19,11 +19,21 @@ export const helpVisible = writable(false)
 export const debugVisible = writable(false)
 export const menuVisible = writable(false)
 
+// Helper to safely parse JSON from localStorage
+function safeJsonParse<T>(value: string | null, fallback: T | null = null): T | null {
+  if (value === null) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch (_) {
+    return fallback;
+  }
+}
+
 // Import provider store
 import { currentApiKey } from './providerStore.js';
 
 let storedApiKey = localStorage.getItem("api_key")
-let parsedApiKey = storedApiKey !== null ? JSON.parse(storedApiKey) : null;
+let parsedApiKey = safeJsonParse<string>(storedApiKey);
 
 // Resolve API key from env when localStorage is empty
 let envApiKey: string | null = null;
@@ -52,12 +62,12 @@ apiKey.subscribe((value) => localStorage.setItem("api_key", JSON.stringify(value
 export { currentApiKey };
 
 let storedCombinedTokens = localStorage.getItem('combined_tokens');
-let parsedCombinedTokens: number = storedCombinedTokens !== null ? JSON.parse(storedCombinedTokens) : 0;
+let parsedCombinedTokens: number = safeJsonParse<number>(storedCombinedTokens, 0) ?? 0;
 export const combinedTokens = writable(parsedCombinedTokens);
 combinedTokens.subscribe((value) => localStorage.setItem("combined_tokens", JSON.stringify(value)));
 
 let storedDefaultAssistantRole = localStorage.getItem('default_assistant_role');
-let parsedDefaultAssistantRole: DefaultAssistantRole = storedDefaultAssistantRole !== null ? JSON.parse(storedDefaultAssistantRole) : 0;
+let parsedDefaultAssistantRole: DefaultAssistantRole | null = safeJsonParse<DefaultAssistantRole>(storedDefaultAssistantRole);
 export const defaultAssistantRole = writable(parsedDefaultAssistantRole || {
     role: "Don't provide compliments or enthusiastic comments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
     type: "system",
@@ -104,7 +114,7 @@ function migrateConversations(convs: any[]): Conversation[] {
 }
 
 let storedConversations = localStorage.getItem('conversations');
-let parsedConversations: Conversation[] = storedConversations !== null ? JSON.parse(storedConversations) : null;
+let parsedConversations: Conversation[] | null = safeJsonParse<Conversation[]>(storedConversations);
 
 // Migrate existing conversations to have IDs
 if (parsedConversations) {
@@ -159,7 +169,7 @@ selectedModel.subscribe(value => {
   export const streamContext = writable({ streamText: '', convId: null });  
 
   let storedShowTokens = localStorage.getItem('show_tokens');
-let parsedShowTokens = storedShowTokens !== null ? JSON.parse(storedShowTokens) : false;
+let parsedShowTokens = safeJsonParse<boolean>(storedShowTokens, false) ?? false;
 
 // Create the writable store with the initial value, either from localStorage or default
 export const showTokens = writable(parsedShowTokens);

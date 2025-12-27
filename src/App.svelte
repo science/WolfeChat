@@ -43,6 +43,7 @@
   import { enterBehavior } from './stores/keyboardSettings.js';
   import { shouldSendOnEnter } from './utils/keyboard.js';
   import { draftsStore } from './stores/draftsStore.js';
+  import { textareaMaxHeight, textareaMinHeight } from './stores/textareaSettings.js';
 
   let fileInputElement; 
   let input: string = "";
@@ -231,8 +232,6 @@ function clearFiles() {
   }    
 }  
 
-const textMaxHeight = 300; // Maximum height in pixels
-
 function autoExpand(event) {
     event.target.style.height = 'inherit'; // Reset the height
     const computed = window.getComputedStyle(event.target);
@@ -241,7 +240,7 @@ function autoExpand(event) {
                  + event.target.scrollHeight
                  + parseInt(computed.getPropertyValue('border-bottom-width'), 10);
 
-    event.target.style.height = `${Math.min(height, textMaxHeight)}px`; // Apply the smaller of the calculated height or maxHeight
+    event.target.style.height = `${Math.min(height, $textareaMaxHeight)}px`; // Apply the smaller of the calculated height or maxHeight
 
     // Fix for GitHub Issue #24: Keep textarea visible after expansion
     // Using 'instant' to avoid animation lag during typing, 'nearest' to minimize scroll distance
@@ -262,7 +261,7 @@ function autoExpand(event) {
       draftsStore.setDraft($conversations[convIndex].id, "");
     }
     clearFiles ();
-    textAreaElement.style.height = '96px'; // Reset the height after sending
+    textAreaElement.style.height = `${$textareaMinHeight}px`; // Reset the height after sending
   }
   function scrollChat() {
     if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -306,7 +305,7 @@ function startEditMessage(i: number) {
   function cancelEdit() {
     editingMessageId = null;
     editingMessageContent = "";
-    editTextArea.style.height = '96px'; // Reset the height when editing is canceled
+    editTextArea.style.height = `${$textareaMinHeight}px`; // Reset the height when editing is canceled
   }
 
   function submitEdit(i: number) {
@@ -408,7 +407,7 @@ function startEditMessage(i: number) {
             class="message-edit-textarea mt-2 bg-gray-700 p-3 mx-10 resize-none focus:outline-none rounded-lg"
             bind:value={editingMessageContent}
             on:input={autoExpand}
-            style="height: 96px; overflow-y: auto;" 
+            style="height: {$textareaMinHeight}px; overflow-y: auto;"
             ></textarea>
             <div class="flex place-content-center mt-4">
               <button class="submit-edit rounded-lg p-2 mr-2 
@@ -508,13 +507,13 @@ function startEditMessage(i: number) {
 
       {/if}
 
-      <textarea bind:this={textAreaElement}  
-  class="w-full min-h-[96px] h-24 rounded-lg p-2 mx-1 mr-0 border-t-2 border-b-2 border-l-2 rounded-r-none bg-primary border-gray-500 resize-none focus:outline-none"   
-  placeholder="Type your message..."  
+      <textarea bind:this={textAreaElement}
+  class="w-full rounded-lg p-2 mx-1 mr-0 border-t-2 border-b-2 border-l-2 rounded-r-none bg-primary border-gray-500 resize-none focus:outline-none"
+  placeholder="Type your message..."
   aria-label="Chat input"
-  bind:value={input}   
+  bind:value={input}
   on:input={autoExpand}
-  style="height: 96px; overflow-y: auto; overflow:visible !important;"
+  style="height: {$textareaMinHeight}px; min-height: {$textareaMinHeight}px; overflow-y: auto; overflow:visible !important;"
   on:keydown={(event) => {
     if (shouldSendOnEnter({
       behavior: $enterBehavior,

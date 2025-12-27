@@ -14,6 +14,7 @@
     import { writable, get, derived } from "svelte/store";
   import { onMount } from 'svelte';
   import { enterBehavior } from '../stores/keyboardSettings.js';
+  import { textareaMaxHeight, textareaMinHeight, MAX_HEIGHT_BOUNDS, MIN_HEIGHT_BOUNDS } from '../stores/textareaSettings.js';
 
   import {
     apiKey,
@@ -643,6 +644,32 @@ handleClose();
     <option value="send">Send message</option>
   </select>
   <p class="text-xs text-gray-400 mt-1">Tip: Shift+Enter always inserts a new line. Ctrl+Enter always sends the message.</p>
+</div>
+
+<div class="mb-4">
+  <label for="textarea-max-height" class="block font-medium mb-2">Input box max height (px)</label>
+  <input
+    type="number"
+    id="textarea-max-height"
+    bind:value={$textareaMaxHeight}
+    min={MAX_HEIGHT_BOUNDS.min}
+    max={MAX_HEIGHT_BOUNDS.max}
+    class="border text-black border-gray-300 p-2 rounded w-full"
+  />
+  <p class="text-xs text-gray-400 mt-1">Maximum height the input can grow to ({MAX_HEIGHT_BOUNDS.min}-{MAX_HEIGHT_BOUNDS.max}px).</p>
+</div>
+
+<div class="mb-4">
+  <label for="textarea-min-height" class="block font-medium mb-2">Input box min height (px)</label>
+  <input
+    type="number"
+    id="textarea-min-height"
+    bind:value={$textareaMinHeight}
+    min={MIN_HEIGHT_BOUNDS.min}
+    max={MIN_HEIGHT_BOUNDS.max}
+    class="border text-black border-gray-300 p-2 rounded w-full"
+  />
+  <p class="text-xs text-gray-400 mt-1">Minimum/default height of the input ({MIN_HEIGHT_BOUNDS.min}-{MIN_HEIGHT_BOUNDS.max}px).</p>
 </div>
 
 <div class="mb-4">
