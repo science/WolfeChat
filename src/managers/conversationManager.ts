@@ -102,10 +102,49 @@ export function setHistory(msg: ChatCompletionRequestMessage[], convId: number =
 export function deleteMessageFromConversation(messageIndex: number) {
     const currentConversationId = get(chosenConversationId);
     const currentConversations = get(conversations);
+    const conversationUniqueId = currentConversations[currentConversationId]?.id;
     const updatedHistory = currentConversations[currentConversationId].history.filter((_, index) => index !== messageIndex);
 
     currentConversations[currentConversationId].history = updatedHistory;
     conversations.set(currentConversations);
+
+    // Clean up reasoning windows and panels for the deleted message
+    // Collect the IDs of windows that will be deleted
+    const deletedWindowIds = new Set<string>();
+    reasoningWindows.update(windows => {
+        const remainingWindows = windows.filter(w => {
+            // Keep windows from other conversations
+            if (!w.convId || w.convId !== conversationUniqueId) return true;
+
+            // Delete windows anchored at the deleted message's index
+            if (w.anchorIndex === messageIndex) {
+                deletedWindowIds.add(w.id);
+                return false;
+            }
+
+            // Keep other windows (those at different indices)
+            return true;
+        });
+
+        // Re-index windows for messages after the deleted one
+        // Their anchorIndex needs to decrease by 1
+        return remainingWindows.map(w => {
+            if (w.convId === conversationUniqueId && w.anchorIndex !== undefined && w.anchorIndex > messageIndex) {
+                return { ...w, anchorIndex: w.anchorIndex - 1 };
+            }
+            return w;
+        });
+    });
+
+    // Remove panels whose responseId matches deleted windows
+    reasoningPanels.update(panels => {
+        return panels.filter(p => {
+            // Keep panels from other conversations
+            if (!p.convId || p.convId !== conversationUniqueId) return true;
+            // Remove panels linked to deleted windows
+            return !p.responseId || !deletedWindowIds.has(p.responseId);
+        });
+    });
 }
 
 export function deleteAllMessagesBelow(messageIndex: number) {
