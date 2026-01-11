@@ -87,7 +87,8 @@
   }
 
   function getAnchors(container: HTMLElement): number[] {
-    const msgEls = Array.from(container.querySelectorAll('.message')) as HTMLElement[];
+    // Include both regular messages and summary messages for navigation
+    const msgEls = Array.from(container.querySelectorAll('.message, .summary-message')) as HTMLElement[];
     const cRect = container.getBoundingClientRect();
     return msgEls.map((el) => {
       const r = el.getBoundingClientRect();

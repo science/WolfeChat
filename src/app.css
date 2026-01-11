@@ -44,3 +44,29 @@ body {
     filter: grayscale(1) saturate(0%) invert(95%) brightness(105%) contrast(100%);
     opacity: 1;
   }
+
+  /* Unified toolbelt icon styling - applies to all action icons */
+  .toolbelt-icon {
+    filter: grayscale(1) saturate(0%) invert(85%) brightness(85%) contrast(90%);
+    opacity: 0.85;
+    transition: filter 0.15s ease-in-out, opacity 0.15s ease-in-out;
+  }
+
+  .toolbelt-icon:hover,
+  button:hover .toolbelt-icon {
+    filter: grayscale(1) saturate(0%) invert(95%) brightness(105%) contrast(100%);
+    opacity: 1;
+  }
+
+  /* Summary toolbelt icons - same styling as regular toolbelt */
+  .summary-toolbelt-icon {
+    filter: grayscale(1) saturate(0%) invert(85%) brightness(85%) contrast(90%);
+    opacity: 0.85;
+    transition: filter 0.15s ease-in-out, opacity 0.15s ease-in-out;
+  }
+
+  .summary-toolbelt-icon:hover,
+  button:hover .summary-toolbelt-icon {
+    filter: grayscale(1) saturate(0%) invert(95%) brightness(105%) contrast(100%);
+    opacity: 1;
+  }

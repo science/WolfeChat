@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Greeked text paragraph (left side) - lines of varying widths -->
+  <path d="M3 5h11"/>
+  <path d="M3 9h9"/>
+  <path d="M3 13h10"/>
+  <path d="M3 17h7"/>
+  <!-- Arrow pointing up (right side) -->
+  <path d="M19 19V7"/>
+  <path d="M15 11l4-4 4 4"/>
+</svg>

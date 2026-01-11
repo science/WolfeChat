@@ -80,6 +80,13 @@ export function closeStream() {
     }).catch(() => {
       // Ignore if module fails to load (not using Anthropic)
     });
+
+    // Also try to abort summary stream
+    import('../managers/summaryManager.js').then(({ abortSummaryStream }) => {
+      abortSummaryStream();
+    }).catch(() => {
+      // Ignore if module fails to load
+    });
   } catch (e) {
     log.warn('closeStream abort failed:', e);
   } finally {

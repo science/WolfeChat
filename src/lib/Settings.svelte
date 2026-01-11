@@ -15,6 +15,13 @@
   import { onMount } from 'svelte';
   import { enterBehavior } from '../stores/keyboardSettings.js';
   import { textareaMaxHeight, textareaMinHeight, MAX_HEIGHT_BOUNDS, MIN_HEIGHT_BOUNDS } from '../stores/textareaSettings.js';
+  import {
+    summaryModel,
+    summaryReasoningEffort,
+    summaryVerbosity,
+    summarySummaryOption,
+    summaryClaudeThinkingEnabled
+  } from '../stores/summaryModelStore.js';
 
   import {
     apiKey,
@@ -601,6 +608,87 @@ handleClose();
       </div>
     </div>
     <!-- End provider configuration group -->
+
+    <!-- Summary Model configuration -->
+    <div class="border border-gray-600 rounded-lg p-4 mb-6">
+      <h3 class="font-medium mb-4">Summary Generation</h3>
+      <div class="mb-4">
+        <label for="summary-model-selection" class="block font-medium mb-2">Summary Model</label>
+        <select bind:value={$summaryModel} class="border text-black border-gray-300 p-2 rounded w-full" id="summary-model-selection">
+          <option value={null}>Use conversation model (default)</option>
+          {#if $filteredModels && $filteredModels.length > 0}
+            {#if get(openaiApiKey) && $filteredModels.filter(m => m.provider === 'openai').length > 0}
+              <optgroup label="OpenAI">
+                {#each $filteredModels.filter(m => m.provider === 'openai').sort((a, b) => a.id.localeCompare(b.id)) as model}
+                  <option value={model.id}>{model.id}</option>
+                {/each}
+              </optgroup>
+            {/if}
+            {#if get(anthropicApiKey) && $filteredModels.filter(m => m.provider === 'anthropic').length > 0}
+              <optgroup label="Anthropic">
+                {#each $filteredModels.filter(m => m.provider === 'anthropic').sort((a, b) => a.id.localeCompare(b.id)) as model}
+                  <option value={model.id}>{model.id}</option>
+                {/each}
+              </optgroup>
+            {/if}
+          {/if}
+        </select>
+        <p class="text-xs text-gray-400 mt-1">Choose a specific model for all summaries, or use the conversation's model.</p>
+      </div>
+
+      <!-- Summary Model Reasoning Settings (OpenAI) -->
+      {#if $summaryModel && supportsReasoning($summaryModel) && !isAnthropicModel($summaryModel)}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+          <div>
+            <label for="summary-reasoning-effort" class="block font-medium mb-1">Reasoning</label>
+            <select id="summary-reasoning-effort" bind:value={$summaryReasoningEffort} class="border text-black border-gray-300 p-2 rounded w-full">
+              {#if !usesMinimalReasoning($summaryModel)}
+                <option value="none">none</option>
+              {/if}
+              {#if usesMinimalReasoning($summaryModel)}
+                <option value="minimal">minimal</option>
+              {/if}
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+          </div>
+          <div>
+            <label for="summary-verbosity" class="block font-medium mb-1">Verbosity</label>
+            <select id="summary-verbosity" bind:value={$summaryVerbosity} class="border text-black border-gray-300 p-2 rounded w-full">
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+          </div>
+          <div>
+            <label for="summary-summary-option" class="block font-medium mb-1">Summary</label>
+            <select id="summary-summary-option" bind:value={$summarySummaryOption} class="border text-black border-gray-300 p-2 rounded w-full">
+              <option value="auto">auto</option>
+              <option value="detailed">detailed</option>
+              <option value="null">null</option>
+            </select>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Summary Model Thinking Settings (Claude) -->
+      {#if $summaryModel && supportsAnthropicReasoning($summaryModel)}
+        <div class="mt-3">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              id="summary-claude-thinking-enabled"
+              bind:checked={$summaryClaudeThinkingEnabled}
+              class="w-4 h-4"
+            />
+            <span class="font-medium">Extended Thinking</span>
+            <span class="text-sm text-gray-400">(for Claude reasoning models)</span>
+          </label>
+        </div>
+      {/if}
+    </div>
+    <!-- End Summary Model configuration -->
 
       {#if $selectedModel.startsWith('tts')}
 <div class="mb-4">

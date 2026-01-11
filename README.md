@@ -121,6 +121,7 @@ This application uses the `anthropic-dangerous-direct-browser-access: true` head
 - **Multiple conversations**: Vertically tabbed conversation manager, so you can maintain multiple conversations simultaneously, using different AI models in each
 - **Auto-Generated Titles**: Multi-provider fallback for smart naming
 - **Custom Titles**: Edit conversation names anytime
+- **AI Summaries**: Generate AI summaries at any point in conversations to compress context and save tokens
 - **Enter Key setting**: Enter key can be set to "send" or "newline" behavior
 
 ## Data Storage

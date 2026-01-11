@@ -14,6 +14,7 @@ import { openaiApiKey, anthropicApiKey } from "../stores/providerStore.js";
 import { createAnthropicClient } from "../services/anthropicClientFactory.js";
 import { debugLog } from "../utils/debugLayerLogger.js";
 import { log } from '../lib/logger.js';
+import { buildMessagesForAPI, isSummaryMessage, formatSummaryForProvider } from '../lib/summaryUtils.js';
 let streamText = "";
 
 
@@ -210,11 +211,22 @@ export async function routeMessage(input: string, convId: string) {
     // Add the effective model to recent models
     addRecentModel(model);
 
-    let outgoingMessage: ChatCompletionRequestMessage[];
-    outgoingMessage = [
-        ...messageHistory,
-        { role: "user", content: input },
-      ];
+    // Build the message array including the new user message
+    const fullHistory = [...messageHistory, { role: "user", content: input }];
+
+    // Filter messages through summary logic (respects active summaries)
+    const filteredMessages = buildMessagesForAPI(fullHistory as any);
+
+    // Determine provider for summary formatting
+    const provider = isAnthropicModel(model) ? 'anthropic' : 'openai';
+
+    // Format any summary messages for the target provider
+    let outgoingMessage: ChatCompletionRequestMessage[] = filteredMessages.map(msg => {
+      if (isSummaryMessage(msg)) {
+        return formatSummaryForProvider(msg, provider) as ChatCompletionRequestMessage;
+      }
+      return msg as ChatCompletionRequestMessage;
+    });
 
     // Fire title generation async BEFORE main message if needed
     let titlePromise: Promise<void> | null = null;
