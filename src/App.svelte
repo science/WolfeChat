@@ -416,7 +416,7 @@ function startEditMessage(i: number) {
 
 </script>
 <svelte:head>
-  <title>{$conversations.length > 0 && $conversations[$chosenConversationId] ? ($conversations[$chosenConversationId].title || "WolfeChat") : "WolfeChat"}</title>
+  <title>{$conversations.length > 0 && $conversations[$chosenConversationId]?.title ? `WolfeChat: ${$conversations[$chosenConversationId].title}` : "WolfeChat"}</title>
 </svelte:head>
 {#if $settingsVisible}
 <Settings on:settings-changed={reloadConfig} />

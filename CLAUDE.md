@@ -258,6 +258,37 @@ log.error('API request failed:', error);
 - Manager modules (`src/managers/`)
 - Main entry point (`src/main.ts`)
 
+## Code Style
+
+### Semicolons (Maximal Approach)
+
+This codebase uses **maximal semicolons** - always include semicolons at the end of statements. This is an AI-written codebase and consistent semicolon usage prevents ASI (Automatic Semicolon Insertion) bugs.
+
+**Always add semicolons after:**
+- Variable declarations: `const x = 1;`
+- Assignment statements: `const app = new App({...});`
+- Function expressions: `const fn = function() {...};`
+- Arrow functions: `const fn = () => {...};`
+- Import statements: `import { x } from 'y';`
+- Export statements: `export const x = 1;`
+- Expression statements: `doSomething();`
+
+**No semicolons after:**
+- Function declarations: `function foo() { }`
+- Class declarations: `class Foo { }`
+- Control structures: `if (x) { }`, `for (...) { }`, `while (...) { }`
+
+**Why this matters:** Without semicolons, lines starting with `(`, `[`, `/`, `+`, `-`, or backticks can cause ASI bugs:
+```typescript
+// BUG: JavaScript interprets this as app({...})(async () => ...)
+const app = new App({...})
+(async () => { ... })();
+
+// CORRECT: Semicolon prevents ambiguity
+const app = new App({...});
+(async () => { ... })();
+```
+
 ## Important Notes
 
 - Always preserve exact indentation when editing files
