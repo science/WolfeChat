@@ -296,3 +296,9 @@ const app = new App({...});
 - TypeScript is configured with `checkJs: true`
 - Tests automatically discovered by file location - no manual registration needed
 - Quick Settings changes are preserved per conversation across sessions
+
+## Git Workflow
+
+- **NEVER push to remote origin (any branch) without explicit user permission**
+- Local commits are encouraged during incremental development - commit frequently as you work through features
+- Always ask before: `git push`, `git push origin`, `git push -u origin <branch>`, or any command that sends commits to remote
