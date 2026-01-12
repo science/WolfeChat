@@ -15,6 +15,18 @@ import { isAnthropicModel } from '../services/anthropicService.js';
 import { createSummaryMessage, getMessagesToSummarize, isSummaryMessage } from '../lib/summaryUtils.js';
 import { getEffectiveSummaryModel } from '../lib/summaryModelUtils.js';
 import { log } from '../lib/logger.js';
+import {
+  buildSummaryPayload,
+  convertToSummaryMessages,
+  buildAnthropicSummaryParams,
+  convertToAnthropicSummaryMessages
+} from '../lib/summaryStreamingUtils.js';
+import {
+  summaryReasoningEffort,
+  summaryVerbosity,
+  summarySummaryOption,
+  summaryClaudeThinkingEnabled
+} from '../stores/summaryModelStore.js';
 
 // ============================================================================
 // Streaming Summary Helpers
@@ -494,7 +506,10 @@ export async function createStreamingSummary(
 }
 
 /**
- * Stream summary via OpenAI API
+ * Stream summary via OpenAI Responses API
+ *
+ * Uses the same Responses API infrastructure as main chat streaming,
+ * ensuring consistent handling of reasoning models.
  */
 async function streamOpenAISummary(
   convId: string,
@@ -508,19 +523,31 @@ async function streamOpenAISummary(
 
   summaryAbortController = new AbortController();
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  // Build messages for summary request
+  const messages = convertToSummaryMessages(prompt);
+
+  // Get reasoning options from stores
+  const reasoningEffort = get(summaryReasoningEffort);
+  const verbosity = get(summaryVerbosity);
+  const summaryOption = get(summarySummaryOption);
+
+  // Build payload using the same infrastructure as main chat
+  // This handles reasoning models correctly (max_completion_tokens, etc.)
+  const payload = buildSummaryPayload(model, messages, {
+    reasoningEffort,
+    verbosity,
+    summaryOption
+  });
+
+  // Use Responses API endpoint (same as main chat)
+  const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${openaiKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: model || 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: 'You are a helpful assistant that creates concise, accurate summaries of conversations.' },
-        { role: 'user', content: prompt }
-      ],
-      max_tokens: 500,
+      ...payload,
       stream: true
     }),
     signal: summaryAbortController.signal
@@ -548,33 +575,57 @@ async function streamOpenAISummary(
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith('data:')) continue;
+      // Process complete SSE blocks (separated by double newlines)
+      const blocks = buffer.split('\n\n');
+      buffer = blocks.pop() || '';
 
-        const data = trimmed.slice(5).trim();
-        if (data === '[DONE]') continue;
+      for (const block of blocks) {
+        if (!block.trim()) continue;
+
+        // Parse SSE format: event: ... and data: ...
+        const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+        let eventType = 'message';
+        const dataLines: string[] = [];
+
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            eventType = line.slice('event:'.length).trim();
+          } else if (line.startsWith('data:')) {
+            dataLines.push(line.slice('data:'.length).trim());
+          }
+        }
+
+        if (dataLines.length === 0) continue;
+
+        const dataStr = dataLines.join('');
+        if (dataStr === '[DONE]') continue;
 
         try {
-          const parsed = JSON.parse(data);
-          const delta = parsed.choices?.[0]?.delta?.content;
-          if (delta) {
-            accumulatedText += delta;
+          const obj = JSON.parse(dataStr);
+          // Resolve event type: prefer explicit SSE event, fall back to payload.type
+          const resolvedType = eventType !== 'message' ? eventType : (obj?.type || 'message');
 
-            // Update summary content progressively
-            conversations.update(convs => {
-              const updated = [...convs];
-              const currentHistory = updated[conversationIndex].history;
-              updated[conversationIndex] = {
-                ...updated[conversationIndex],
-                history: updateStreamingSummaryContent(currentHistory, summaryIndex, accumulatedText)
-              };
-              return updated;
-            });
+          // Handle text deltas (Responses API format)
+          if (resolvedType === 'response.output_text.delta') {
+            const deltaText = obj?.delta?.text ?? obj?.delta ?? '';
+            if (deltaText) {
+              accumulatedText += deltaText;
+
+              // Update summary content progressively
+              conversations.update(convs => {
+                const updated = [...convs];
+                const currentHistory = updated[conversationIndex].history;
+                updated[conversationIndex] = {
+                  ...updated[conversationIndex],
+                  history: updateStreamingSummaryContent(currentHistory, summaryIndex, accumulatedText)
+                };
+                return updated;
+              });
+            }
           }
+          // Note: We don't need to handle response.completed for summaries
+          // as we just accumulate text and return it when stream ends
         } catch {
           // Ignore parse errors for individual chunks
         }
@@ -588,7 +639,10 @@ async function streamOpenAISummary(
 }
 
 /**
- * Stream summary via Anthropic API
+ * Stream summary via Anthropic SDK
+ *
+ * Uses the same SDK infrastructure as main chat streaming,
+ * ensuring consistent handling of thinking-capable models.
  */
 async function streamAnthropicSummary(
   convId: string,
@@ -602,82 +656,70 @@ async function streamAnthropicSummary(
 
   summaryAbortController = new AbortController();
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': anthropicKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: model || 'claude-3-haiku-20240307',
-      max_tokens: 500,
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      system: 'You are a helpful assistant that creates concise, accurate summaries of conversations.',
-      stream: true
-    }),
-    signal: summaryAbortController.signal
+  // Create Anthropic client (same as main chat)
+  const client = createAnthropicClient(anthropicKey);
+
+  // Build messages for summary request
+  const messages = convertToAnthropicSummaryMessages(prompt);
+
+  // Get thinking option from stores
+  const thinkingEnabled = get(summaryClaudeThinkingEnabled);
+
+  // Build params using the same infrastructure as main chat
+  // This handles thinking-capable models correctly
+  const params = buildAnthropicSummaryParams(model, messages, {
+    thinkingEnabled
   });
 
-  if (!response.ok || !response.body) {
-    const text = await response.text().catch(() => '');
-    throw new Error(`Anthropic API error ${response.status}: ${text || response.statusText}`);
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
   let accumulatedText = '';
 
   try {
-    while (true) {
-      // Check for user-requested closure
-      if (get(userRequestedStreamClosure)) {
-        reader.cancel();
-        break;
+    // Use SDK streaming (same as main chat)
+    const stream = client.messages.stream(params, {
+      signal: summaryAbortController.signal
+    });
+
+    // Handle text deltas
+    stream.on('text', (text: string) => {
+      // Check if stream was aborted
+      if (get(userRequestedStreamClosure) || summaryAbortController?.signal.aborted) {
+        return;
       }
 
-      const { done, value } = await reader.read();
-      if (done) break;
+      accumulatedText += text;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      // Update summary content progressively
+      conversations.update(convs => {
+        const updated = [...convs];
+        const currentHistory = updated[conversationIndex].history;
+        updated[conversationIndex] = {
+          ...updated[conversationIndex],
+          history: updateStreamingSummaryContent(currentHistory, summaryIndex, accumulatedText)
+        };
+        return updated;
+      });
+    });
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith('data:')) continue;
+    // Note: For summaries, we don't need to handle thinking events separately
+    // The summary content is all we need
 
-        const data = trimmed.slice(5).trim();
-        if (data === '[DONE]') continue;
-
-        try {
-          const parsed = JSON.parse(data);
-          // Anthropic uses content_block_delta events
-          if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-            accumulatedText += parsed.delta.text;
-
-            // Update summary content progressively
-            conversations.update(convs => {
-              const updated = [...convs];
-              const currentHistory = updated[conversationIndex].history;
-              updated[conversationIndex] = {
-                ...updated[conversationIndex],
-                history: updateStreamingSummaryContent(currentHistory, summaryIndex, accumulatedText)
-              };
-              return updated;
-            });
-          }
-        } catch {
-          // Ignore parse errors for individual chunks
-        }
+    stream.on('error', (error: Error) => {
+      // Ignore abort errors
+      if (error?.name === 'AbortError' || get(userRequestedStreamClosure)) {
+        return;
       }
+      log.error('Anthropic summary stream error:', error);
+    });
+
+    // Wait for stream to complete
+    await stream.finalMessage();
+  } catch (error) {
+    // Handle abort gracefully
+    if (error instanceof Error && error.name === 'AbortError') {
+      log.debug('Anthropic summary stream aborted by user');
+      return accumulatedText;
     }
-  } finally {
-    reader.releaseLock();
+    throw error;
   }
 
   return accumulatedText;

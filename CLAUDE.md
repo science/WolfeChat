@@ -80,6 +80,57 @@ WolfeChat is a Svelte-based ChatGPT UI that uses the OpenAI Responses API for st
 
 6. **Multi-Provider Support** - Supports both OpenAI and Anthropic APIs with automatic provider routing based on model selection
 
+### Code Reuse and DRY Principles
+
+**Before implementing new functionality, always analyze existing code for reusable infrastructure.** Duplicating code paths leads to:
+- Inconsistent behavior (e.g., one path handles edge cases, another doesn't)
+- Regression bugs when fixes are applied to one path but not others
+- Maintenance burden from multiple implementations of the same logic
+
+#### Key Infrastructure to Reuse
+
+**OpenAI API Calls:**
+- `buildResponsesPayload()` in `openaiService.ts` - Handles reasoning model parameters correctly (max_completion_tokens vs max_tokens)
+- `buildResponsesInputFromMessages()` - Converts messages to Responses API format
+- Use the Responses API endpoint (`/v1/responses`), not the legacy ChatCompletions API
+
+**Anthropic API Calls:**
+- `createAnthropicClient()` in `anthropicClientFactory.ts` - Creates properly configured SDK client
+- `getMaxOutputTokens()` in `anthropicModelConfig.ts` - Model-specific token limits
+- `addThinkingConfigurationWithBudget()` in `anthropicReasoning.ts` - Extended thinking support
+- Use SDK streaming (`client.messages.stream()`) instead of raw fetch
+
+**Example Anti-Pattern (Avoid):**
+```typescript
+// BAD: Duplicated API call with hardcoded parameters
+const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  body: JSON.stringify({
+    model,
+    messages,
+    max_tokens: 500,  // Won't work with reasoning models!
+    stream: true
+  })
+});
+```
+
+**Example Correct Pattern:**
+```typescript
+// GOOD: Reuse existing infrastructure
+import { buildResponsesPayload } from '../services/openaiService.js';
+
+const payload = buildResponsesPayload(model, input, streaming, options);
+const response = await fetch('https://api.openai.com/v1/responses', {
+  body: JSON.stringify({ ...payload, stream: true })
+});
+```
+
+#### When Adding New Features
+
+1. **Search for existing implementations** - Before writing API calls, search the codebase for similar functionality
+2. **Extract and reuse** - If existing code is embedded in a larger function, extract the reusable parts into utilities
+3. **Create wrapper utilities** - When adapting existing infrastructure for a new use case, create thin wrapper utilities (see `summaryStreamingUtils.ts` as an example)
+4. **Test alignment** - Write tests that verify new code uses the same code paths as existing functionality
+
 ### Security Considerations
 
 **Anthropic API Browser Access:**
