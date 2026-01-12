@@ -1,15 +1,9 @@
 import './app.css'
 import App from './App.svelte'
-import chatIcon from './assets/chat.svg';
 import { log } from './lib/logger.js';
 
 const app = new App({
   target: document.getElementById('app'),
-})
-
-window.addEventListener('load', () => {
-  const linkIcon = document.querySelector('link[rel="icon"]');
-  if (linkIcon) linkIcon.setAttribute('href', chatIcon);
 });
 
 // In-app test mode: load browser tests and expose a runner when ?testMode=1

@@ -39,11 +39,15 @@
   import DebugPanel from './lib/DebugPanel.svelte';
   import ReasoningInline from './lib/ReasoningInline.svelte';
   import QuickSettings from './lib/QuickSettings.svelte';
+  import SummaryMessage from './lib/SummaryMessage.svelte';
   import { ScrollMemory } from './utils/scrollState.js';
   import { enterBehavior } from './stores/keyboardSettings.js';
   import { shouldSendOnEnter } from './utils/keyboard.js';
   import { draftsStore } from './stores/draftsStore.js';
   import { textareaMaxHeight, textareaMinHeight } from './stores/textareaSettings.js';
+  import { createStreamingSummary, toggleSummaryActive, updateSummaryContent } from './managers/summaryManager.js';
+  import { isSummaryMessage } from './lib/summaryUtils.js';
+  import SummarizeIcon from './assets/summarize.svg';
 
   let fileInputElement; 
   let input: string = "";
@@ -58,6 +62,10 @@
 
   let editingMessageId: number | null = null;
   let editingMessageContent: string = "";
+
+  // Summary state
+  let editingSummaryId: number | null = null;
+  let isSummaryGenerating: boolean = false;
 
   const scrollMem = new ScrollMemory();
   $: scrollMem.setSuspended($isStreaming);
@@ -334,6 +342,52 @@ function startEditMessage(i: number) {
            /rsct=image\/(jpeg|jpg|gif|png|bmp)/i.test(url);
   }
 
+  // Summary handling functions
+  async function handleSummarize(messageIndex: number) {
+    if (isSummaryGenerating || $isStreaming) return;
+
+    const convId = $conversations[$chosenConversationId]?.id;
+    if (!convId) return;
+
+    isSummaryGenerating = true;
+    try {
+      // Use streaming version - creates placeholder immediately and streams content
+      await createStreamingSummary(convId, messageIndex);
+    } catch (error) {
+      console.error('Failed to create summary:', error);
+      // Could show error toast here
+    } finally {
+      isSummaryGenerating = false;
+    }
+  }
+
+  function handleSummaryToggle(event: CustomEvent<{ index: number }>) {
+    const convId = $conversations[$chosenConversationId]?.id;
+    if (!convId) return;
+
+    toggleSummaryActive(convId, event.detail.index);
+  }
+
+  function handleSummaryStartEdit(event: CustomEvent<{ index: number }>) {
+    editingSummaryId = event.detail.index;
+  }
+
+  function handleSummarySaveEdit(event: CustomEvent<{ index: number; content: string }>) {
+    const convId = $conversations[$chosenConversationId]?.id;
+    if (!convId) return;
+
+    updateSummaryContent(convId, event.detail.index, event.detail.content);
+    editingSummaryId = null;
+  }
+
+  function handleSummaryCancelEdit() {
+    editingSummaryId = null;
+  }
+
+  function handleSummaryDelete(event: CustomEvent<{ index: number }>) {
+    deleteMessageFromConversation(event.detail.index);
+  }
+
   /**
    * Handles new chat creation while preserving input drafts.
    * This function ensures the current conversation's draft is saved
@@ -362,7 +416,7 @@ function startEditMessage(i: number) {
 
 </script>
 <svelte:head>
-  <title>{$conversations.length > 0 && $conversations[$chosenConversationId] ? ($conversations[$chosenConversationId].title || "WolfeChat") : "WolfeChat"}</title>
+  <title>{$conversations.length > 0 && $conversations[$chosenConversationId]?.title ? `WolfeChat: ${$conversations[$chosenConversationId].title}` : "WolfeChat"}</title>
 </svelte:head>
 {#if $settingsVisible}
 <Settings on:settings-changed={reloadConfig} />
@@ -386,7 +440,20 @@ function startEditMessage(i: number) {
           <div>
         {#each $conversations[$chosenConversationId].history as message, i}
 
-        {#if message.role !=='system'}
+        {#if isSummaryMessage(message)}
+          <!-- Summary message -->
+          <SummaryMessage
+            {message}
+            messageIndex={i}
+            history={$conversations[$chosenConversationId].history}
+            isEditing={editingSummaryId === i}
+            on:toggle={handleSummaryToggle}
+            on:startEdit={handleSummaryStartEdit}
+            on:saveEdit={handleSummarySaveEdit}
+            on:cancelEdit={handleSummaryCancelEdit}
+            on:delete={handleSummaryDelete}
+          />
+        {:else if message.role !=='system'}
 
           <div class="message relative inline-block bg-primary px-2 pb-5 flex flex-col" role="listitem" aria-label={message.role === 'assistant' ? 'Assistant message' : message.role === 'user' ? 'User message' : undefined} data-message-index={i} data-message-role={message.role} data-testid={message.role === 'assistant' ? 'assistant-message' : message.role === 'user' ? 'user-message' : undefined}>
             <div class="profile-picture flex">
@@ -465,6 +532,18 @@ function startEditMessage(i: number) {
                   <img class="delete-all-below-icon" alt="Delete all below" src={DeleteBelowIcon} title="Delete all messages below" />
                 </button>
               {/if}
+              <!-- Summarize up to here button -->
+              <button
+                class="summarizeButton w-5"
+                class:opacity-50={isSummaryGenerating || $isStreaming}
+                class:cursor-not-allowed={isSummaryGenerating || $isStreaming}
+                title="Summarize up to here"
+                aria-label="Summarize up to here"
+                on:click={() => handleSummarize(i)}
+                disabled={isSummaryGenerating || $isStreaming}
+              >
+                <img class="summarize-icon toolbelt-icon" alt="Summarize" src={SummarizeIcon} title="Summarize up to here" />
+              </button>
             </div>
 
             {/if}

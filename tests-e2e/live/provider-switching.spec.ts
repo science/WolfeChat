@@ -118,7 +118,8 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     await openSettings(page);
 
     // Look for the bordered container around provider settings
-    const providerContainer = page.locator('.border.border-gray-600.rounded-lg.p-4');
+    // Use .first() since there may be multiple styled containers (e.g., Summary Generation section)
+    const providerContainer = page.locator('.border.border-gray-600.rounded-lg.p-4').first();
     await expect(providerContainer).toBeVisible();
 
     // Verify it contains the provider dropdown
