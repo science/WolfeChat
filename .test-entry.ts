@@ -54,5 +54,6 @@ import './src/tests/unit/summary-model-selection.test.ts';
 import './src/tests/unit/summary-model-store.test.ts';
 import './src/tests/unit/summary-streaming-alignment.test.ts';
 import './src/tests/unit/summary-streaming.test.ts';
+import './src/tests/unit/summary-word-target.test.ts';
 import './src/tests/unit/test-harness-quiet-output.test.ts';
 import './src/tests/unit/textareaSettings.test.ts';

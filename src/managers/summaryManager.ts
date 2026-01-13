@@ -143,6 +143,10 @@ export function findLoadingSummaryIndex(history: ChatMessage[]): number {
 
 /**
  * Format a summarization prompt from messages
+ *
+ * Uses dynamic word target based on conversation length:
+ * - Calculates 10% of estimated word count (chars / 5)
+ * - Clamps between 50 (min) and 2000 (max) words
  */
 export function formatSummaryPrompt(messages: ChatMessage[]): string {
   const conversationText = messages.map(msg => {
@@ -150,12 +154,15 @@ export function formatSummaryPrompt(messages: ChatMessage[]): string {
     return `${role}: ${msg.content}`;
   }).join('\n\n');
 
+  // Calculate dynamic word target based on conversation length
+  const wordTarget = calculateSummaryWordTarget(messages);
+
   return `Summarize the following conversation concisely. Focus on:
 1. Key topics discussed
 2. Important decisions or conclusions
 3. Any action items or next steps mentioned
 
-Keep the summary under 200 words. Write in third person.
+Keep the summary under ${wordTarget} words. Write in third person.
 
 Conversation:
 ${conversationText}`;
@@ -723,4 +730,38 @@ async function streamAnthropicSummary(
   }
 
   return accumulatedText;
+}
+
+// ============================================================================
+// Dynamic Summary Word Target
+// ============================================================================
+
+/**
+ * Constants for summary word target bounds
+ */
+export const SUMMARY_WORD_TARGET_MIN = 50;
+export const SUMMARY_WORD_TARGET_MAX = 2000;
+
+/**
+ * Calculate the target word count for a summary based on conversation length.
+ *
+ * Algorithm:
+ * 1. Count total characters in all message content
+ * 2. Divide by 5 to estimate word count
+ * 3. Take 10% of that as the target
+ * 4. Clamp between min (50) and max (2000) bounds
+ *
+ * @param messages - The messages to be summarized
+ * @returns Target word count for the summary
+ */
+export function calculateSummaryWordTarget(messages: ChatMessage[]): number {
+  // Count total characters in all message content
+  const totalChars = messages.reduce((sum, msg) => sum + (msg.content?.length || 0), 0);
+
+  // Estimate word count (chars / 5) and take 10%
+  const estimatedWords = totalChars / 5;
+  const targetWords = Math.round(estimatedWords * 0.10);
+
+  // Clamp between min and max bounds
+  return Math.max(SUMMARY_WORD_TARGET_MIN, Math.min(SUMMARY_WORD_TARGET_MAX, targetWords));
 }
