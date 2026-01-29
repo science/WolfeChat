@@ -54,9 +54,6 @@ test.describe('Stop Button Functionality', () => {
     // Wait a moment for the streaming to start
     await page.waitForTimeout(500);
 
-    // Take screenshot to see what's actually happening
-    await page.screenshot({ path: 'test-results/stop-button-openai-during-stream.png' });
-
     const isStopVisible = await stopIcon.isVisible();
     const isSendVisible = await sendIcon.isVisible();
 
@@ -206,7 +203,6 @@ test.describe('Stop Button Functionality', () => {
     debugInfo('Clicked send button');
 
     await page.waitForTimeout(500);
-    await page.screenshot({ path: 'test-results/stop-button-anthropic-during-stream.png' });
 
     const isStopVisible = await stopIcon.isVisible();
     const isSendVisible = await sendIcon.isVisible();

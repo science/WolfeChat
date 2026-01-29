@@ -892,13 +892,16 @@ export interface WaitForAssistantOptions {
   timeout?: number;
   stabilizationTime?: number;
   pollInterval?: number;
+  /** Minimum number of assistant messages expected. Phase 3 waits for this count. */
+  expectedAssistantCount?: number;
 }
 
 export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOptions = {}) {
   const {
     timeout = 60_000,  // Increased default but still leaves buffer before test timeout
     stabilizationTime = 500,  // Reduced since we're not relying on text stability
-    pollInterval = 100  // Faster polling since we're checking efficient signals
+    pollInterval = 100,  // Faster polling since we're checking efficient signals
+    expectedAssistantCount = 0  // 0 = don't check count, just wait for last to complete
   } = opts;
 
   const startTime = Date.now();
@@ -996,18 +999,28 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
     { timeout: Math.min(20000, timeout) }
   ).catch(() => null);  // Don't fail if no network request
 
-  // Phase 3: Wait for assistant message to appear
-  const assistantOk = await pollUntil(
-    () => {
-      const assistants = document.querySelectorAll('[role="listitem"][data-message-role="assistant"]');
-      if (assistants.length === 0) return false;
-      const lastAssistant = assistants[assistants.length - 1];
-      const text = lastAssistant.textContent || '';
-      return text.length > 0 && !text.includes('█');
-    },
-    'assistant-appear',
-    Math.min(30000, timeout)
-  );
+  // Phase 3: Wait for assistant message to appear (with optional minimum count)
+  const phase3Deadline = Date.now() + Math.min(30000, timeout);
+  let assistantOk = false;
+  while (Date.now() < phase3Deadline) {
+    try {
+      const result = await page.evaluate((minCount) => {
+        const assistants = document.querySelectorAll('[role="listitem"][data-message-role="assistant"]');
+        if (assistants.length === 0) return false;
+        if (minCount > 0 && assistants.length < minCount) return false;
+        const lastAssistant = assistants[assistants.length - 1];
+        const text = lastAssistant.textContent || '';
+        return text.length > 0 && !text.includes('█');
+      }, expectedAssistantCount);
+      if (result) { assistantOk = true; break; }
+    } catch {
+      break;
+    }
+    await page.waitForTimeout(Math.min(pollInterval, 500));
+  }
+  if (!assistantOk) {
+    debugWarn(`[WAIT-ASSISTANT] pollUntil "assistant-appear" timed out`);
+  }
 
   // Phase 4: Wait for UI completion (send button enabled, no wait icon, no streaming)
   const uiOk = await pollUntil(
@@ -1161,6 +1174,27 @@ export async function sendMessage(page: Page, text: string, opts: SendMessageOpt
   const entered = await input.inputValue();
   if (entered !== text) throw new Error(`Failed to enter text. Expected: "${text}", Got: "${entered}"`);
 
+  // Wait for streaming to finish before sending — ctrl-enter and enter are
+  // blocked by shouldSendOnEnter() when isStreaming is true. We detect this
+  // by checking if the Send button shows "Wait" icon (streaming) vs "Send" icon.
+  if (submitMethod === 'ctrl-enter' || submitMethod === 'enter') {
+    const deadline = Date.now() + inputTimeout;
+    while (Date.now() < deadline) {
+      const isStillStreaming = await page.evaluate(() => {
+        const btn = document.querySelector('button[aria-label="Send"]');
+        if (!btn) return false;
+        const img = btn.querySelector('img');
+        return img?.alt === 'Wait';
+      });
+      if (!isStillStreaming) break;
+      await page.waitForTimeout(250);
+    }
+  }
+
+  // Ensure textarea has focus before sending keyboard shortcut
+  await input.focus();
+  await page.waitForTimeout(100);
+
   switch (submitMethod) {
     case 'ctrl-enter':
       await page.keyboard.down('Control');
@@ -1178,7 +1212,30 @@ export async function sendMessage(page: Page, text: string, opts: SendMessageOpt
   }
 
   if (waitForEmpty) {
-    await expect(input).toHaveValue('', { timeout: 5000 });
+    // Poll for empty with retry — if ctrl-enter was silently blocked (e.g., isStreaming
+    // still true), retry the keyboard shortcut after a delay.
+    let cleared = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await expect(input).toHaveValue('', { timeout: 2000 });
+        cleared = true;
+        break;
+      } catch {
+        // Input not cleared — ctrl-enter may have been blocked. Re-focus and retry.
+        await input.focus();
+        await page.waitForTimeout(500);
+        if (submitMethod === 'ctrl-enter') {
+          await page.keyboard.down('Control');
+          await page.keyboard.press('Enter');
+          await page.keyboard.up('Control');
+        } else if (submitMethod === 'enter') {
+          await page.keyboard.press('Enter');
+        }
+      }
+    }
+    if (!cleared) {
+      await expect(input).toHaveValue('', { timeout: 5000 });
+    }
   }
 }
 
@@ -1340,7 +1397,8 @@ function detectProvider(modelId: string): 'openai' | 'anthropic' | 'unknown' {
       lower.includes('dall-e') || lower.includes('whisper') ||
       lower.includes('tts') || lower.includes('text-embedding') ||
       lower.includes('omni-moderation') || lower.includes('codex') ||
-      lower.includes('chatgpt') || lower.includes('computer-use-preview')) {
+      lower.includes('chatgpt') || lower.includes('computer-use-preview') ||
+      lower.includes('sora')) {
     return 'openai';
   }
 

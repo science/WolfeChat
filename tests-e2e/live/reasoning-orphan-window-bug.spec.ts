@@ -283,8 +283,6 @@ test.describe('Orphaned Reasoning Window Bug', () => {
     expect(visibleWindowsAfterNewMessage).toBeLessThanOrEqual(1);
     expect(windowsAfterNewMessage.length).toBeLessThanOrEqual(1);
 
-    // Screenshot for debugging
-    await page.screenshot({ path: 'test-results/reasoning-orphan-windows-test.png', fullPage: true });
     debugInfo('Test completed');
   });
 

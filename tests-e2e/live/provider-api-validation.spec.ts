@@ -119,8 +119,8 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     expect(hasClaudeModels).toBe(true);
 
     // Verify specific Claude models from our hardcoded list
-    const hasClaudeOpus = models.some(m => m.includes('claude-4-opus') || m.includes('claude-3-opus'));
-    const hasClaudeSonnet = models.some(m => m.includes('claude-4-sonnet') || m.includes('claude-3-5-sonnet'));
+    const hasClaudeOpus = models.some(m => /claude.*opus/i.test(m));
+    const hasClaudeSonnet = models.some(m => /claude.*sonnet/i.test(m));
     expect(hasClaudeOpus || hasClaudeSonnet).toBe(true);
   });
 

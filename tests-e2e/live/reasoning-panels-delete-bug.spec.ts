@@ -148,12 +148,6 @@ test.describe('Issue #12: Reasoning panels should be deleted with messages', () 
     const panelsAfterDeletion = await getReasoningPanelCount(page);
     console.log(`Reasoning panels visible in UI after deletion: ${panelsAfterDeletion}`);
 
-    // Take screenshot if panels are still visible
-    if (panelsAfterDeletion > 0) {
-      await page.screenshot({ path: 'debug-panels-visible.png', fullPage: true });
-      console.log('DEBUG: Screenshot saved to debug-panels-visible.png');
-    }
-
     expect(panelsAfterDeletion).toBe(0);
 
     // 10) Verify store state

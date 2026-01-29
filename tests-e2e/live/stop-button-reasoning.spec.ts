@@ -119,9 +119,6 @@ test.describe('Stop Button - Reasoning Models', () => {
     const contentAddedAfterStop = contentAfterWait.length - contentAfterStop.length;
     debugInfo(`Content added after stop button clicked: ${contentAddedAfterStop} chars`);
 
-    // Take screenshot for debugging
-    await page.screenshot({ path: 'test-results/stop-button-reasoning-after-wait.png' });
-
     // THE KEY ASSERTION:
     // If the stream was truly stopped, very little (or no) content should be added after stop
     // Some small amount might be in the buffer, but not hundreds of characters
@@ -210,8 +207,6 @@ test.describe('Stop Button - Reasoning Models', () => {
     debugInfo(`Total assistant content at stop: ${totalLengthAtStop} chars`);
     debugInfo(`Total assistant content after wait: ${totalLengthAfterWait} chars`);
     debugInfo(`Content growth after stop: ${contentGrowth} chars`);
-
-    await page.screenshot({ path: 'test-results/stop-button-reasoning-panel-test.png' });
 
     // The stream should be truly stopped - minimal content growth
     expect(contentGrowth).toBeLessThanOrEqual(50);
@@ -397,8 +392,6 @@ test.describe('Stop Button - Reasoning Models', () => {
     const assistantContent = assistantMessages.map((m: any) => m.text).join('');
     debugInfo(`Assistant message content: ${assistantContent.length} chars`);
 
-    await page.screenshot({ path: 'test-results/stop-reasoning-panel-monitor.png' });
-
     // THE KEY ASSERTION:
     // If stop worked correctly, reasoning text should not have grown significantly
     // Allow a small buffer for in-flight data
@@ -490,8 +483,6 @@ test.describe('Stop Button - Reasoning Models', () => {
 
     const totalGrowthAfterStop = maxContentObserved - contentAfterStop.length;
     debugInfo(`Final content: ${maxContentObserved} chars (grew ${totalGrowthAfterStop} chars after stop)`);
-
-    await page.screenshot({ path: 'test-results/stop-anthropic-content-monitor.png' });
 
     // Allow small buffer for in-flight data
     const maxAcceptableGrowth = 100;
@@ -620,8 +611,6 @@ test.describe('Stop Button - Reasoning Models', () => {
     debugInfo(`  - Reasoning growth events: ${reasoningGrowthEvents}`);
     debugInfo(`  - Content growth events: ${contentGrowthEvents}`);
 
-    await page.screenshot({ path: 'test-results/stop-openai-reasoning-robust.png' });
-
     // KEY ASSERTIONS:
     // Allow small buffer for in-flight data (100 chars)
     const maxAcceptableGrowth = 100;
@@ -705,7 +694,6 @@ test.describe('Stop Button - Reasoning Models', () => {
     // Wait for things to settle
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: 'test-results/stop-button-timing-test.png' });
   });
 
 });
