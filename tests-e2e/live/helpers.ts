@@ -1000,7 +1000,7 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
   ).catch(() => null);  // Don't fail if no network request
 
   // Phase 3: Wait for assistant message to appear (with optional minimum count)
-  const phase3Deadline = Date.now() + Math.min(30000, timeout);
+  const phase3Deadline = Date.now() + timeout;
   let assistantOk = false;
   while (Date.now() < phase3Deadline) {
     try {

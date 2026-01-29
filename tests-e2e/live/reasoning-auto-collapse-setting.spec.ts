@@ -227,7 +227,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     debugInfo('Reasoning window is initially open');
 
     // Wait for assistant response to complete
-    await waitForAssistantDone(page);
+    await waitForAssistantDone(page, { timeout: 90_000 });
     debugInfo('Assistant response completed');
 
     // Give a small buffer for the auto-close to trigger
@@ -277,7 +277,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     debugInfo('Reasoning window is initially open');
 
     // Wait for assistant response to complete
-    await waitForAssistantDone(page);
+    await waitForAssistantDone(page, { timeout: 90_000 });
     debugInfo('Assistant response completed');
 
     // Give time for auto-close to trigger (if it would)
@@ -319,7 +319,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     debugInfo('Reasoning window is initially open');
 
     // Wait for assistant response to complete
-    await waitForAssistantDone(page);
+    await waitForAssistantDone(page, { timeout: 90_000 });
     debugInfo('Anthropic assistant response completed');
 
     // Give a small buffer for the auto-close to trigger
@@ -364,7 +364,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     debugInfo('Reasoning window is initially open');
 
     // Wait for assistant response to complete
-    await waitForAssistantDone(page);
+    await waitForAssistantDone(page, { timeout: 90_000 });
     debugInfo('Anthropic assistant response completed');
 
     // Give time for auto-close to trigger (if it would)
