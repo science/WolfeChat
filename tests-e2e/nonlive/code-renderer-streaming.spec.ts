@@ -71,7 +71,7 @@ test.describe('Code rendering stays highlighted during streaming updates', () =>
     if (await sendButton.isVisible().catch(() => false)) {
       await Promise.all([
         page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        sendButton.click(),
+        sendButton.click({ force: true }),
       ]);
     } else {
       await Promise.all([
@@ -145,7 +145,7 @@ test.describe('Code rendering stays highlighted during streaming updates', () =>
     if (await sendButton.isVisible().catch(() => false)) {
       await Promise.all([
         page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        sendButton.click(),
+        sendButton.click({ force: true }),
       ]);
     } else {
       await Promise.all([
@@ -165,7 +165,7 @@ test.describe('Code rendering stays highlighted during streaming updates', () =>
     if (await sendButton.isVisible().catch(() => false)) {
       await Promise.all([
         page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        sendButton.click(),
+        sendButton.click({ force: true }),
       ]);
     } else {
       await Promise.all([

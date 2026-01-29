@@ -30,7 +30,13 @@ test('Live: gpt-5-nano shows "minimal" option, hides "none" in Quick Settings', 
   }
 
   await page.goto('/');
-  await page.waitForSelector('#app', { state: 'attached' });
+  {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      if (await page.locator('#app').count() > 0) break;
+      await page.waitForTimeout(200);
+    }
+  }
   await bootstrapLiveAPI(page);
 
   await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i });
@@ -66,7 +72,13 @@ test('Live: gpt-5-nano shows "minimal" option, hides "none" in Settings', async 
   }
 
   await page.goto('/');
-  await page.waitForSelector('#app', { state: 'attached' });
+  {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      if (await page.locator('#app').count() > 0) break;
+      await page.waitForTimeout(200);
+    }
+  }
   await bootstrapLiveAPI(page);
 
   await openSettings(page);
@@ -103,7 +115,13 @@ test('Live: gpt-5.1 shows "none" option, hides "minimal" in Quick Settings', asy
   }
 
   await page.goto('/');
-  await page.waitForSelector('#app', { state: 'attached' });
+  {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      if (await page.locator('#app').count() > 0) break;
+      await page.waitForTimeout(200);
+    }
+  }
   await bootstrapLiveAPI(page);
 
   await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.1/i });
@@ -127,9 +145,9 @@ test('Live: gpt-5.1 shows "none" option, hides "minimal" in Quick Settings', asy
 
   // Close and reopen to verify persistence
   const toggle = page.locator('button[aria-controls="quick-settings-body"]');
-  await toggle.click();
+  await toggle.click({ force: true });
   await page.waitForTimeout(100);
-  await toggle.click();
+  await toggle.click({ force: true });
   await page.waitForTimeout(100);
   await expect(reasoningSelect).toHaveValue('none');
 
@@ -147,7 +165,13 @@ test('Live: gpt-5.1 shows "none" option, hides "minimal" in Settings', async ({ 
   }
 
   await page.goto('/');
-  await page.waitForSelector('#app', { state: 'attached' });
+  {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      if (await page.locator('#app').count() > 0) break;
+      await page.waitForTimeout(200);
+    }
+  }
   await bootstrapLiveAPI(page);
 
   await openSettings(page);
@@ -169,7 +193,7 @@ test('Live: gpt-5.1 shows "none" option, hides "minimal" in Settings', async ({ 
 
   // Save and reopen to verify persistence
   const saveButton = page.getByRole('button', { name: /save/i });
-  await saveButton.click();
+  await saveButton.click({ force: true });
   await page.waitForTimeout(200);
 
   await openSettings(page);

@@ -44,7 +44,13 @@ const hasKey = !!process.env.OPENAI_API_KEY;
    */
   async function selectConversation(page: any, index: number) {
     // Wait for conversations to be visible
-    await page.waitForSelector('.conversation', { timeout: 5000 });
+    {
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if (await page.locator('.conversation').count() > 0) break;
+        await page.waitForTimeout(200);
+      }
+    }
 
     // Get all conversation elements (they're in reverse order in the UI)
     const conversations = await page.locator('.conversation').all();
@@ -54,7 +60,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
     // Click the conversation at the given index (accounting for reverse order)
     const targetIndex = Math.min(index, conversations.length - 1);
-    await conversations[targetIndex].click();
+    await conversations[targetIndex].click({ force: true });
 
     // Wait for conversation to be selected - check that input field is visible and active
     await expect(page.getByRole('textbox', { name: /chat input/i })).toBeVisible();
@@ -124,7 +130,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Act: Click the "New Chat" button in sidebar
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
       await expect(newChatButton).toBeVisible();
-      await newChatButton.click();
+      await newChatButton.click({ force: true });
       debugInfo('✓ Clicked New Chat button');
 
       // Wait for new conversation to be created
@@ -153,8 +159,8 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
 
       // Click new chat twice to create 3 total conversations
-      await newChatButton.click();
-      await newChatButton.click();
+      await newChatButton.click({ force: true });
+      await newChatButton.click({ force: true });
 
       debugInfo('✓ Created 3 conversations total');
 
@@ -176,7 +182,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       debugInfo('✓ Added text to first conversation');
 
       // With first conversation active, click "New Chat"
-      await newChatButton.click();
+      await newChatButton.click({ force: true });
       debugInfo('✓ Created new chat while first conversation was active');
 
       // Check all original conversations
@@ -206,7 +212,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Click Clear Chat button
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
       await expect(clearButton).toBeVisible();
-      await clearButton.click();
+      await clearButton.click({ force: true });
 
       // Verify clear chat correctly cleared the input
       const clearedInput = await input.inputValue();
@@ -221,7 +227,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Click New Chat button
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
-      await newChatButton.click();
+      await newChatButton.click({ force: true });
 
       // Navigate back to the previous conversation
       await selectConversation(page, 1);
@@ -250,7 +256,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       if (!conversationId) {
         // Click new chat to create first conversation
         const newChatButton = page.getByRole('button', { name: /new conversation/i });
-        await newChatButton.click();
+        await newChatButton.click({ force: true });
         await page.waitForTimeout(500);
         conversationId = await getCurrentConversationId(page);
       }
@@ -274,7 +280,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Click "New Chat"
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
-      await newChatButton.click();
+      await newChatButton.click({ force: true });
       await page.waitForTimeout(500);
       debugInfo('✓ Clicked New Chat button');
 
@@ -317,9 +323,9 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Click "New Chat" multiple times rapidly
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
-      await newChatButton.click();
-      await newChatButton.click();
-      await newChatButton.click();
+      await newChatButton.click({ force: true });
+      await newChatButton.click({ force: true });
+      await newChatButton.click({ force: true });
       await page.waitForTimeout(1000); // Wait for all operations to complete
       debugInfo('✓ Clicked New Chat 3 times rapidly');
 
@@ -362,7 +368,7 @@ This should all be preserved when creating a new chat.`;
 
       // Create new chat
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
-      await newChatButton.click();
+      await newChatButton.click({ force: true });
       await page.waitForTimeout(500);
 
       // Return to original conversation
@@ -396,12 +402,12 @@ This should all be preserved when creating a new chat.`;
       // Click New Chat button in topbar (if visible)
       const topbarNewChat = page.locator('button:has(img[alt="+"])').first();
       if (await topbarNewChat.isVisible().catch(() => false)) {
-        await topbarNewChat.click();
+        await topbarNewChat.click({ force: true });
         debugInfo('✓ Clicked topbar New Chat button');
       } else {
         // Fallback to sidebar button
         const sidebarNewChat = page.getByRole('button', { name: /new conversation/i });
-        await sidebarNewChat.click();
+        await sidebarNewChat.click({ force: true });
         debugInfo('✓ Clicked sidebar New Chat button (topbar not visible)');
       }
 

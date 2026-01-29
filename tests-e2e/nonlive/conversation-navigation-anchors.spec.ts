@@ -48,7 +48,7 @@ async function openQuickSettings(page) {
   await expect(toggle).toBeVisible();
   const expanded = await toggle.getAttribute('aria-expanded');
   if (expanded !== 'true') {
-    await toggle.click();
+    await toggle.click({ force: true });
   }
   const body = page.locator('#quick-settings-body');
   await expect(body).toBeVisible();
@@ -110,13 +110,13 @@ test.describe('conversation navigation anchors', () => {
     }, midOffset);
 
     // Click Up -> snap to anchors[3]
-    await up.click();
+    await up.click({ force: true });
     await page.waitForTimeout(150);
     let afterUp = await scroller.evaluate(el => (el as HTMLElement).scrollTop);
     expect(approx(afterUp, anchors[startIdx])).toBeTruthy();
 
     // Click Down -> snap to anchors[4]
-    await down.click();
+    await down.click({ force: true });
     await page.waitForTimeout(150);
     let afterDown = await scroller.evaluate(el => (el as HTMLElement).scrollTop);
     expect(approx(afterDown, anchors[startIdx + 1])).toBeTruthy();
@@ -124,7 +124,7 @@ test.describe('conversation navigation anchors', () => {
     // Step Down through remaining anchors
     let idx = startIdx + 2;
     while (idx < anchors.length) {
-      await down.click();
+      await down.click({ force: true });
       await page.waitForTimeout(120);
       const st = await scroller.evaluate(el => (el as HTMLElement).scrollTop);
       const bottom = await scroller.evaluate(el => (el as HTMLElement).scrollHeight - (el as HTMLElement).clientHeight);
@@ -137,7 +137,7 @@ test.describe('conversation navigation anchors', () => {
     // Go back up to top
     let upIdx = Math.max(0, anchors.length - 2);
     while (upIdx >= 0) {
-      await up.click();
+      await up.click({ force: true });
       await page.waitForTimeout(120);
       const st = await scroller.evaluate(el => (el as HTMLElement).scrollTop);
       expect(approx(st, anchors[upIdx]) || (upIdx === 0 && approx(st, 0, 5))).toBeTruthy();
@@ -145,7 +145,7 @@ test.describe('conversation navigation anchors', () => {
     }
 
     // Extra Up at top remains at top
-    await up.click();
+    await up.click({ force: true });
     await page.waitForTimeout(120);
     const stTop = await scroller.evaluate(el => (el as HTMLElement).scrollTop);
     expect(approx(stTop, 0, 2)).toBeTruthy();

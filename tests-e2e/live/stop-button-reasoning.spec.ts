@@ -63,7 +63,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     await page.locator('textarea[aria-label="Chat input"]').fill(testMessage);
     debugInfo(`Sending message: "${testMessage.substring(0, 50)}..."`);
 
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Message sent, waiting for streaming to start');
 
     // Wait for the stop button to appear (indicates streaming started)
@@ -84,7 +84,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     debugInfo(`Content before stop: ${contentBeforeStop.length} chars`);
 
     // Click the stop button
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Clicked stop button');
 
     // The send button should reappear (this is what the UI does now)
@@ -157,7 +157,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     // Send a message that will definitely trigger reasoning
     const testMessage = 'Explain the mathematical proof for the Pythagorean theorem step by step.';
     await page.locator('textarea[aria-label="Chat input"]').fill(testMessage);
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Message sent');
 
     // Wait for streaming to start
@@ -175,7 +175,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     debugInfo(`Reasoning panel visible: ${hasReasoningPanel}`);
 
     // Click stop
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Clicked stop button');
 
     // Verify UI updates
@@ -267,7 +267,7 @@ test.describe('Stop Button - Reasoning Models', () => {
 
     // Send message
     await page.locator('textarea[aria-label="Chat input"]').fill('Write a long story about space exploration, at least 1000 words.');
-    await sendButton.click();
+    await sendButton.click({ force: true });
 
     // Wait for streaming to start
     await expect(stopIcon).toBeVisible({ timeout: 5000 });
@@ -275,7 +275,7 @@ test.describe('Stop Button - Reasoning Models', () => {
 
     // Wait a moment then click stop
     await page.waitForTimeout(500);
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Stop button clicked');
 
     // Wait for UI to update
@@ -321,7 +321,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     await page.locator('textarea[aria-label="Chat input"]').fill(
       'Solve this step by step: A farmer has 17 sheep. All but 9 die. How many are left? Show your complete reasoning process.'
     );
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Message sent');
 
     // Wait for streaming to start
@@ -354,7 +354,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     debugInfo(`Before stop: ${panelsBeforeStop.length} panels, ${reasoningTextBeforeStop} chars of reasoning`);
 
     // Click stop
-    await sendButton.click();
+    await sendButton.click({ force: true });
     const stopClickTime = Date.now();
     debugInfo(`Stop clicked at ${stopClickTime}`);
 
@@ -439,7 +439,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     await page.locator('textarea[aria-label="Chat input"]').fill(
       'Write a detailed analysis of the French Revolution, including causes, key events, and lasting impacts. Be thorough.'
     );
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Message sent to Anthropic');
 
     // Wait for streaming to start
@@ -456,7 +456,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     debugInfo(`Content before stop: ${contentBeforeStop.length} chars`);
 
     // Click stop
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Clicked stop button');
 
     // Wait for UI to update
@@ -525,7 +525,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     await page.locator('textarea[aria-label="Chat input"]').fill(
       'Write a detailed proof of the Pythagorean theorem using similar triangles. Show all steps carefully and explain each one thoroughly. Include diagrams in ASCII art if helpful.'
     );
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Message sent to OpenAI reasoning model');
 
     // Wait for streaming to start
@@ -562,7 +562,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     debugInfo(`Message content before stop: ${contentBeforeStop} chars`);
 
     // Click stop
-    await sendButton.click();
+    await sendButton.click({ force: true });
     const stopClickTime = Date.now();
     debugInfo(`Stop clicked at ${stopClickTime} with ${reasoningTextBeforeStop} chars of reasoning`);
 
@@ -664,7 +664,7 @@ test.describe('Stop Button - Reasoning Models', () => {
 
     // Send message
     await page.locator('textarea[aria-label="Chat input"]').fill('Tell me about quantum computing in detail.');
-    await sendButton.click();
+    await sendButton.click({ force: true });
 
     // Wait for streaming
     await expect(stopIcon).toBeVisible({ timeout: 5000 });
@@ -675,7 +675,7 @@ test.describe('Stop Button - Reasoning Models', () => {
 
     // Capture timing for stop click
     const stopClickTime = Date.now();
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo(`Stop clicked at ${stopClickTime}`);
 
     // Immediately check if stop icon is still visible

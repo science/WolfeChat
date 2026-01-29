@@ -60,14 +60,14 @@ test.describe('API Mocking for Nonlive Tests', () => {
 
     // Open Settings
     const settingsButton = await page.locator('button').filter({ hasText: 'Settings' }).first();
-    await settingsButton.click();
+    await settingsButton.click({ force: true });
 
     // Fill API key
     await page.fill('input[type="password"]', 'sk-test123');
 
     // Click Check API (this should trigger our mock)
     const checkAPIButton = page.locator('button:has-text("Check API")');
-    await checkAPIButton.click();
+    await checkAPIButton.click({ force: true });
 
     // Wait for the API call to complete
     debugInfo('STEP 2: Wait for mocked API call to complete');
@@ -124,13 +124,13 @@ test.describe('API Mocking for Nonlive Tests', () => {
 
     // Close Settings modal properly using Save button
     const saveBtn = page.getByRole('button', { name: /^save$/i });
-    await saveBtn.click();
+    await saveBtn.click({ force: true });
     await page.waitForSelector('h2:has-text("Settings")', { state: 'hidden', timeout: 5000 });
     await page.waitForTimeout(500);
 
     // Expand QuickSettings
     const quickSettingsButton = await page.locator('button').filter({ hasText: 'Quick Settings' }).first();
-    await quickSettingsButton.click();
+    await quickSettingsButton.click({ force: true });
 
     // Wait for dropdown with correct selector
     const modelSelect = page.locator('#current-model-select');

@@ -48,7 +48,7 @@ test.describe('API Error Handling', () => {
     // Save and close settings
     const saveBtn = page.getByRole('button', { name: /^save$/i });
     await expect(saveBtn).toBeVisible();
-    await saveBtn.click();
+    await saveBtn.click({ force: true });
     await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
 
     // Send a message that will cause an API error
@@ -133,7 +133,7 @@ test.describe('API Error Handling', () => {
     // Save and close settings
     const saveBtn = page.getByRole('button', { name: /^save$/i });
     await expect(saveBtn).toBeVisible();
-    await saveBtn.click();
+    await saveBtn.click({ force: true });
     await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
 
     // Try to send a message that will fail during streaming

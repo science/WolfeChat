@@ -28,7 +28,7 @@ test.describe('Mobile Input Visibility - Issue #24', () => {
     await expect(textarea).toBeVisible();
 
     // 3. Focus the textarea (simulates user tapping to type)
-    await textarea.click();
+    await textarea.click({ force: true });
     await page.screenshot({ path: '/tmp/issue24-02-focused.png', fullPage: false });
 
     // 4. REALISTIC: Keyboard appears IMMEDIATELY when user taps textarea
@@ -86,7 +86,7 @@ test.describe('Mobile Input Visibility - Issue #24', () => {
     await expect(textarea).toBeVisible();
 
     // Focus and type a very long message
-    await textarea.click();
+    await textarea.click({ force: true });
 
     // Type enough to trigger multiple auto-expands
     const longMessage = Array(20).fill('This is a line of text that should trigger auto-expand behavior').join('\n');
@@ -123,7 +123,7 @@ test.describe('Mobile Input Visibility - Issue #24', () => {
 
     const textarea = page.locator('textarea[aria-label="Chat input"]');
     await expect(textarea).toBeVisible();
-    await textarea.click();
+    await textarea.click({ force: true });
 
     await page.screenshot({ path: '/tmp/issue24-07-extreme-start.png', fullPage: false });
 

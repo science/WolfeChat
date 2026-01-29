@@ -124,7 +124,7 @@ test.describe('Cold Start - New User Experience', () => {
 
     // Open Settings (use specific selector to avoid Quick Settings match)
     const settingsButton = page.getByRole('button', { name: /^settings/i }).first();
-    await settingsButton.click();
+    await settingsButton.click({ force: true });
 
     // Settings modal should open
     const settingsHeading = page.getByRole('heading', { name: /settings/i });

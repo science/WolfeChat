@@ -121,7 +121,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     await expect(autoCollapseCheckbox).toBeVisible();
     await expect(autoCollapseCheckbox).toBeChecked(); // Default is checked
 
-    await autoCollapseCheckbox.uncheck();
+    await autoCollapseCheckbox.uncheck({ force: true });
     await expect(autoCollapseCheckbox).not.toBeChecked();
 
     await saveAndCloseSettings(page);
@@ -167,7 +167,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     await expect(autoCollapseCheckbox).toBeChecked();
 
     // Uncheck it
-    await autoCollapseCheckbox.uncheck();
+    await autoCollapseCheckbox.uncheck({ force: true });
     await expect(autoCollapseCheckbox).not.toBeChecked();
 
     // Close Quick Settings
@@ -257,7 +257,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     // Disable auto-collapse
     const autoCollapseCheckbox = page.locator('#reasoning-auto-collapse');
     await expect(autoCollapseCheckbox).toBeChecked(); // Default is checked
-    await autoCollapseCheckbox.uncheck();
+    await autoCollapseCheckbox.uncheck({ force: true });
     await expect(autoCollapseCheckbox).not.toBeChecked();
 
     await operateQuickSettings(page, { mode: 'ensure-closed' });
@@ -345,7 +345,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     // Disable auto-collapse
     const autoCollapseCheckbox = page.locator('#reasoning-auto-collapse');
     await expect(autoCollapseCheckbox).toBeChecked(); // Default is checked
-    await autoCollapseCheckbox.uncheck();
+    await autoCollapseCheckbox.uncheck({ force: true });
     await expect(autoCollapseCheckbox).not.toBeChecked();
 
     await operateQuickSettings(page, { mode: 'ensure-closed' });

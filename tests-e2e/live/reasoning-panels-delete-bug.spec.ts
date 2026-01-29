@@ -23,7 +23,7 @@ async function sendMessage(page: import('@playwright/test').Page, text: string) 
     }
   }
   await expect(input).toBeVisible();
-  await input.click();
+  await input.click({ force: true });
   await input.fill(text);
   await page.keyboard.down('Control');
   await page.keyboard.press('Enter');
@@ -48,18 +48,18 @@ async function deleteAllBelowForMessage(page: import('@playwright/test').Page, i
   const items = page.locator('[role="listitem"]');
   const item = items.nth(index);
   await expect(item).toBeVisible();
-  await item.hover();
+  await item.hover({ force: true });
 
   const deleteAllBtn = item.locator('button[aria-label="Delete all messages below"]').first();
   await expect(deleteAllBtn).toBeVisible();
-  await deleteAllBtn.click();
+  await deleteAllBtn.click({ force: true });
 
   // Handle confirmation dialog if present
   const dialog = page.getByRole('dialog');
   if (await dialog.isVisible().catch(() => false)) {
     const confirm = dialog.getByRole('button', { name: /delete|confirm|ok/i });
     if (await confirm.isVisible().catch(() => false)) {
-      await confirm.click();
+      await confirm.click({ force: true });
     }
   }
 }

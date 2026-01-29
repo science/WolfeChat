@@ -21,13 +21,13 @@ test.describe('Verify E2E Fixes', () => {
     debugInfo('STEP 1: Set up API key to trigger model fetch');
 
     // Open Settings
-    await page.click('button:has-text("Settings")');
+    await page.click('button:has-text("Settings")', { force: true });
 
     // Fill API key
     await page.fill('input[type="password"]', 'sk-test123');
 
     // Click Check API (should trigger our mock)
-    await page.click('button:has-text("Check API")');
+    await page.click('button:has-text("Check API")', { force: true });
 
     // Wait for API call to complete
     await page.waitForTimeout(2000);

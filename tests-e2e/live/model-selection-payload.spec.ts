@@ -63,7 +63,7 @@ test.describe('Model selection drives request payload.model', () => {
     // Send first message (uses default model from bootstrap)
     const input = page.getByRole('textbox', { name: 'Chat input' });
     await input.waitFor({ state: 'visible' });
-    await input.click();
+    await input.click({ force: true });
     await input.fill('Hello');
 
     // Try to click a send button if present; otherwise submit via Enter/Ctrl-Enter
@@ -72,7 +72,7 @@ test.describe('Model selection drives request payload.model', () => {
       await Promise.all([
         // Wait for at least one request to /responses with POST
         page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        sendButton.click(),
+        sendButton.click({ force: true }),
       ]);
     } else {
       await Promise.all([
@@ -94,13 +94,13 @@ test.describe('Model selection drives request payload.model', () => {
 
     // Send again and assert second phase
     await input.waitFor({ state: 'visible' });
-    await input.click();
+    await input.click({ force: true });
     await input.fill('Again');
 
     if (await sendButton.isVisible().catch(() => false)) {
       await Promise.all([
         page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        sendButton.click(),
+        sendButton.click({ force: true }),
       ]);
     } else {
       await Promise.all([

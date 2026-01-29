@@ -7,7 +7,7 @@ async function sendPrompt(page: import('@playwright/test').Page, text: string) {
   await textarea.fill(text);
   const sendBtn = page.getByRole('button', { name: /send/i });
   if (await sendBtn.isVisible().catch(() => false)) {
-    await sendBtn.click();
+    await sendBtn.click({ force: true });
   } else {
     await textarea.press('Enter');
   }
@@ -169,7 +169,7 @@ function panelStatus(panel: import('@playwright/test').Locator) {
      const summary = details.locator('summary');
      let isOpen = await details.getAttribute('open');
      if (!isOpen || isOpen === null) {
-       await summary.click();
+       await summary.click({ force: true });
        // Wait for the details to actually open
        await expect(details).toHaveAttribute('open', '', { timeout: 5000 });
      }

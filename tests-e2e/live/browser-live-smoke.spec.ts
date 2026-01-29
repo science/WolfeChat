@@ -11,7 +11,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
     // Test basic input functionality first
     const input = page.getByRole('textbox', { name: /chat input/i });
     await expect(input).toBeVisible();
-    await input.click();
+    await input.click({ force: true });
     
     // Test character by character input
     await page.keyboard.type('H');

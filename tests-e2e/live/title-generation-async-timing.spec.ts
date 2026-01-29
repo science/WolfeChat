@@ -14,7 +14,7 @@ test.describe('Live API: Title Generation Async Timing', () => {
 
     const newChatBtn = page.getByRole('button', { name: /new chat|new conversation|add conversation/i }).first();
     if (await newChatBtn.isVisible().catch(() => false)) {
-      await newChatBtn.click();
+      await newChatBtn.click({ force: true });
       await page.waitForTimeout(500);
     }
 

@@ -63,19 +63,19 @@ async function deleteMessage(page: any, index: number) {
   const items = page.locator('[role="listitem"]');
   const item = items.nth(index);
   await expect(item).toBeVisible();
-  await item.hover();
+  await item.hover({ force: true });
 
   // Try "Delete this Chat message" button first (always available)
   const deleteBtn = item.locator('button[aria-label="Delete this Chat message"]').first();
   await expect(deleteBtn).toBeVisible({ timeout: 5000 });
-  await deleteBtn.click();
+  await deleteBtn.click({ force: true });
 
   // Handle confirmation dialog if present
   const dialog = page.getByRole('dialog');
   if (await dialog.isVisible().catch(() => false)) {
     const confirm = dialog.getByRole('button', { name: /delete|confirm|ok/i });
     if (await confirm.isVisible().catch(() => false)) {
-      await confirm.click();
+      await confirm.click({ force: true });
     }
   }
 
@@ -87,18 +87,18 @@ async function deleteAllBelowForMessage(page: any, index: number) {
   const items = page.locator('[role="listitem"]');
   const item = items.nth(index);
   await expect(item).toBeVisible();
-  await item.hover();
+  await item.hover({ force: true });
 
   const deleteAllBtn = item.locator('button[aria-label="Delete all messages below"]').first();
   await expect(deleteAllBtn).toBeVisible({ timeout: 5000 });
-  await deleteAllBtn.click();
+  await deleteAllBtn.click({ force: true });
 
   // Handle confirmation dialog if present
   const dialog = page.getByRole('dialog');
   if (await dialog.isVisible().catch(() => false)) {
     const confirm = dialog.getByRole('button', { name: /delete|confirm|ok/i });
     if (await confirm.isVisible().catch(() => false)) {
-      await confirm.click();
+      await confirm.click({ force: true });
     }
   }
 
@@ -178,7 +178,7 @@ test.describe('Orphaned Reasoning Window Bug', () => {
     debugInfo(`First panel text snippet: ${firstPanelText}`);
 
     // 7) Click STOP button to abort the stream
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Clicked stop button');
 
     // Wait for send button to reappear
@@ -317,7 +317,7 @@ test.describe('Orphaned Reasoning Window Bug', () => {
     debugInfo(`Before stop: ${windowsBeforeStop.length} windows`);
 
     // Stop the stream
-    await sendButton.click();
+    await sendButton.click({ force: true });
     await expect(sendIcon).toBeVisible({ timeout: 5000 });
     debugInfo('Stopped stream');
 

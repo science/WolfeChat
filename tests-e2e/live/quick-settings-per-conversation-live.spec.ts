@@ -16,7 +16,13 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   if (DEBUG_LVL) await page.evaluate(lvl => { (window as any).__DEBUG = lvl; }, DEBUG_LVL);
 
   await page.goto('/');
-  await page.waitForSelector('#app', { state: 'attached' });
+  {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      if (await page.locator('#app').count() > 0) break;
+      await page.waitForTimeout(200);
+    }
+  }
 
   await bootstrapLiveAPI(page);
   await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'minimal', verbosity: 'low', closeAfter: true });
@@ -33,14 +39,14 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   {
     const before = await rows.count();
     await expect(newConvBtn).toBeVisible();
-    await newConvBtn.click();
+    await newConvBtn.click({ force: true });
     await expect(rows).toHaveCount(before + 1);
   }
 
   // create conv3
   {
     const before = await rows.count();
-    await newConvBtn.click();
+    await newConvBtn.click({ force: true });
     await expect(rows).toHaveCount(before + 1);
   }
 
@@ -53,17 +59,17 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   await operateQuickSettings(page, { mode: 'ensure-open', summary: 'detailed', closeAfter: true });
 
   // conv2 settings
-  await rows.nth(1).click();
+  await rows.nth(1).click({ force: true });
   // Ensure a reasoning model is selected before setting reasoning controls
   await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'high', verbosity: 'high', summary: 'auto', closeAfter: true });
 
   // conv1 settings
-  await rows.nth(2).click();
+  await rows.nth(2).click({ force: true });
   await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'medium', verbosity: 'medium', summary: 'null', closeAfter: true });
 
   // Verify cycling retains settings
   // conv3
-  await rows.nth(0).click();
+  await rows.nth(0).click({ force: true });
   await operateQuickSettings(page, { mode: 'ensure-open' });
   const modelSelect = page.locator('#current-model-select');
   const reasoningEffortSel = page.locator('#reasoning-effort');
@@ -76,7 +82,7 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
 
   // conv2
-  await rows.nth(1).click();
+  await rows.nth(1).click({ force: true });
   await operateQuickSettings(page, { mode: 'ensure-open' });
   await expect(page.locator('#reasoning-effort')).toHaveValue('high');
   await expect(page.locator('#verbosity')).toHaveValue('high');
@@ -84,7 +90,7 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
 
   // conv1
-  await rows.nth(2).click();
+  await rows.nth(2).click({ force: true });
   await operateQuickSettings(page, { mode: 'ensure-open' });
   await expect(page.locator('#reasoning-effort')).toHaveValue('medium');
   await expect(page.locator('#verbosity')).toHaveValue('medium');

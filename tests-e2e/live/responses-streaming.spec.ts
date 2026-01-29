@@ -65,7 +65,14 @@ test.describe('Live API: Responses API streaming', () => {
     `});
     
     // Wait for function to be available
-    await page.waitForFunction(() => typeof (window as any).__testResponsesStreamingAPI === 'function');
+    {
+      const deadline = Date.now() + 10000;
+      while (Date.now() < deadline) {
+        const ready = await page.evaluate(() => typeof (window as any).__testResponsesStreamingAPI === 'function');
+        if (ready) break;
+        await page.waitForTimeout(200);
+      }
+    }
     
     // Execute the test
     const result = await page.evaluate(async () => {

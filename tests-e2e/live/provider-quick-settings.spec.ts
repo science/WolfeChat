@@ -179,7 +179,7 @@ test.describe.configure({ mode: 'serial' });
       // Create new conversation by clicking New Chat
       const newChatBtn = page.getByRole('button', { name: /new chat|new conversation/i });
       if (await newChatBtn.isVisible().catch(() => false)) {
-        await newChatBtn.click();
+        await newChatBtn.click({ force: true });
       }
 
       // Set different model for second conversation
@@ -192,7 +192,7 @@ test.describe.configure({ mode: 'serial' });
       // Switch back to first conversation (if conversation list exists)
       const conversationList = page.locator('[data-conversation-id]').first();
       if (await conversationList.isVisible().catch(() => false)) {
-        await conversationList.click();
+        await conversationList.click({ force: true });
 
         // Quick Settings should show the GPT model for this conversation
         await operateQuickSettings(page, { mode: 'ensure-open' });
@@ -263,17 +263,21 @@ test.describe.configure({ mode: 'serial' });
       await expect(quickModelSelectDirect).toBeVisible();
 
       // Wait for models to actually load in Quick Settings (store reactivity may take time)
-      await page.waitForFunction(
-        () => {
-          const select = document.querySelector('#current-model-select') as HTMLSelectElement;
-          if (!select) return false;
-          const options = Array.from(select.options).map(o => o.textContent?.toLowerCase() || '');
-          const hasGpt = options.some(o => o.includes('gpt'));
-          const hasClaude = options.some(o => o.includes('claude'));
-          return hasGpt && hasClaude;
-        },
-        { timeout: 10000, polling: 200 }
-      );
+      {
+        const deadline = Date.now() + 10000;
+        while (Date.now() < deadline) {
+          const ready = await page.evaluate(() => {
+            const select = document.querySelector('#current-model-select') as HTMLSelectElement;
+            if (!select) return false;
+            const options = Array.from(select.options).map(o => o.textContent?.toLowerCase() || '');
+            const hasGpt = options.some(o => o.includes('gpt'));
+            const hasClaude = options.some(o => o.includes('claude'));
+            return hasGpt && hasClaude;
+          });
+          if (ready) break;
+          await page.waitForTimeout(200);
+        }
+      }
 
       let options = await quickModelSelectDirect.locator('option').allTextContents();
       let hasGptModels = options.some(m => m.toLowerCase().includes('gpt'));

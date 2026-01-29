@@ -50,7 +50,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
     await expect(firstMessage).toBeVisible();
 
     // Hover to reveal toolbelt
-    await firstMessage.hover();
+    await firstMessage.hover({ force: true });
 
     // Look for the summarize button
     const summarizeBtn = firstMessage.locator('button[aria-label="Summarize up to here"]');

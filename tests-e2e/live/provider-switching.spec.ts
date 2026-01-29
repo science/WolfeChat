@@ -60,7 +60,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // Set OpenAI API key and save
     await providerSelect.selectOption('OpenAI');
     await apiKeyInput.fill('sk-openai-test-key');
-    await saveBtn.click();
+    await saveBtn.click({ force: true });
 
     // Reopen settings and switch to Anthropic - field should be empty initially
     await openSettings(page);
@@ -69,7 +69,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     // Set Anthropic API key and save
     await apiKeyInput.fill('sk-ant-test-key');
-    await saveBtn.click();
+    await saveBtn.click({ force: true });
 
     // Reopen settings and switch back to OpenAI - should show OpenAI key
     await openSettings(page);
@@ -91,13 +91,13 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // Set up OpenAI key first and save
     await providerSelect.selectOption('OpenAI');
     await apiKeyInput.fill('sk-openai-persist-test');
-    await saveBtn.click();
+    await saveBtn.click({ force: true });
 
     // Reopen settings, set Anthropic key and save
     await openSettings(page);
     await providerSelect.selectOption('Anthropic');
     await apiKeyInput.fill('sk-ant-persist-test');
-    await saveBtn.click();
+    await saveBtn.click({ force: true });
 
     // Reload page
     await page.reload();

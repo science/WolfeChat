@@ -19,7 +19,7 @@ test.describe('Live API: Title Update', () => {
     // Create new conversation - look for "New Chat" button or similar
     const newChatBtn = page.getByRole('button', { name: /new chat|new conversation|add conversation/i }).first();
     if (await newChatBtn.isVisible().catch(() => false)) {
-      await newChatBtn.click();
+      await newChatBtn.click({ force: true });
       // Wait a moment for new conversation to be created
       await page.waitForTimeout(500);
     }
@@ -89,24 +89,26 @@ test.describe('Live API: Title Update', () => {
     
     if (!updatedTitle) {
       // Fallback: Wait for title update using DOM polling
-      updatedTitle = await page.waitForFunction(
-        () => {
-          const conversations = document.querySelectorAll('.title-container.conversation .title-text');
-          
-          for (const titleEl of conversations) {
-            const currentTitle = (titleEl.textContent || '').trim();
-            if (currentTitle && 
-                currentTitle.toLowerCase() !== 'new conversation' && 
-                !currentTitle.toLowerCase().includes('untitled') &&
-                currentTitle.length > 0) {
-              return currentTitle;
+      {
+        const deadline = Date.now() + 15000;
+        while (Date.now() < deadline) {
+          const result = await page.evaluate(() => {
+            const conversations = document.querySelectorAll('.title-container.conversation .title-text');
+            for (const titleEl of conversations) {
+              const currentTitle = (titleEl.textContent || '').trim();
+              if (currentTitle &&
+                  currentTitle.toLowerCase() !== 'new conversation' &&
+                  !currentTitle.toLowerCase().includes('untitled') &&
+                  currentTitle.length > 0) {
+                return currentTitle;
+              }
             }
-          }
-          
-          return null;
-        },
-        { timeout: 15000, polling: 500 }
-      ).then(handle => handle.jsonValue()).catch(() => null);
+            return null;
+          });
+          if (result) { updatedTitle = result; break; }
+          await page.waitForTimeout(500);
+        }
+      }
     }
 
     // Assert title was updated

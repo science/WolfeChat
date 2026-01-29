@@ -33,7 +33,7 @@ test.describe('QuickSettings Expansion', () => {
 
     // Click to expand QuickSettings
     debugInfo('STEP 3: Expand QuickSettings');
-    await quickSettingsButton.click();
+    await quickSettingsButton.click({ force: true });
 
     // Wait for expansion animation and dropdown to appear
     await page.waitForSelector('#current-model-select', { timeout: 5000 });
@@ -84,7 +84,7 @@ test.describe('QuickSettings Expansion', () => {
 
     // Step 1: Expand QuickSettings to access model dropdown
     const quickSettingsButton = await page.locator('button').filter({ hasText: 'Quick Settings' }).first();
-    await quickSettingsButton.click();
+    await quickSettingsButton.click({ force: true });
     await page.waitForSelector('#current-model-select', { timeout: 5000 });
 
     // Step 2: Check current model dropdown state
@@ -97,13 +97,13 @@ test.describe('QuickSettings Expansion', () => {
 
     // Click settings button (from our debug we know the text)
     const settingsButton = await page.locator('button').filter({ hasText: 'Settings' }).first();
-    await settingsButton.click();
+    await settingsButton.click({ force: true });
 
     // Fill API key
     await page.fill('input[type="password"]', 'sk-test123');
 
     // Click "Check API" button
-    await page.click('button:has-text("Check API")');
+    await page.click('button:has-text("Check API")', { force: true });
 
     // Wait a moment for API processing
     await page.waitForTimeout(2000);

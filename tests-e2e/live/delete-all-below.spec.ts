@@ -28,7 +28,7 @@ async function sendMessage(page: import('@playwright/test').Page, text: string) 
     }
   }
   await expect(input).toBeVisible();
-  await input.click();
+  await input.click({ force: true });
   await input.fill(text);
   // Prefer Ctrl+Enter; fallback to clicking Send if needed
   await page.keyboard.down('Control');
@@ -58,19 +58,19 @@ async function deleteAllBelowForMessage(page: import('@playwright/test').Page, i
   await expect(item).toBeVisible();
 
   // Hover to reveal the per-message toolbelt (buttons are hidden until hover)
-  await item.hover();
+  await item.hover({ force: true });
 
   // Click the direct "Delete all messages below" button in the toolbelt
   const deleteAllBtn = item.locator('button[aria-label="Delete all messages below"]').first();
   await expect(deleteAllBtn).toBeVisible();
-  await deleteAllBtn.click();
+  await deleteAllBtn.click({ force: true });
 
   // If a confirmation dialog appears, confirm
   const dialog = page.getByRole('dialog');
   if (await dialog.isVisible().catch(() => false)) {
     const confirm = dialog.getByRole('button', { name: /delete|confirm|ok/i });
     if (await confirm.isVisible().catch(() => false)) {
-      await confirm.click();
+      await confirm.click({ force: true });
     }
   }
 }

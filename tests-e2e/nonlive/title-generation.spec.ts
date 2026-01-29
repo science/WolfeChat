@@ -2,12 +2,12 @@ import { test, expect } from '@playwright/test';
 
 async function setupApiKey(page) {
   // Open Settings via Sidebar button
-  await page.getByRole('button', { name: /^Settings/ }).click();
+  await page.getByRole('button', { name: /^Settings/ }).click({ force: true });
   const apiKeyInput = page.locator('#api-key');
   await expect(apiKeyInput).toBeVisible();
   await apiKeyInput.fill('test-key');
   // Save settings
-  await page.getByRole('button', { name: /^Save$/ }).click();
+  await page.getByRole('button', { name: /^Save$/ }).click({ force: true });
 }
 
 function setupResponsesRouting(page, handlers) {
@@ -42,7 +42,7 @@ async function sendMessage(page, text) {
   const textbox = page.getByRole('textbox', { name: /message|chat|prompt/i });
   await textbox.fill(text);
   const sendBtn = page.getByRole('button', { name: /send/i }).first();
-  await sendBtn.click();
+  await sendBtn.click({ force: true });
 }
 
 function sseBody(chunks) {
@@ -117,11 +117,11 @@ test.describe('title generation', () => {
     // Try a generic edit button near title
     const editButton = page.getByRole('button', { name: /edit title|rename/i }).first();
     if (await editButton.isVisible()) {
-      await editButton.click();
+      await editButton.click({ force: true });
       const titleInput = page.getByRole('textbox', { name: /title/i }).first();
       await titleInput.fill('My Custom Title');
       const saveBtn = page.getByRole('button', { name: /save/i }).first();
-      await saveBtn.click();
+      await saveBtn.click({ force: true });
     }
 
     setupResponsesRouting(page, {

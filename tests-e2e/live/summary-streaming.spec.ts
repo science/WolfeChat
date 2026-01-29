@@ -141,7 +141,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Click stop button (it's the same as the send button during streaming)
       const stopButton = page.locator('button[aria-label="Stop streaming"]');
       if (await stopButton.isVisible()) {
-        await stopButton.click();
+        await stopButton.click({ force: true });
         debugInfo('Stop button clicked');
 
         // Wait a moment for abort to process

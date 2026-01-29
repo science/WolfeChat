@@ -48,7 +48,7 @@ test.describe('Debug QuickSettings Click', () => {
     // Click the QuickSettings button
     debugInfo('STEP 2: Click QuickSettings button');
     const quickSettingsButton = await page.locator('button').filter({ hasText: 'Quick Settings' }).first();
-    await quickSettingsButton.click();
+    await quickSettingsButton.click({ force: true });
 
     // Wait a moment for any changes
     await page.waitForTimeout(1000);

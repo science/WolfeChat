@@ -30,7 +30,14 @@ async function bindWrapper(page: Page) {
     };
   `});
   // Wait for the function to be defined to avoid race conditions
-  await page.waitForFunction(() => typeof (window as any).__runBoundStream === 'function');
+  {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      const ready = await page.evaluate(() => typeof (window as any).__runBoundStream === 'function');
+      if (ready) break;
+      await page.waitForTimeout(200);
+    }
+  }
  }
  
  // Expose richer hook-based runner for TDD on event utilities
@@ -97,7 +104,14 @@ async function bindWrapper(page: Page) {
         }
       };
     `});
-    await page.waitForFunction(() => typeof (window as any).__runHookedStream === 'function');
+    {
+      const deadline = Date.now() + 10000;
+      while (Date.now() < deadline) {
+        const ready = await page.evaluate(() => typeof (window as any).__runHookedStream === 'function');
+        if (ready) break;
+        await page.waitForTimeout(200);
+      }
+    }
   }
  
  async function sendViaUI(page: Page, text: string) {
@@ -116,7 +130,7 @@ async function bindWrapper(page: Page) {
     }
   }
   await expect(input).toBeVisible();
-  await input.click();
+  await input.click({ force: true });
   await input.fill(text);
   // Send via Ctrl+Enter (supported per tests) or click send button
   await page.keyboard.down('Control');

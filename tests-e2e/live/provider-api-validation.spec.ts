@@ -30,7 +30,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     // Enter valid OpenAI key
     await apiKeyInput.fill(openaiKey);
-    await checkBtn.click();
+    await checkBtn.click({ force: true });
 
     // Wait for validation to complete and models to populate
     const modelSelect = page.locator('#model-selection');
@@ -62,7 +62,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     // Enter invalid key
     await apiKeyInput.fill('sk-invalid-key-12345');
-    await checkBtn.click();
+    await checkBtn.click({ force: true });
 
     // Look for error message (could be in various forms)
     const errorMessage = page.locator('text=/error|invalid|failed|unauthorized/i').first();
@@ -89,7 +89,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     // Enter valid Anthropic key
     await apiKeyInput.fill(anthropicKey);
-    await checkBtn.click();
+    await checkBtn.click({ force: true });
 
     // Check for any error messages first
     await page.waitForTimeout(2000); // Give time for API call
@@ -136,7 +136,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     // Enter invalid key
     await apiKeyInput.fill('sk-ant-invalid-key-12345');
-    await checkBtn.click();
+    await checkBtn.click({ force: true });
 
     // Look for error message
     const errorMessage = page.locator('text=/error|invalid|failed|unauthorized/i').first();
@@ -178,7 +178,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // Validate OpenAI key
     await providerSelect.selectOption('OpenAI');
     await apiKeyInput.fill(openaiKey);
-    await checkBtn.click();
+    await checkBtn.click({ force: true });
 
     // Wait for OpenAI models to load
     await expect(async () => {
@@ -196,7 +196,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
       // Switch to Anthropic and validate
       await providerSelect.selectOption('Anthropic');
       await apiKeyInput.fill(anthropicKey);
-      await checkBtn.click();
+      await checkBtn.click({ force: true });
 
       // Wait for Anthropic models to load
       await expect(async () => {
@@ -263,7 +263,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // Test OpenAI error message
     await providerSelect.selectOption('OpenAI');
     await apiKeyInput.fill('sk-invalid-openai-key');
-    await checkBtn.click();
+    await checkBtn.click({ force: true });
 
     // Wait for error and check it mentions OpenAI context
     await page.waitForTimeout(2000); // Give time for API call to fail
@@ -271,7 +271,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // Test Anthropic error message
     await providerSelect.selectOption('Anthropic');
     await apiKeyInput.fill('sk-ant-invalid-anthropic-key');
-    await checkBtn.click();
+    await checkBtn.click({ force: true });
 
     // Wait for error and check it mentions Anthropic context
     await page.waitForTimeout(2000); // Give time for API call to fail

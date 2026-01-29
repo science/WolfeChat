@@ -18,12 +18,12 @@ export default defineConfig({
     {
       name: 'nonlive',
       testMatch: 'tests-e2e/nonlive/**/*.spec.ts',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
     },
     {
       name: 'live',
       testMatch: 'tests-e2e/live/**/*.spec.ts',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
       timeout: 60_000,
     },
     {

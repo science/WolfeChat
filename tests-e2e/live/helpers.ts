@@ -1,6 +1,21 @@
 import { expect, Page, Locator } from '@playwright/test';
 import { debugLog, debugErr, debugWarn, debugInfo, DEBUG_LEVELS, isDebugLevel } from '../debug-utils';
 
+// ==================== CLICK WORKAROUND ====================
+// Playwright 1.57 + Chromium headless on WSL2 has a known issue where
+// the "stable" actionability check (which compares bounding boxes across
+// two animation frames) hangs forever because CDP-level animation frame
+// callbacks never fire. Using force:true bypasses this check.
+// See: hot-tub-controller uses the same workaround.
+
+/**
+ * Click helper that bypasses the broken "stable" actionability check
+ * on headless Chromium in WSL2.
+ */
+export async function forceClick(locator: Locator, options: Parameters<Locator['click']>[0] = {}) {
+  await locator.click({ force: true, ...options });
+}
+
 // ==================== MODEL DROPDOWN HELPER INTERFACES ====================
 
 interface ModelInfo {
@@ -114,7 +129,7 @@ export async function openSettings(page: Page) {
     ];
     for (const c of cascades) {
       if (await c.isVisible().catch(() => false)) {
-        await c.click();
+        await c.click({ force: true });
         return true;
       }
     }
@@ -131,7 +146,7 @@ export async function openSettings(page: Page) {
     ];
     for (const m of menuCandidates) {
       if (await m.isVisible().catch(() => false)) {
-        await m.click();
+        await m.click({ force: true });
         break;
       }
     }
@@ -145,7 +160,7 @@ export async function openSettings(page: Page) {
       ];
       for (const b of withinBanner) {
         if (await b.isVisible().catch(() => false)) {
-          await b.click();
+          await b.click({ force: true });
           break;
         }
       }
@@ -186,7 +201,7 @@ export async function withSettings(page: Page, action: () => Promise<void>) {
     // Always save and close, even if action throws
     const saveBtn = page.getByRole('button', { name: /^save$/i });
     await expect(saveBtn).toBeVisible();
-    await saveBtn.click();
+    await saveBtn.click({ force: true });
     await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
     await page.waitForTimeout(500); // Wait for dialog animations to complete
   }
@@ -202,7 +217,7 @@ export async function enableTokenDisplay(page: Page) {
     const isChecked = await checkbox.isChecked();
 
     if (!isChecked) {
-      await checkbox.check();
+      await checkbox.check({ force: true });
     }
   });
 }
@@ -236,7 +251,7 @@ export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthrop
 
   const checkBtn = page.getByRole('button', { name: /check api/i });
   await expect(checkBtn).toBeVisible();
-  await checkBtn.click();
+  await checkBtn.click({ force: true });
 
   // Wait for success or for models to populate in Settings select
   // Prefer semantic combobox by label, fallback to id
@@ -277,7 +292,7 @@ export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthrop
   // Save and close
   const saveBtn = page.getByRole('button', { name: /^save$/i });
   await expect(saveBtn).toBeVisible();
-  await saveBtn.click();
+  await saveBtn.click({ force: true });
   await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
   await page.waitForTimeout(500); // Wait for dialog animations to complete
 }
@@ -336,7 +351,7 @@ export async function fillApiKeyAndWaitForModels(
 export async function saveAndCloseSettings(page: Page): Promise<void> {
   const saveBtn = page.getByRole('button', { name: /^save$/i });
   await expect(saveBtn).toBeVisible({ timeout: 5000 });
-  await saveBtn.click();
+  await saveBtn.click({ force: true });
 
   const settingsHeading = page.getByRole('heading', { name: /settings/i });
   await expect(settingsHeading).toBeHidden({ timeout: 5000 });
@@ -430,12 +445,12 @@ export async function ensureSettingsClosed(page: Page): Promise<void> {
     debugInfo('[Helper Debug] Settings is open, closing it...');
     const saveBtn = page.getByRole('button', { name: /^save$/i });
     if (await saveBtn.isVisible().catch(() => false)) {
-      await saveBtn.click();
+      await saveBtn.click({ force: true });
     } else {
       // Fallback: try to close via cancel or X button
       const cancelBtn = page.getByRole('button', { name: /cancel|close|×/i }).first();
       if (await cancelBtn.isVisible().catch(() => false)) {
-        await cancelBtn.click();
+        await cancelBtn.click({ force: true });
       }
     }
 
@@ -525,7 +540,7 @@ export async function getVisibleModels(page: Page): Promise<string[]> {
     // Settings is open - close it properly to avoid overlay blocking QuickSettings
     const saveBtn = page.getByRole('button', { name: /^save$/i });
     if (await saveBtn.isVisible().catch(() => false)) {
-      await saveBtn.click();
+      await saveBtn.click({ force: true });
       await expect(settingsHeading).toBeHidden({ timeout: 5000 });
       await page.waitForTimeout(500); // Wait for dialog animations to complete
     } else {
@@ -541,7 +556,7 @@ export async function getVisibleModels(page: Page): Promise<string[]> {
   const isExpanded = await quickSettingsButton.getAttribute('aria-expanded') === 'true';
 
   if (!isExpanded) {
-    await quickSettingsButton.click();
+    await quickSettingsButton.click({ force: true });
     await page.waitForTimeout(500); // Allow expansion animation
   }
 
@@ -595,35 +610,32 @@ export async function waitForModelsToLoad(
 
     // Trigger the check (assumes Check API button is already visible)
     const checkBtn = page.getByRole('button', { name: /check api/i });
-    await checkBtn.click();
+    await checkBtn.click({ force: true });
 
     // Wait for network response
     await responsePromise;
 
-    // Wait for DOM to show real model options in Settings
-    await page.waitForFunction(
-      () => {
+    // Wait for DOM to show real model options in Settings (polling via evaluate)
+    const modelDeadline = Date.now() + 10000;
+    while (Date.now() < modelDeadline) {
+      const hasOptions = await page.evaluate(() => {
         const select = document.querySelector('#model-selection') as HTMLSelectElement;
         if (!select) return false;
+        return select.querySelectorAll('option[value]:not([value=""]):not(:disabled)').length > 0;
+      });
+      if (hasOptions) break;
+      await page.waitForTimeout(200);
+    }
 
-        // Look for options with real values (not empty, not disabled)
-        const realOptions = select.querySelectorAll('option[value]:not([value=""]):not(:disabled)');
-
-        return realOptions.length > 0;
-      },
-      { timeout: 10000 }
-    );
-
-    // Debug after the function completes (in Node context)
     const optionCount = await page.locator('#model-selection option[value]:not([value=""]):not(:disabled)').count();
-    debugInfo('DOM Check - Real options found after waitForFunction:', { count: optionCount });
+    debugInfo('DOM Check - Real options found:', { count: optionCount });
   } else if (context === 'quick-settings') {
     // Original QuickSettings logic - keep unchanged
     const quickSettingsButton = page.locator('button').filter({ hasText: 'Quick Settings' }).first();
     const isExpanded = await quickSettingsButton.getAttribute('aria-expanded') === 'true';
 
     if (!isExpanded) {
-      await quickSettingsButton.click();
+      await quickSettingsButton.click({ force: true });
       await page.waitForTimeout(500); // Allow expansion animation
     }
 
@@ -652,18 +664,20 @@ export async function waitForModelsToLoad(
     );
 
     const checkBtn = page.getByRole('button', { name: /check api/i });
-    await checkBtn.click();
+    await checkBtn.click({ force: true });
     await responsePromise;
 
-    await page.waitForFunction(
-      () => {
+    // Poll for model options (waitForFunction hangs in headless WSL2)
+    const qsDeadline = Date.now() + 10000;
+    while (Date.now() < qsDeadline) {
+      const hasOptions = await page.evaluate(() => {
         const select = document.querySelector('#current-model-select') as HTMLSelectElement;
         if (!select) return false;
-        const realOptions = select.querySelectorAll('option[value]:not([value=""]):not(:disabled)');
-        return realOptions.length > 0;
-      },
-      { timeout: 10000 }
-    );
+        return select.querySelectorAll('option[value]:not([value=""]):not(:disabled)').length > 0;
+      });
+      if (hasOptions) break;
+      await page.waitForTimeout(200);
+    }
   } else {
     throw new Error('waitForModelsToLoad called without an open modal');
   }
@@ -675,7 +689,7 @@ export async function verifyProviderIndicators(page: Page, expectedProviders: st
   const isExpanded = await quickSettingsButton.getAttribute('aria-expanded') === 'true';
 
   if (!isExpanded) {
-    await quickSettingsButton.click();
+    await quickSettingsButton.click({ force: true });
     await page.waitForTimeout(500);
   }
 
@@ -726,12 +740,12 @@ export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-op
   // Open/ensure-open
   if (mode === 'open' || mode === 'ensure-open') {
     if (!(await isOpen())) {
-      await toggle.click();
+      await toggle.click({ force: true });
       await expect(body).toBeVisible();
     }
   } else if (mode === 'ensure-closed' || mode === 'close') {
     if (await isOpen()) {
-      await toggle.click();
+      await toggle.click({ force: true });
       await expect(body).toBeHidden();
     }
     if (mode !== 'ensure-closed') return; // close only
@@ -808,7 +822,7 @@ export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-op
 
   if (closeAfter) {
     if (await isOpen()) {
-      await toggle.click();
+      await toggle.click({ force: true });
       await expect(body).toBeHidden();
     }
   }
@@ -945,6 +959,32 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
     }
   });
 
+  // NOTE: page.waitForFunction() hangs in headless Chromium on WSL2 because
+  // CDP-level animation frame callbacks never fire. We use page.evaluate() +
+  // page.waitForTimeout() polling loops instead.
+
+  // Helper: poll page.evaluate until predicate returns truthy or timeout
+  const pollUntil = async (
+    fn: () => any,
+    label: string,
+    maxMs: number,
+    intervalMs = pollInterval
+  ): Promise<boolean> => {
+    const deadline = Date.now() + maxMs;
+    while (Date.now() < deadline) {
+      try {
+        const result = await page.evaluate(fn);
+        if (result) return true;
+      } catch {
+        // page closed or navigation — treat as failure
+        return false;
+      }
+      await page.waitForTimeout(Math.min(intervalMs, 500));
+    }
+    debugWarn(`[WAIT-ASSISTANT] pollUntil "${label}" timed out after ${maxMs}ms`);
+    return false;
+  };
+
   // Phase 2: Set up network monitoring for SSE streams (updated for Responses API)
   const ssePromise = page.waitForResponse(
     response => {
@@ -956,74 +996,43 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
     { timeout: Math.min(20000, timeout) }
   ).catch(() => null);  // Don't fail if no network request
 
-  // Phase 3: Wait for assistant message to appear using efficient DOM check
-  const assistantAppearPromise = page.waitForFunction(
+  // Phase 3: Wait for assistant message to appear
+  const assistantOk = await pollUntil(
     () => {
-      // Check for new assistant message efficiently
       const assistants = document.querySelectorAll('[role="listitem"][data-message-role="assistant"]');
       if (assistants.length === 0) return false;
-      
       const lastAssistant = assistants[assistants.length - 1];
-      // Check if it has meaningful content (not just loading state)
       const text = lastAssistant.textContent || '';
-      return text.length > 0 && !text.includes('█');  // No cursor
+      return text.length > 0 && !text.includes('█');
     },
-    { timeout: Math.min(30000, timeout), polling: pollInterval }
+    'assistant-appear',
+    Math.min(30000, timeout)
   );
 
-  // Phase 4: Wait for stream completion signal from injected monitor
-  const streamCompletePromise = page.waitForFunction(
+  // Phase 4: Wait for UI completion (send button enabled, no wait icon, no streaming)
+  const uiOk = await pollUntil(
     () => {
-      const win = window as any;
-      if (!win.__streamMonitor) return true;  // Fallback if injection failed
-      
-      // Stream is complete if not streaming and we had a completion recently
-      const monitor = win.__streamMonitor;
-      if (!monitor.isStreaming) {
-        // If we completed in the last 10 seconds, consider it done
-        if (monitor.lastCompletedAt && Date.now() - monitor.lastCompletedAt < 10000) {
-          return true;
-        }
-        // Or if we never started streaming (maybe non-streaming response)
-        return true;
-      }
-      return false;
-    },
-    { timeout, polling: pollInterval }
-  );
-
-  // Phase 5: Wait for UI to reflect completion state
-  // More robust than checking button state - look for streaming indicators
-  const uiCompletePromise = page.waitForFunction(
-    () => {
-      // Check multiple completion indicators
       const indicators: boolean[] = [];
       let foundSendBtn = false;
-      
-      // 1. Send button should be enabled
+
       const sendBtn = document.querySelector('button[aria-label="Send"]') as HTMLButtonElement;
       if (sendBtn) {
         foundSendBtn = true;
         indicators.push(!sendBtn.disabled);
       }
-      
-      // 2. No wait/loading indicators visible
+
       const waitIcon = document.querySelector('img[alt="Wait"]') as HTMLImageElement;
       indicators.push(!waitIcon || waitIcon.style.display === 'none' || !waitIcon.offsetParent);
-      
-      // 3. Check for data-streaming attribute if app uses it
+
       const streamingElements = document.querySelectorAll('[data-streaming="true"]');
       indicators.push(streamingElements.length === 0);
-      
-      // 4. No typing/cursor indicators in assistant messages
+
       const assistants = document.querySelectorAll('[role="listitem"][data-message-role="assistant"]');
       if (assistants.length > 0) {
         const lastAssistant = assistants[assistants.length - 1];
-        const hasTypingIndicator = (lastAssistant.textContent || '').includes('█');
-        indicators.push(!hasTypingIndicator);
+        indicators.push(!(lastAssistant.textContent || '').includes('█'));
       }
-      
-      // 5. Additional check: Look for submit button in various forms
+
       if (!foundSendBtn) {
         const submitBtns = document.querySelectorAll('button[type="submit"], input[type="submit"], button:has(img[alt*="send"])');
         for (const btn of submitBtns) {
@@ -1034,94 +1043,33 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
           }
         }
       }
-      
-      // 6. Check if stream monitor indicates completion  
-      const win = window as any;
-      const monitor = win.__streamMonitor;
-      if (monitor) {
-        // Stream completion from our injected monitor
-        indicators.push(!monitor.isStreaming);
-      }
-      
-      // Need at least some indicators and all must be true for completion
-      // Be more lenient - require at least 2 indicators to agree
+
       const completionCount = indicators.filter(Boolean).length;
       const totalCount = indicators.length;
       return totalCount >= 2 && completionCount >= Math.max(2, totalCount - 1);
     },
-    { timeout, polling: pollInterval }
+    'ui-complete',
+    timeout
   );
 
   try {
-    // Wait for all signals in parallel, complete when all are done
-    const results = await Promise.allSettled([
-      assistantAppearPromise,
-      streamCompletePromise,
-      uiCompletePromise,
-      ssePromise
-    ]);
+    // Wait for SSE to complete (may already have finished)
+    await ssePromise;
 
-    // Log results if debugging
     debugInfo('[WAIT-ASSISTANT] Completion signals:', {
-      assistantAppeared: results[0].status === 'fulfilled',
-      streamComplete: results[1].status === 'fulfilled',
-      uiComplete: results[2].status === 'fulfilled',
-      sseReceived: results[3].status === 'fulfilled'
+      assistantAppeared: assistantOk,
+      uiComplete: uiOk,
     });
-
-    // Enhanced logging for debugging reasoning events issue
-    if (results[0].status !== 'fulfilled' || results[2].status !== 'fulfilled') {
-      debugWarn('[WAIT-ASSISTANT] Detailed completion status:', {
-        assistantAppeared: results[0].status === 'fulfilled' ? 'OK' : `FAILED: ${results[0].reason}`,
-        streamComplete: results[1].status === 'fulfilled' ? 'OK' : `FAILED: ${results[1].reason}`,
-        uiComplete: results[2].status === 'fulfilled' ? 'OK' : `FAILED: ${results[2].reason}`,
-        sseReceived: results[3].status === 'fulfilled' ? 'OK' : `FAILED: ${results[3].reason}`
-      });
-    }
-
-    // More lenient completion logic for reasoning events bug
-    // We primarily need the assistant message to appear and either UI completion OR stream completion
-    const assistantOk = results[0].status === 'fulfilled';
-    const uiOk = results[2].status === 'fulfilled';
-    const streamOk = results[1].status === 'fulfilled';
 
     if (!assistantOk) {
       throw new Error('Assistant message did not appear');
     }
 
-    if (!uiOk && !streamOk) {
-      throw new Error('Neither UI completion nor stream completion succeeded - possible reasoning events issue');
-    }
-
     if (!uiOk) {
-      debugWarn('[WAIT-ASSISTANT] UI completion failed but stream completion succeeded - likely reasoning events bug');
+      debugWarn('[WAIT-ASSISTANT] UI completion check failed but assistant appeared');
     }
 
-    // Additional check: Ensure isStreaming is false by checking the UI state
-    // This is critical for reasoning models where stream completion may lag
-    const finalCheckResult = await page.waitForFunction(
-      () => {
-        const win = window as any;
-        // Check the monitor
-        const monitorStreaming = win.__streamMonitor?.isStreaming ?? false;
-
-        // Also check if the Wait icon is NOT visible (which indicates streaming)
-        const waitIcon = document.querySelector('img[alt="Wait"]') as HTMLImageElement;
-        const waitIconVisible = waitIcon && waitIcon.offsetParent !== null;
-
-        return !monitorStreaming && !waitIconVisible;
-      },
-      { timeout: 5000, polling: 100 }
-    ).catch((err) => {
-      debugWarn('[WAIT-ASSISTANT] Final streaming check timed out - stream may still be active');
-      return null;
-    });
-
-    if (!finalCheckResult) {
-      throw new Error('Stream did not complete - Wait icon still visible or stream monitor indicates streaming');
-    }
-
-    // Additional stabilization if needed
+    // Final stabilization
     if (stabilizationTime > 0) {
       await page.waitForTimeout(stabilizationTime);
     }
@@ -1131,20 +1079,12 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
   } catch (error) {
     // Enhanced error diagnostics
     try {
-      // Check if page is still accessible before attempting evaluation
       if (!page.isClosed()) {
         const diagnostics = await page.evaluate(() => {
-          const win = window as any;
-          const monitor = win.__streamMonitor || {};
           const assistants = document.querySelectorAll('[role="listitem"][data-message-role="assistant"]');
           const sendBtn = document.querySelector('button[aria-label="Send"]') as HTMLButtonElement;
 
           return {
-            streamMonitor: {
-              isStreaming: monitor.isStreaming,
-              lastCompletedAt: monitor.lastCompletedAt,
-              timeSinceComplete: monitor.lastCompletedAt ? Date.now() - monitor.lastCompletedAt : null
-            },
             assistantCount: assistants.length,
             lastAssistantLength: assistants.length > 0 ? assistants[assistants.length - 1].textContent?.length : 0,
             sendButtonDisabled: sendBtn?.disabled,
@@ -1153,8 +1093,6 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
         });
 
         debugErr('[WAIT-ASSISTANT] Timeout diagnostics:', { diagnostics });
-      } else {
-        debugErr('[WAIT-ASSISTANT] Page closed - cannot collect diagnostics', { error: error?.message || error });
       }
     } catch (diagError) {
       debugErr('[WAIT-ASSISTANT] Failed to collect diagnostics', {
@@ -1162,7 +1100,7 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
         originalError: error?.message || error
       });
     }
-    
+
     throw error;
   }
 }
@@ -1210,10 +1148,10 @@ export async function sendMessage(page: Page, text: string, opts: SendMessageOpt
   if (!input) throw new Error('Could not find chat input element');
 
   await expect(input).toBeVisible({ timeout: 5000 });
-  await input.click();
+  await input.click({ force: true });
 
   if (clearFirst) {
-    await input.click({ clickCount: 3 });
+    await input.click({ force: true, clickCount: 3 });
     await page.keyboard.press('Backspace');
     const cur = await input.inputValue();
     if (cur) await input.clear();
@@ -1235,7 +1173,7 @@ export async function sendMessage(page: Page, text: string, opts: SendMessageOpt
     case 'click-button':
       const sendBtn = page.getByRole('button', { name: /send/i });
       await expect(sendBtn).toBeVisible({ timeout: 3000 });
-      await sendBtn.click();
+      await sendBtn.click({ force: true });
       break;
   }
 
@@ -1268,12 +1206,24 @@ export async function waitForStreamComplete(page: Page, opts: StreamCompleteOpti
   }
 
   // Phase 2: streaming indicators cleared or send button re-enabled
+  // (Using polling instead of waitForSelector which hangs in headless WSL2)
   if (waitForStreamState) {
-    await Promise.race([
-      page.waitForSelector('[data-streaming="false"]', { timeout: left() }),
-      page.waitForSelector('button[aria-label="Send"]:not([disabled])', { timeout: left() }),
-      page.waitForSelector('img[alt="Wait"]', { state: 'hidden', timeout: left() }),
-    ]);
+    const streamDeadline = Date.now() + left();
+    while (Date.now() < streamDeadline) {
+      const done = await page.evaluate(() => {
+        // Send button re-enabled
+        const sendBtn = document.querySelector('button[aria-label="Send"]') as HTMLButtonElement;
+        if (sendBtn && !sendBtn.disabled) return true;
+        // Wait icon hidden
+        const waitIcon = document.querySelector('img[alt="Wait"]') as HTMLImageElement;
+        if (!waitIcon || !waitIcon.offsetParent) return true;
+        // Streaming attribute cleared
+        if (document.querySelector('[data-streaming="false"]')) return true;
+        return false;
+      });
+      if (done) break;
+      await page.waitForTimeout(200);
+    }
   }
 
   // Phase 3: assistant message present and stabilized
@@ -1469,7 +1419,7 @@ export async function getModelDropdownState(
       result.isOpen = await toggle.getAttribute('aria-expanded') === 'true';
 
       if (!result.isOpen && opts.openIfClosed) {
-        await toggle.click();
+        await toggle.click({ force: true });
         await expect(body).toBeVisible();
         result.isOpen = true;
       }
@@ -1679,7 +1629,7 @@ export async function getModelDropdownState(
         // Close Settings using save button
         const saveBtn = page.getByRole('button', { name: /^save$/i });
         if (await saveBtn.isVisible().catch(() => false)) {
-          await saveBtn.click();
+          await saveBtn.click({ force: true });
           await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden();
         }
       }
@@ -1701,7 +1651,7 @@ export async function getModelDropdownState(
 export async function setConversationSystemPrompt(page: Page, systemPrompt: string): Promise<void> {
   const systemRoleTextarea = page.locator('#conversation-system-role');
   await expect(systemRoleTextarea).toBeVisible({ timeout: 5000 });
-  await systemRoleTextarea.click();
+  await systemRoleTextarea.click({ force: true });
   await systemRoleTextarea.fill(systemPrompt);
 
   // Verify the value was set

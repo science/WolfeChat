@@ -118,13 +118,13 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     // conv2
     {
       const before = await rows.count();
-      await newConvBtn.click();
+      await newConvBtn.click({ force: true });
       await expect(rows).toHaveCount(before + 1);
     }
     // conv3
     {
       const before = await rows.count();
-      await newConvBtn.click();
+      await newConvBtn.click({ force: true });
       await expect(rows).toHaveCount(before + 1);
     }
 
@@ -132,27 +132,27 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
 
     // Configure per-conversation settings (Option A: reasoning-capable models only)
     // conv3 (rows.nth(0))
-    await rows.nth(0).click();
+    await rows.nth(0).click({ force: true });
     await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'minimal', verbosity: 'low', summary: 'detailed' });
     // Ensure UI reflects model before proceeding
     await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5-nano/i);
     await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
 
     // conv2 (rows.nth(1))
-    await rows.nth(1).click();
+    await rows.nth(1).click({ force: true });
     await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'medium', verbosity: 'medium', summary: 'auto' });
     await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5-nano/i);
     await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
 
     // conv1 (rows.nth(2))
-    await rows.nth(2).click();
+    await rows.nth(2).click({ force: true });
     await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'medium', verbosity: 'medium', summary: 'null' });
     await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5-nano/i);
     await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
 
     // Verify UI values stick when cycling (reasoning controls should be present for all)
     const verifyUiFor = async (idx: number, expected: { effort: string; verbosity: string; summary: string; }) => {
-      await rows.nth(idx).click();
+      await rows.nth(idx).click({ force: true });
       await operateQuickSettings(page, { mode: 'ensure-open' });
       await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5-nano/i);
       await expect(page.locator('#reasoning-effort')).toHaveValue(expected.effort);
@@ -250,7 +250,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     const sendAndAssert = async (idx: number, label: string, expectModelRe: RegExp, expectEffort: string, expectVerbosity: string, expectSummary: string) => {
       captured.length = 0;
       if (DEBUG_LVL >= 2) debugInfo('[TEST] sendAndAssert start', { idx, label, expectModelRe: String(expectModelRe), expectEffort, expectVerbosity, expectSummary });
-      await rows.nth(idx).click();
+      await rows.nth(idx).click({ force: true });
       
       // Wait for conversation to actually switch
       await page.waitForTimeout(500);
@@ -295,7 +295,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
                 actualText: (topText || '').slice(0, 120)
               });
             }
-            await rows.nth(idx).click();
+            await rows.nth(idx).click({ force: true });
             await page.waitForTimeout(500);
           }
         }

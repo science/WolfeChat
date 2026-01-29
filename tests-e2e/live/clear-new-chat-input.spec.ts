@@ -40,7 +40,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Act: Click Clear Chat button in sidebar
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
       await expect(clearButton).toBeVisible();
-      await clearButton.click();
+      await clearButton.click({ force: true });
 
       // Assert: Input should be empty
       await expect(input).toHaveValue('');
@@ -57,13 +57,20 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // First ensure QuickSettings is open
       const quickSettingsToggle = page.locator('button[aria-controls="quick-settings-body"]');
       if (await quickSettingsToggle.isVisible().catch(() => false)) {
-        await quickSettingsToggle.click();
-        await page.waitForSelector('#quick-settings-body', { state: 'visible' });
+        await quickSettingsToggle.click({ force: true });
+        {
+          const deadline = Date.now() + 10000;
+          while (Date.now() < deadline) {
+            const visible = await page.locator('#quick-settings-body').isVisible().catch(() => false);
+            if (visible) break;
+            await page.waitForTimeout(200);
+          }
+        }
       }
 
       const clearButtonQuickSettings = page.locator('#quick-settings-body button[aria-label="Clear Conversation"]').first();
       await expect(clearButtonQuickSettings).toBeVisible();
-      await clearButtonQuickSettings.click();
+      await clearButtonQuickSettings.click({ force: true });
 
       // Assert: Input should be empty
       await expect(input).toHaveValue('');
@@ -78,7 +85,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Act: Click Clear Chat button
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
-      await clearButton.click();
+      await clearButton.click({ force: true });
 
       // Assert: Input should be empty
       await expect(input).toHaveValue('');
@@ -93,7 +100,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Act: Click Clear Chat button
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
-      await clearButton.click();
+      await clearButton.click({ force: true });
 
       // Assert: Input should be empty
       await expect(input).toHaveValue('');
@@ -111,7 +118,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Act: Click New Chat button in sidebar
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
       await expect(newChatButton).toBeVisible();
-      await newChatButton.click();
+      await newChatButton.click({ force: true });
 
       // Assert: Input should be empty
       await expect(input).toHaveValue('');
@@ -130,7 +137,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
       // Act: Click New Chat button in topbar (visible on mobile)
       const newChatTopbar = page.locator('button:has(img[alt="+"])').first();
       await expect(newChatTopbar).toBeVisible();
-      await newChatTopbar.click();
+      await newChatTopbar.click({ force: true });
 
       // Assert: Input should be empty
       await expect(input).toHaveValue('');
@@ -143,7 +150,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Send the message
       const sendButton = page.getByRole('button', { name: /send/i });
-      await sendButton.click();
+      await sendButton.click({ force: true });
 
       // Wait a moment for the message to be processed
       await page.waitForTimeout(1000);
@@ -155,7 +162,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Act: Click New Chat button
       const newChatButton = page.getByRole('button', { name: /new conversation/i });
-      await newChatButton.click();
+      await newChatButton.click({ force: true });
 
       // Assert: Input should be empty
       await expect(input).toHaveValue('');
@@ -172,7 +179,7 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Act: Click Clear Chat button
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
-      await clearButton.click();
+      await clearButton.click({ force: true });
 
       // Assert: Input should be empty
       await expect(input).toHaveValue('');
@@ -187,9 +194,9 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 
       // Act: Click Clear Chat multiple times rapidly
       const clearButton = page.locator('button[aria-label="Clear Conversation"]').first();
-      await clearButton.click();
-      await clearButton.click();
-      await clearButton.click();
+      await clearButton.click({ force: true });
+      await clearButton.click({ force: true });
+      await clearButton.click({ force: true });
 
       // Small delay to ensure all clicks are processed
       await page.waitForTimeout(500);

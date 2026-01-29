@@ -234,7 +234,7 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
 
     if (stopButton) {
       debugInfo('🛑 Found stop button, clicking to interrupt stream');
-      await stopButton.click();
+      await stopButton.click({ force: true });
 
       // Wait a moment for stream to stop
       await page.waitForTimeout(1000);
@@ -307,7 +307,7 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
       if (isCollapsible) {
         const expandButton = await page.$('[data-testid="expand-reasoning"], .expand-reasoning, button:has-text("Show reasoning")');
         if (expandButton) {
-          await expandButton.click();
+          await expandButton.click({ force: true });
           await page.waitForTimeout(500);
           debugInfo('🔽 Expanded reasoning section');
         }

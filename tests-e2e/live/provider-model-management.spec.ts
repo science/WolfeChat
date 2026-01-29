@@ -190,7 +190,7 @@ test.describe.configure({ mode: 'serial' });
 
       const checkBtn = page.getByRole('button', { name: /check api/i });
       await expect(checkBtn).toBeVisible();
-      await checkBtn.click();
+      await checkBtn.click({ force: true });
 
       // Wait for error state to be processed
       await page.waitForTimeout(2000);
@@ -273,8 +273,8 @@ test.describe.configure({ mode: 'serial' });
 
     // User action: Navigate to settings and back
     await page.keyboard.press('Escape'); // Close QuickSettings
-    await page.getByRole('button', { name: /settings/i }).first().click();
-    await page.getByRole('button', { name: /save/i }).click();
+    await page.getByRole('button', { name: /settings/i }).first().click({ force: true });
+    await page.getByRole('button', { name: /save/i }).click({ force: true });
 
     // User expectation: Model selection still persists
     await operateQuickSettings(page, { mode: 'ensure-open' });

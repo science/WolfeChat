@@ -45,7 +45,7 @@ test.describe('Stop Button Functionality', () => {
     debugInfo(`Filled message: "${testMessage}"`);
 
     // Click send button to start streaming
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Clicked send button');
 
     // CRITICAL TEST: Stop button (Wait icon) should appear during streaming
@@ -107,7 +107,7 @@ test.describe('Stop Button Functionality', () => {
 
     // Start streaming with a long response
     await page.locator('textarea[aria-label="Chat input"]').fill('Count to 100 slowly, one number per line');
-    await sendButton.click();
+    await sendButton.click({ force: true });
 
     // Wait for stop button to appear
     await expect(stopIcon).toBeVisible({ timeout: 2000 });
@@ -133,7 +133,7 @@ test.describe('Stop Button Functionality', () => {
     }
 
     // Click stop button to abort
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Clicked stop button');
 
     // Send button should reappear quickly
@@ -202,7 +202,7 @@ test.describe('Stop Button Functionality', () => {
     debugInfo('✓ Send button initially visible');
 
     await page.locator('textarea[aria-label="Chat input"]').fill('Count to 50 slowly');
-    await sendButton.click();
+    await sendButton.click({ force: true });
     debugInfo('Clicked send button');
 
     await page.waitForTimeout(500);

@@ -21,12 +21,12 @@ export async function clickSummarizeButton(page: Page, messageIndex: number): Pr
   await expect(message).toBeVisible({ timeout: 5000 });
 
   // Hover to reveal toolbelt
-  await message.hover();
+  await message.hover({ force: true });
 
   // Find and click the summarize button
   const summarizeBtn = message.locator('button[aria-label="Summarize up to here"]').first();
   await expect(summarizeBtn).toBeVisible({ timeout: 2000 });
-  await summarizeBtn.click();
+  await summarizeBtn.click({ force: true });
 
   debugInfo('Summarize button clicked');
 }
@@ -95,7 +95,7 @@ export async function toggleSummaryActive(page: Page, summaryIndex: number): Pro
   const wasChecked = await checkbox.isChecked();
 
   // Click to toggle
-  await checkbox.click();
+  await checkbox.click({ force: true });
 
   // Verify the toggle worked
   const isNowChecked = await checkbox.isChecked();
@@ -135,11 +135,11 @@ export async function clickSummaryEditButton(page: Page, summaryIndex: number): 
   const summaries = page.locator('[data-testid="summary-message"]');
   const summary = summaries.nth(summaryIndex);
 
-  await summary.hover();
+  await summary.hover({ force: true });
 
   const editBtn = summary.locator('button[aria-label="Edit summary"]');
   await expect(editBtn).toBeVisible({ timeout: 2000 });
-  await editBtn.click();
+  await editBtn.click({ force: true });
 
   debugInfo('Summary edit button clicked');
 }
@@ -158,9 +158,9 @@ export async function editSummaryContent(
   const summary = summaries.nth(summaryIndex);
 
   // Click edit button first
-  await summary.hover();
+  await summary.hover({ force: true });
   const editBtn = summary.locator('button[aria-label="Edit summary"]');
-  await editBtn.click();
+  await editBtn.click({ force: true });
 
   // Wait for edit textarea to appear
   const textarea = summary.locator('textarea[data-testid="summary-edit-textarea"]');
@@ -171,7 +171,7 @@ export async function editSummaryContent(
 
   // Click save button
   const saveBtn = summary.locator('button[aria-label="Save summary"]');
-  await saveBtn.click();
+  await saveBtn.click({ force: true });
 
   // Wait for edit mode to close
   await expect(textarea).not.toBeVisible({ timeout: 2000 });
@@ -188,11 +188,11 @@ export async function clickSummaryDeleteButton(page: Page, summaryIndex: number)
   const summaries = page.locator('[data-testid="summary-message"]');
   const summary = summaries.nth(summaryIndex);
 
-  await summary.hover();
+  await summary.hover({ force: true });
 
   const deleteBtn = summary.locator('button[aria-label="Delete summary"]');
   await expect(deleteBtn).toBeVisible({ timeout: 2000 });
-  await deleteBtn.click();
+  await deleteBtn.click({ force: true });
 
   debugInfo('Summary delete button clicked');
 }
@@ -310,7 +310,7 @@ export async function setSummaryModel(page: Page, modelId: string | null): Promi
 
   for (const selector of cascades) {
     if (await selector.isVisible().catch(() => false)) {
-      await selector.click();
+      await selector.click({ force: true });
       break;
     }
   }
@@ -328,7 +328,7 @@ export async function setSummaryModel(page: Page, modelId: string | null): Promi
 
   // Close settings (click Save button)
   const saveBtn = page.getByRole('button', { name: /^save$/i });
-  await saveBtn.click();
+  await saveBtn.click({ force: true });
 
   // Wait for settings to close
   await expect(page.locator('#summary-model-selection')).not.toBeVisible({ timeout: 3000 });

@@ -17,7 +17,7 @@ test.describe('Test Correct QuickSettings Selector', () => {
     // Step 1: Expand QuickSettings
     debugInfo('STEP 1: Expand QuickSettings');
     const quickSettingsButton = await page.locator('button').filter({ hasText: 'Quick Settings' }).first();
-    await quickSettingsButton.click();
+    await quickSettingsButton.click({ force: true });
 
     // Step 2: Use correct selector
     debugInfo('STEP 2: Check dropdown with correct selector');
@@ -90,24 +90,24 @@ test.describe('Test Correct QuickSettings Selector', () => {
       debugInfo('STEP 4: No models found, setting up API key');
 
       // Close QuickSettings first
-      await quickSettingsButton.click();
+      await quickSettingsButton.click({ force: true });
 
       // Open Settings
       const settingsButton = await page.locator('button').filter({ hasText: 'Settings' }).first();
-      await settingsButton.click();
+      await settingsButton.click({ force: true });
 
       // Set API key
       await page.fill('input[type="password"]', 'sk-test123');
 
       // Click Check API
-      await page.click('button:has-text("Check API")');
+      await page.click('button:has-text("Check API")', { force: true });
 
       // Wait for API call
       await page.waitForTimeout(3000);
 
       // Close Settings properly before opening QuickSettings
       const saveBtn = page.getByRole('button', { name: /^save$/i });
-      await saveBtn.click();
+      await saveBtn.click({ force: true });
       await page.waitForSelector('h2:has-text("Settings")', { state: 'hidden', timeout: 5000 });
       await page.waitForTimeout(500);
 
@@ -135,7 +135,7 @@ test.describe('Test Correct QuickSettings Selector', () => {
       debugInfo('Store after API setup:', { storeAfterAPI });
 
       // Re-expand QuickSettings to check dropdown
-      await quickSettingsButton.click();
+      await quickSettingsButton.click({ force: true });
 
       const optionsAfterAPI = await modelSelect.locator('option').allTextContents();
       debugInfo('Dropdown options after API setup:', { optionsAfterAPI });
