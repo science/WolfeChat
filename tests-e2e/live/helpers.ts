@@ -1244,6 +1244,8 @@ export interface StreamCompleteOptions {
   waitForNetwork?: boolean;
   waitForStreamState?: boolean;
   waitForAssistant?: boolean;
+  /** Minimum number of assistant messages expected (passed to waitForAssistantDone). */
+  expectedAssistantCount?: number;
 }
 
 export async function waitForStreamComplete(page: Page, opts: StreamCompleteOptions = {}) {
@@ -1252,6 +1254,7 @@ export async function waitForStreamComplete(page: Page, opts: StreamCompleteOpti
     waitForNetwork = true,
     waitForStreamState = true,
     waitForAssistant = true,
+    expectedAssistantCount = 0,
   } = opts;
 
   const start = Date.now();
@@ -1262,21 +1265,21 @@ export async function waitForStreamComplete(page: Page, opts: StreamCompleteOpti
     await page.waitForLoadState('networkidle', { timeout: left() });
   }
 
-  // Phase 2: streaming indicators cleared or send button re-enabled
+  // Phase 2: streaming indicators cleared (Wait icon gone = not streaming)
   // (Using polling instead of waitForSelector which hangs in headless WSL2)
+  // NOTE: The Send button is disabled={!isStreaming && !input.trim().length},
+  // so it's ENABLED during streaming (showing Wait icon) and DISABLED after
+  // streaming ends (input empty). We detect streaming-done by checking the
+  // Wait icon is gone, NOT the disabled state.
   if (waitForStreamState) {
     const streamDeadline = Date.now() + left();
     while (Date.now() < streamDeadline) {
       const done = await page.evaluate(() => {
-        // Send button re-enabled
-        const sendBtn = document.querySelector('button[aria-label="Send"]') as HTMLButtonElement;
-        if (sendBtn && !sendBtn.disabled) return true;
-        // Wait icon hidden
-        const waitIcon = document.querySelector('img[alt="Wait"]') as HTMLImageElement;
-        if (!waitIcon || !waitIcon.offsetParent) return true;
-        // Streaming attribute cleared
-        if (document.querySelector('[data-streaming="false"]')) return true;
-        return false;
+        const btn = document.querySelector('button[aria-label="Send"]');
+        if (!btn) return true;
+        const img = btn.querySelector('img');
+        // Streaming is done when the Wait icon is NOT showing
+        return !img || img.alt !== 'Wait';
       });
       if (done) break;
       await page.waitForTimeout(200);
@@ -1285,7 +1288,7 @@ export async function waitForStreamComplete(page: Page, opts: StreamCompleteOpti
 
   // Phase 3: assistant message present and stabilized
   if (waitForAssistant) {
-    await waitForAssistantDone(page, { timeout: left() });
+    await waitForAssistantDone(page, { timeout: left(), expectedAssistantCount });
   }
 }
 

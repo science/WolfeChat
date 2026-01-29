@@ -9,7 +9,7 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173';
 // TDD: When fixed, the assertions on the captured request payload will pass.
 
 test.describe('Live API: Quick Settings per-conversation settings honored on submit', () => {
-  test.setTimeout(60_000);  // Reduced from 120s - should be sufficient with improved timeout logic
+  test.setTimeout(180_000);  // 3 sequential reasoning model sends need ample time
 
   test('Live: settings persist and are honored when submitting', async ({ page }) => {
     const DEBUG_LVL = Number(process.env.DEBUG || '0') || 0;
@@ -331,7 +331,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
 
       // Wait for assistant response to complete streaming
       // Use shorter timeout for debugging (temporarily reduced from 45s)
-      await waitForStreamComplete(page, { timeout: 15_000 });
+      await waitForStreamComplete(page, { timeout: 45_000 });
 
       // Post-wait diagnostics
       if (DEBUG_LVL >= 2) {
