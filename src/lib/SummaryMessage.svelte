@@ -3,6 +3,7 @@
   import SvelteMarkdown from 'svelte-markdown';
   import EditIcon from '../assets/edit.svg';
   import DeleteIcon from '../assets/delete.svg';
+  import DeleteBelowIcon from '../assets/deleteBelow.svg';
   import type { ChatMessage } from '../stores/stores.js';
   import { countShadowedMessages } from '../lib/summaryUtils.js';
   import { getSummaryBackgroundClasses } from '../lib/summaryStyleUtils.js';
@@ -41,6 +42,12 @@
   function handleDelete() {
     dispatch('delete', { index: messageIndex });
   }
+
+  function handleDeleteAllBelow() {
+    dispatch('deleteAllBelow', { index: messageIndex });
+  }
+
+  $: isLastMessage = messageIndex >= history.length - 1;
 </script>
 
 <div
@@ -159,6 +166,16 @@
       >
         <img class="summary-toolbelt-icon w-4 h-4" src={DeleteIcon} alt="Delete" />
       </button>
+      {#if !isLastMessage}
+        <button
+          class="deleteAllBelowButton p-1 hover:bg-gray-700 rounded"
+          title="Delete all messages below"
+          aria-label="Delete all messages below"
+          on:click={handleDeleteAllBelow}
+        >
+          <img class="summary-toolbelt-icon w-4 h-4" src={DeleteBelowIcon} alt="Delete all below" title="Delete all messages below" />
+        </button>
+      {/if}
     </div>
   {/if}
 

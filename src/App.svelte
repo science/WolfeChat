@@ -388,6 +388,10 @@ function startEditMessage(i: number) {
     deleteMessageFromConversation(event.detail.index);
   }
 
+  function handleSummaryDeleteAllBelow(event: CustomEvent<{ index: number }>) {
+    deleteAllMessagesBelow(event.detail.index);
+  }
+
   /**
    * Handles new chat creation while preserving input drafts.
    * This function ensures the current conversation's draft is saved
@@ -452,6 +456,7 @@ function startEditMessage(i: number) {
             on:saveEdit={handleSummarySaveEdit}
             on:cancelEdit={handleSummaryCancelEdit}
             on:delete={handleSummaryDelete}
+            on:deleteAllBelow={handleSummaryDeleteAllBelow}
           />
         {:else if message.role !=='system'}
 
