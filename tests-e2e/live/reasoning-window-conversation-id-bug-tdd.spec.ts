@@ -34,7 +34,7 @@ test.describe('TDD: Reasoning Window Conversation ID Bug', () => {
 
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       reasoning: 'medium',
       closeAfter: false
     });
@@ -100,7 +100,7 @@ test.describe('TDD: Reasoning Window Conversation ID Bug', () => {
     // Immediately configure reasoning model to trigger race condition
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       reasoning: 'medium',
       closeAfter: true
     });

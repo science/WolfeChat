@@ -916,7 +916,7 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
 
     const msgs: any[] = asst ? [sys, user, asst] : [sys, user];
     const input = buildResponsesInputFromMessages(msgs);
-    const model = 'gpt-3.5-turbo';
+    const model = 'gpt-4.1-nano';
     const payload = buildResponsesPayload(model, input, false);
 
     const key = get(openaiApiKey);

@@ -69,7 +69,7 @@ test.describe('Verify E2E Fixes', () => {
         debugInfo(`✅ SUCCESS: Found ${visibleModels.length} models with updated helper`);
 
         // Verify we have expected models
-        const expectedModels = ['gpt-4', 'gpt-3.5-turbo'];
+        const expectedModels = ['gpt-4', 'gpt-4.1-nano'];
         const hasExpectedModels = expectedModels.every(model =>
           visibleModels.some(visible => visible.includes(model))
         );

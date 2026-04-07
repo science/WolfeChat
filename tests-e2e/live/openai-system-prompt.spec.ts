@@ -41,7 +41,7 @@ test.describe('OpenAI System Prompt Integration', () => {
 
     // Select a GPT model (non-reasoning for speed)
     await operateQuickSettings(page, {
-      model: /gpt-3\.5-turbo/i,
+      model: /gpt-4\.1-nano/i,
       closeAfter: true
     });
 
@@ -106,7 +106,7 @@ test.describe('OpenAI System Prompt Integration', () => {
 
     // Select a GPT model
     await operateQuickSettings(page, {
-      model: /gpt-3\.5-turbo/i,
+      model: /gpt-4\.1-nano/i,
       closeAfter: true
     });
 
@@ -160,7 +160,7 @@ test.describe('OpenAI System Prompt Integration', () => {
 
     // Select a reasoning model
     await operateQuickSettings(page, {
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       closeAfter: true
     });
 

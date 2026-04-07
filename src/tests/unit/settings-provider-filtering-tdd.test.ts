@@ -21,7 +21,7 @@ registerTest({
     // Mock the modelsStore with mixed provider models (what would be fetched)
     const rawModelsStore = [
       { id: 'gpt-4', provider: 'openai', created: 1234567890 },
-      { id: 'gpt-3.5-turbo', provider: 'openai', created: 1234567880 },
+      { id: 'gpt-4.1-nano', provider: 'openai', created: 1234567880 },
       { id: 'claude-3-opus', provider: 'anthropic', created: 1234567870 },
       { id: 'claude-3-sonnet', provider: 'anthropic', created: 1234567860 }
     ];
@@ -92,7 +92,7 @@ registerTest({
 
     const rawModelsStore = [
       { id: 'gpt-4', provider: 'openai', created: 1234567890 },
-      { id: 'gpt-3.5-turbo', provider: 'openai', created: 1234567880 },
+      { id: 'gpt-4.1-nano', provider: 'openai', created: 1234567880 },
       { id: 'claude-3-opus', provider: 'anthropic', created: 1234567870 },
       { id: 'claude-3-sonnet', provider: 'anthropic', created: 1234567860 }
     ];
@@ -180,7 +180,7 @@ registerTest({
     const rawModelsStore = [
       { id: 'gpt-4', provider: 'openai', created: 1687882411, object: 'model', owned_by: 'openai' },
       { id: 'gpt-4-vision-preview', provider: 'openai', created: 1698894618, object: 'model', owned_by: 'openai' },
-      { id: 'gpt-3.5-turbo', provider: 'openai', created: 1677610602, object: 'model', owned_by: 'openai' },
+      { id: 'gpt-4.1-nano', provider: 'openai', created: 1677610602, object: 'model', owned_by: 'openai' },
       { id: 'dall-e-3', provider: 'openai', created: 1698785189, object: 'model', owned_by: 'openai' },
       { id: 'tts-1', provider: 'openai', created: 1681940951, object: 'model', owned_by: 'openai' }
     ];
@@ -198,14 +198,14 @@ registerTest({
       return true;
     });
 
-    // ASSERT: Should get only the 2 chat models (gpt-4 and gpt-3.5-turbo)
+    // ASSERT: Should get only the 2 chat models (gpt-4 and gpt-4.1-nano)
     // Should exclude gpt-4-vision-preview, dall-e-3, tts-1
     if (filteredModels.length !== 2) {
       debugInfo('Filtered models:', filteredModels.map(m => m.id));
       throw new Error(`Expected 2 chat models, got ${filteredModels.length}`);
     }
 
-    const expectedModels = ['gpt-4', 'gpt-3.5-turbo'];
+    const expectedModels = ['gpt-4', 'gpt-4.1-nano'];
     const actualModels = filteredModels.map(m => m.id).sort();
     const expectedSorted = expectedModels.sort();
 

@@ -89,7 +89,7 @@ test.describe.configure({ mode: 'serial' });
     // User action: Select a specific model
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-3\.5-turbo/i,  // User selects a chat model
+      model: /gpt-4\.1-nano/i,  // User selects a chat model
       closeAfter: true
     });
 
@@ -214,7 +214,7 @@ test.describe.configure({ mode: 'serial' });
     // User action: Select OpenAI model first
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-3\.5-turbo/i,
+      model: /gpt-4\.1-nano/i,
       closeAfter: true
     });
 
@@ -253,7 +253,7 @@ test.describe.configure({ mode: 'serial' });
     await bootstrapLiveAPI(page, 'OpenAI');
 
     // User action: Select specific model
-    const targetModel = /gpt-3\.5-turbo/i;
+    const targetModel = /gpt-4\.1-nano/i;
     await operateQuickSettings(page, {
       mode: 'ensure-open',
       model: targetModel

@@ -105,7 +105,7 @@ describe('Helper Function Unit Tests', () => {
         // Test the logic pattern: check if open, open if needed, then get models
         const isSettingsOpen = vi.fn().mockResolvedValue(false);
         const openSettings = vi.fn();
-        const getModels = vi.fn().mockResolvedValue(['gpt-4', 'gpt-3.5-turbo']);
+        const getModels = vi.fn().mockResolvedValue(['gpt-4', 'gpt-4.1-nano']);
 
         // Simulate the function logic
         const isOpen = await isSettingsOpen();
@@ -117,7 +117,7 @@ describe('Helper Function Unit Tests', () => {
         expect(isSettingsOpen).toHaveBeenCalledTimes(1);
         expect(openSettings).toHaveBeenCalledTimes(1);
         expect(getModels).toHaveBeenCalledTimes(1);
-        expect(models).toEqual(['gpt-4', 'gpt-3.5-turbo']);
+        expect(models).toEqual(['gpt-4', 'gpt-4.1-nano']);
       });
 
       it('should filter out placeholder options', async () => {
@@ -126,7 +126,7 @@ describe('Helper Function Unit Tests', () => {
           'Select a model...',
           'gpt-4',
           'No models available',
-          'gpt-3.5-turbo',
+          'gpt-4.1-nano',
           '',
           'claude-3-sonnet'
         ];
@@ -139,7 +139,7 @@ describe('Helper Function Unit Tests', () => {
           text.trim() !== ''
         );
 
-        expect(filteredModels).toEqual(['gpt-4', 'gpt-3.5-turbo', 'claude-3-sonnet']);
+        expect(filteredModels).toEqual(['gpt-4', 'gpt-4.1-nano', 'claude-3-sonnet']);
       });
     });
   });

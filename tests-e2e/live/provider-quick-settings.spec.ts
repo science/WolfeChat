@@ -37,13 +37,13 @@ test.describe.configure({ mode: 'serial' });
     await setProviderApiKey(page, 'OpenAI', openaiKey);
 
     // Test GPT model selection works - use specific chat model pattern
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-3\.5-turbo/i });
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-4\.1-nano/i });
 
     // Get initial state with only OpenAI
     const initialState = await getModelDropdownState(page);
     expect(initialState.providers.openai).toBeDefined();
     expect(initialState.providers.openai!.models.length).toBeGreaterThan(0);
-    expect(initialState.selectedModel).toContain('gpt-3.5-turbo');
+    expect(initialState.selectedModel).toContain('gpt-4.1-nano');
 
     await operateQuickSettings(page, { mode: 'ensure-closed' });
 
@@ -92,7 +92,7 @@ test.describe.configure({ mode: 'serial' });
       // Select GPT model and send message
       await operateQuickSettings(page, {
         mode: 'ensure-open',
-        model: /gpt-3\.5-turbo/i,  // Specific chat model, not TTS
+        model: /gpt-4\.1-nano/i,  // Specific chat model, not TTS
         closeAfter: true
       });
 
@@ -126,7 +126,7 @@ test.describe.configure({ mode: 'serial' });
     // Use a GPT model
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-3\.5/i,
+      model: /gpt-4\.1/i,
       closeAfter: true
     });
 
@@ -168,7 +168,7 @@ test.describe.configure({ mode: 'serial' });
     // Set model for first conversation
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-3\.5/i,
+      model: /gpt-4\.1/i,
       closeAfter: true
     });
 

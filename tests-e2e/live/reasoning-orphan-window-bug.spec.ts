@@ -292,7 +292,7 @@ test.describe('Orphaned Reasoning Window Bug', () => {
 
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       reasoningEffort: 'high',
       closeAfter: true
     });

@@ -25,7 +25,7 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   }
 
   await bootstrapLiveAPI(page);
-  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'minimal', verbosity: 'low', closeAfter: true });
+  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'minimal', verbosity: 'low', closeAfter: true });
 
   const input = page.getByRole('textbox', { name: /chat input/i });
 
@@ -53,19 +53,19 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   // rows: 0->conv3, 1->conv2, 2->conv1
 
   // Set per-conversation models/reasoning using helper to ensure panel open and model availability
-  // conv3: use gpt-5-nano (approved test model)
-  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'minimal', verbosity: 'low' });
+  // conv3: use gpt-5.4-nano (approved test model)
+  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'minimal', verbosity: 'low' });
   // Set summary last (helper doesn't include it by default in earlier calls)
   await operateQuickSettings(page, { mode: 'ensure-open', summary: 'detailed', closeAfter: true });
 
   // conv2 settings
   await rows.nth(1).click({ force: true });
   // Ensure a reasoning model is selected before setting reasoning controls
-  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'high', verbosity: 'high', summary: 'auto', closeAfter: true });
+  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'high', verbosity: 'high', summary: 'auto', closeAfter: true });
 
   // conv1 settings
   await rows.nth(2).click({ force: true });
-  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'medium', verbosity: 'medium', summary: 'null', closeAfter: true });
+  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'medium', verbosity: 'medium', summary: 'null', closeAfter: true });
 
   // Verify cycling retains settings
   // conv3
@@ -75,7 +75,7 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   const reasoningEffortSel = page.locator('#reasoning-effort');
   const verbositySel = page.locator('#verbosity');
   const summarySel = page.locator('#summary');
-  // We use gpt-5-nano as the standard test model, and we can assert reasoning control values
+  // We use gpt-5.4-nano as the standard test model, and we can assert reasoning control values
   await expect(reasoningEffortSel).toHaveValue('minimal');
   await expect(verbositySel).toHaveValue('low');
   await expect(summarySel).toHaveValue('detailed');

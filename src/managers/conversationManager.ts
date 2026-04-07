@@ -200,7 +200,7 @@ export async function routeMessage(input: string, convId: string) {
     currentHistory = [...currentHistory, { role: "user", content: input }];
     setHistory(currentHistory, conversationIndex);
 
-    const defaultModel = 'gpt-3.5-turbo';
+    const defaultModel = 'gpt-4.1-nano';
     const defaultVoice = 'alloy';
     // The conversation's unique string ID is now the convId parameter
     const convUniqueId = convId;

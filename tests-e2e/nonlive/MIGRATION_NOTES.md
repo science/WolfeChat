@@ -26,7 +26,7 @@ Deferred for future implementation (require more complex multi-chat UI navigatio
 #### Network Mocking
 - Mock `/v1/responses` endpoint to control reasoning data
 - Use SSE (Server-Sent Events) format matching production API
-- Control reasoning inclusion based on model selection (`gpt-5-nano` = reasoning, `gpt-3.5-turbo` = no reasoning)
+- Control reasoning inclusion based on model selection (`gpt-5.4-nano` = reasoning, `gpt-4.1-nano` = no reasoning)
 
 #### UI Interaction
 - Use semantic selectors: `getByRole('textbox')`, `getByRole('button')`

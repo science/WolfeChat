@@ -16,7 +16,7 @@ registerTest({
     // Mock the models store with mixed provider models
     const mockModelsStore = [
       { id: 'gpt-4', provider: 'openai' },
-      { id: 'gpt-3.5-turbo', provider: 'openai' },
+      { id: 'gpt-4.1-nano', provider: 'openai' },
       { id: 'claude-3-opus', provider: 'anthropic' },
       { id: 'claude-3-sonnet', provider: 'anthropic' }
     ];
@@ -59,7 +59,7 @@ registerTest({
   fn: () => {
     const mockModelsStore = [
       { id: 'gpt-4', provider: 'openai' },
-      { id: 'gpt-3.5-turbo', provider: 'openai' },
+      { id: 'gpt-4.1-nano', provider: 'openai' },
       { id: 'claude-3-opus', provider: 'anthropic' },
       { id: 'claude-3-sonnet', provider: 'anthropic' }
     ];

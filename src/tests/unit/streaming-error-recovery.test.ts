@@ -23,7 +23,7 @@ import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
     }]);
 
     let mockChosenConversationId = writable(0);
-    let mockSelectedModel = writable('gpt-3.5-turbo');
+    let mockSelectedModel = writable('gpt-4.1-nano');
     let mockDefaultAssistantRole = writable({ type: 'system' });
     let mockIsStreaming = writable(false);
 
@@ -85,7 +85,7 @@ import { debugInfo, debugWarn, debugErr } from '../utils/debugLog.js';
 
       const { sendRegularMessage } = openaiService;
       const testMessages = [{ role: 'user', content: 'Test message' }];
-      const testConfig = { model: 'gpt-3.5-turbo' };
+      const testConfig = { model: 'gpt-4.1-nano' };
 
       try {
         await sendRegularMessage(testMessages as any, 0, testConfig);

@@ -83,12 +83,12 @@ test.describe('Model Dropdown Helper Tests', () => {
 
     // Select a specific model
     await operateQuickSettings(page, {
-      model: /gpt-3\.5-turbo/i
+      model: /gpt-4\.1-nano/i
     });
 
     const state = await getModelDropdownState(page);
 
-    expect(state.selectedModel).toContain('gpt-3.5-turbo');
+    expect(state.selectedModel).toContain('gpt-4.1-nano');
     expect(state.selectedModelProvider).toBe('openai');
   });
 

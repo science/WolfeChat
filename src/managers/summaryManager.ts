@@ -224,7 +224,7 @@ export async function generateSummary(
 
     } else if (openaiKey) {
       // Use OpenAI for summary generation (default)
-      const summaryModel = model || 'gpt-3.5-turbo';
+      const summaryModel = model || 'gpt-4.1-nano';
       const msgs: any[] = [
         { role: 'system', content: 'You are a helpful assistant that creates concise, accurate summaries of conversations.' },
         { role: 'user', content: summaryPrompt }
@@ -301,7 +301,7 @@ export async function createSummary(
 
   // Get the model for this conversation
   const perConv = conversationQuickSettings.getSettings(convId);
-  const model = perConv.model || get(selectedModel) || 'gpt-3.5-turbo';
+  const model = perConv.model || get(selectedModel) || 'gpt-4.1-nano';
 
   // Generate the summary
   const summaryText = await generateSummary(messagesToSummarize, model);

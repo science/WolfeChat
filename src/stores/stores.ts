@@ -143,7 +143,7 @@ conversations.subscribe((value) => {
 });
 
 
-export const selectedModel = writable(localStorage.getItem('selectedModel') || 'gpt-3.5-turbo');
+export const selectedModel = writable(localStorage.getItem('selectedModel') || 'gpt-4.1-nano');
 export const selectedVoice = writable(localStorage.getItem('selectedVoice') || 'alloy');
 export const selectedMode = writable(localStorage.getItem('selectedMode') || 'GPT');
 

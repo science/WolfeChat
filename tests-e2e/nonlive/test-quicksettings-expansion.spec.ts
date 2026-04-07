@@ -22,8 +22,8 @@ test.describe('QuickSettings Expansion', () => {
     debugInfo('QuickSettings button text:', { buttonText });
 
     // Verify it shows model in collapsed form
-    expect(buttonText).toContain('gpt-3.5-turbo');
-    debugInfo('✅ Collapsed QuickSettings shows gpt-3.5-turbo');
+    expect(buttonText).toContain('gpt-4.1-nano');
+    debugInfo('✅ Collapsed QuickSettings shows gpt-4.1-nano');
 
     // Check that model dropdown doesn't exist yet
     debugInfo('STEP 2: Verify dropdown not visible before expansion');

@@ -106,7 +106,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     });
 
     // Ensure quick settings is functional and selects a reasoning-capable model by default
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano|gpt-5/i, reasoningEffort: 'minimal', verbosity: 'low', summary: 'auto', closeAfter: true });
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano|gpt-5/i, reasoningEffort: 'minimal', verbosity: 'low', summary: 'auto', closeAfter: true });
 
     // Chat input will be resolved by helper when sending messages
 
@@ -133,28 +133,28 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     // Configure per-conversation settings (Option A: reasoning-capable models only)
     // conv3 (rows.nth(0))
     await rows.nth(0).click({ force: true });
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'minimal', verbosity: 'low', summary: 'detailed' });
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'minimal', verbosity: 'low', summary: 'detailed' });
     // Ensure UI reflects model before proceeding
-    await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5-nano/i);
+    await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5\.4-nano/i);
     await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
 
     // conv2 (rows.nth(1))
     await rows.nth(1).click({ force: true });
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'medium', verbosity: 'medium', summary: 'auto' });
-    await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5-nano/i);
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'medium', verbosity: 'medium', summary: 'auto' });
+    await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5\.4-nano/i);
     await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
 
     // conv1 (rows.nth(2))
     await rows.nth(2).click({ force: true });
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, reasoningEffort: 'medium', verbosity: 'medium', summary: 'null' });
-    await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5-nano/i);
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'medium', verbosity: 'medium', summary: 'null' });
+    await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5\.4-nano/i);
     await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
 
     // Verify UI values stick when cycling (reasoning controls should be present for all)
     const verifyUiFor = async (idx: number, expected: { effort: string; verbosity: string; summary: string; }) => {
       await rows.nth(idx).click({ force: true });
       await operateQuickSettings(page, { mode: 'ensure-open' });
-      await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5-nano/i);
+      await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5\.4-nano/i);
       await expect(page.locator('#reasoning-effort')).toHaveValue(expected.effort);
       await expect(page.locator('#verbosity')).toHaveValue(expected.verbosity);
       await expect(page.locator('#summary')).toHaveValue(expected.summary);
@@ -586,8 +586,8 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
 
     // Assertions for each conversation
     await sendAndAssert(0, 'conv3', /gpt-5/i, 'minimal', 'low', 'detailed');
-    await sendAndAssert(1, 'conv2', /gpt-5-nano/i, 'medium', 'medium', 'auto');
-    await sendAndAssert(2, 'conv1', /gpt-5-nano/i, 'medium', 'medium', 'null');
+    await sendAndAssert(1, 'conv2', /gpt-5\.4-nano/i, 'medium', 'medium', 'auto');
+    await sendAndAssert(2, 'conv1', /gpt-5\.4-nano/i, 'medium', 'medium', 'null');
 
     // Extract SSE debug data after test completion
     debugInfo(`[TEST] Extracting SSE debug data for session: ${sessionId}`);

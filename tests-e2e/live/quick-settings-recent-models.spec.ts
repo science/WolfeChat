@@ -87,8 +87,8 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
 
     await bootstrapLiveAPI(page);
 
-    // Select gpt-3.5-turbo in Quick Settings for non-reasoning test
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-3\.5-turbo/i });
+    // Select gpt-4.1-nano in Quick Settings for non-reasoning test
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-4\.1-nano/i });
 
     // Get the currently selected model
     const modelSelect = page.locator('#current-model-select');
@@ -251,19 +251,19 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
       return currentModel;
     };
 
-    // Select gpt-3.5-turbo first and send message
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-3\.5-turbo/i });
+    // Select gpt-4.1-nano first and send message
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-4\.1-nano/i });
     await operateQuickSettings(page, { mode: 'ensure-closed' });
     
-    // First message with gpt-3.5-turbo
-    const firstModel = await sendWithCurrentModel('First test message with gpt-3.5-turbo');
+    // First message with gpt-4.1-nano
+    const firstModel = await sendWithCurrentModel('First test message with gpt-4.1-nano');
 
-    // Switch to gpt-5-nano for reasoning test
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i });
+    // Switch to gpt-5.4-nano for reasoning test
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i });
     
-    // Check if gpt-5-nano is available and different from first model
+    // Check if gpt-5.4-nano is available and different from first model
     const currentModel = await modelSelect.inputValue();
-    const foundDifferentModel = currentModel !== firstModel && /gpt-5-nano/i.test(currentModel);
+    const foundDifferentModel = currentModel !== firstModel && /gpt-5\.4-nano/i.test(currentModel);
     
     if (DEBUG_LVL >= 2) {
       debugInfo('[TEST] Switched to model:', { currentModel });
@@ -273,10 +273,10 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
     await operateQuickSettings(page, { mode: 'ensure-closed' });
 
     if (foundDifferentModel) {
-      // Send message with gpt-5-nano
-      const secondModel = await sendWithCurrentModel('Second test message with gpt-5-nano');
+      // Send message with gpt-5.4-nano
+      const secondModel = await sendWithCurrentModel('Second test message with gpt-5.4-nano');
       
-      // Verify we have both models in recent list (gpt-3.5-turbo and gpt-5-nano)
+      // Verify we have both models in recent list (gpt-4.1-nano and gpt-5.4-nano)
       await operateQuickSettings(page, { mode: 'ensure-open' });
       
       const recentOptgroup = modelSelect.locator('optgroup[label="Recently used"]');
@@ -291,7 +291,7 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
         recentTexts.push(text);
       }
       
-      // Most recently used model (gpt-5-nano) should be first
+      // Most recently used model (gpt-5.4-nano) should be first
       expect(recentTexts[0]).toBe(secondModel);
       
       if (recentCount >= 2) {
@@ -301,12 +301,12 @@ test.describe('Live: Quick Settings model dropdown recent models functionality',
       
       if (DEBUG_LVL >= 2) {
         debugInfo('[TEST] Final recent models list:', { recentTexts });
-        debugInfo('[TEST] Expected order: [gpt-5-nano, gpt-3.5-turbo]');
+        debugInfo('[TEST] Expected order: [gpt-5.4-nano, gpt-4.1-nano]');
       }
       
       await operateQuickSettings(page, { mode: 'ensure-closed' });
     } else {
-      debugInfo('[TEST] gpt-5-nano not available or same as first model, skipping two-model test');
+      debugInfo('[TEST] gpt-5.4-nano not available or same as first model, skipping two-model test');
       
       // Still verify the first model appears in recent list
       await operateQuickSettings(page, { mode: 'ensure-open' });

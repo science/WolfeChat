@@ -88,7 +88,7 @@ registerTest({
   name: 'sendRegularMessage attaches model to assistant messages (delta and final)',
   fn: async (t) => {
   resetConversations();
-  setModel('gpt-3.5-turbo');
+  setModel('gpt-4.1-nano');
 
   await withMockedStreamResponse(async () => {
     await sendRegularMessage([{ role: 'user', content: 'Hi' }], 'conv-test', { model: get(selectedModel) });
@@ -97,7 +97,7 @@ registerTest({
   const conv = get(conversations)[0];
   t.that(conv.history.length >= 1, 'history has assistant messages');
   const last = getLastAssistant();
-  t.that(last?.model === 'gpt-3.5-turbo', 'assistant message stores selected model');
+  t.that(last?.model === 'gpt-4.1-nano', 'assistant message stores selected model');
 }}
 );
 
@@ -106,14 +106,14 @@ registerTest({
   name: 'sendVisionMessage attaches model to assistant messages',
   fn: async (t) => {
   resetConversations();
-  setModel('gpt-3.5-turbo');
+  setModel('gpt-4.1-nano');
 
   await withMockedStreamResponse(async () => {
     await sendVisionMessage([{ role: 'user', content: 'See this' }], ['data:image/png;base64,AAA'], 0, { model: get(selectedModel) });
   });
 
   const last = getLastAssistant();
-  t.that(last?.model === 'gpt-3.5-turbo', 'vision assistant message stores selected model');
+  t.that(last?.model === 'gpt-4.1-nano', 'vision assistant message stores selected model');
 }}
 );
 
@@ -144,12 +144,12 @@ registerTest({
   name: 'displayAudioMessage attaches model to audio assistant message',
   fn: async (t) => {
   resetConversations();
-  setModel('gpt-3.5-turbo');
+  setModel('gpt-4.1-nano');
 
   displayAudioMessage('blob:https://audio');
 
   const last = getLastAssistant();
   t.that(last?.isAudio === true, 'audio message marked as audio');
-  t.that(last?.model === 'gpt-3.5-turbo', 'audio message stores selected model');
+  t.that(last?.model === 'gpt-4.1-nano', 'audio message stores selected model');
 }
 });

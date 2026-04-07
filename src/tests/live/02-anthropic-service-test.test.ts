@@ -65,7 +65,7 @@ if (hasAnthropicKey) {
 
       // Test non-Claude models
       t.that(!isAnthropicModel('gpt-4'), 'Should not identify gpt-4 as Anthropic');
-      t.that(!isAnthropicModel('gpt-3.5-turbo'), 'Should not identify gpt-3.5-turbo as Anthropic');
+      t.that(!isAnthropicModel('gpt-4.1-nano'), 'Should not identify gpt-4.1-nano as Anthropic');
       t.that(!isAnthropicModel('text-davinci-003'), 'Should not identify text-davinci-003 as Anthropic');
 
       console.log('✓ isAnthropicModel working correctly');
@@ -86,7 +86,7 @@ if (hasAnthropicKey) {
 
       // Test OpenAI models
       t.that(getModelProvider('gpt-4') === 'openai', 'GPT-4 should return openai provider');
-      t.that(getModelProvider('gpt-3.5-turbo') === 'openai', 'GPT-3.5 should return openai provider');
+      t.that(getModelProvider('gpt-4.1-nano') === 'openai', 'GPT-3.5 should return openai provider');
 
       console.log('✓ getModelProvider working correctly');
     }

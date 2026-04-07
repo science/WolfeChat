@@ -27,7 +27,7 @@ test.describe('Stop Button Functionality', () => {
 
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       closeAfter: true
     });
 
@@ -76,7 +76,7 @@ test.describe('Stop Button Functionality', () => {
 
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       closeAfter: true
     });
 
@@ -148,7 +148,7 @@ test.describe('Stop Button Functionality', () => {
     debugInfo(`Final content length: ${finalContent.length} chars`);
 
     // Verify the message exists (may be empty if aborted during reasoning phase)
-    // For reasoning models like gpt-5-nano, content may not appear until after reasoning completes
+    // For reasoning models like gpt-5.4-nano, content may not appear until after reasoning completes
     debugInfo(`Final content length: ${finalContent.length} chars`);
     if (finalContent.length > 0) {
       debugInfo(`✓ Partial message preserved (${finalContent.length} chars)`);

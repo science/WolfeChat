@@ -63,7 +63,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     // Select a reasoning model (gpt-5-nano is a reasoning model)
     // Use value instead of label since selectOption doesn't support regex for labels
     const modelOptions = await modelSelect.locator('option').allTextContents();
-    const gpt5NanoOption = modelOptions.find(opt => /gpt-5-nano/i.test(opt));
+    const gpt5NanoOption = modelOptions.find(opt => /gpt-5\.4-nano/i.test(opt));
     if (!gpt5NanoOption) throw new Error('gpt-5-nano not found in model options');
     await modelSelect.selectOption(gpt5NanoOption);
 
@@ -88,10 +88,10 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     const modelSelect = page.locator('#model-selection');
     await expect(modelSelect).toBeVisible();
 
-    // Select a non-reasoning model (gpt-3.5-turbo)
+    // Select a non-reasoning model (gpt-4.1-nano)
     const modelOptions = await modelSelect.locator('option').allTextContents();
-    const gpt35Option = modelOptions.find(opt => /gpt-3\.5-turbo/i.test(opt));
-    if (!gpt35Option) throw new Error('gpt-3.5-turbo not found in model options');
+    const gpt35Option = modelOptions.find(opt => /gpt-4\.1-nano/i.test(opt));
+    if (!gpt35Option) throw new Error('gpt-4.1-nano not found in model options');
     await modelSelect.selectOption(gpt35Option);
 
     await page.waitForTimeout(300);
@@ -111,7 +111,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
 
     const modelSelect = page.locator('#model-selection');
     const modelOptions = await modelSelect.locator('option').allTextContents();
-    const gpt5NanoOption = modelOptions.find(opt => /gpt-5-nano/i.test(opt));
+    const gpt5NanoOption = modelOptions.find(opt => /gpt-5\.4-nano/i.test(opt));
     if (!gpt5NanoOption) throw new Error('gpt-5-nano not found in model options');
     await modelSelect.selectOption(gpt5NanoOption);
     await page.waitForTimeout(300);
@@ -137,7 +137,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     // Select a reasoning model again to see the checkbox
     const modelSelect2 = page.locator('#model-selection');
     const modelOptions2 = await modelSelect2.locator('option').allTextContents();
-    const gpt5NanoOption2 = modelOptions2.find(opt => /gpt-5-nano/i.test(opt));
+    const gpt5NanoOption2 = modelOptions2.find(opt => /gpt-5\.4-nano/i.test(opt));
     if (!gpt5NanoOption2) throw new Error('gpt-5-nano not found in model options after reload');
     await modelSelect2.selectOption(gpt5NanoOption2);
     await page.waitForTimeout(300);
@@ -156,7 +156,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     // Select a reasoning model via Quick Settings
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i
+      model: /gpt-5\.4-nano/i
     });
 
     // Find the auto-collapse checkbox in Quick Settings
@@ -178,7 +178,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
 
     const settingsModelSelect = page.locator('#model-selection');
     const settingsModelOptions = await settingsModelSelect.locator('option').allTextContents();
-    const settingsGpt5Nano = settingsModelOptions.find(opt => /gpt-5-nano/i.test(opt));
+    const settingsGpt5Nano = settingsModelOptions.find(opt => /gpt-5\.4-nano/i.test(opt));
     if (!settingsGpt5Nano) throw new Error('gpt-5-nano not found in Settings model options');
     await settingsModelSelect.selectOption(settingsGpt5Nano);
     await page.waitForTimeout(300);
@@ -201,7 +201,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     // Reasoning effort "high" + complex prompt ensures reasoning window appears
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       reasoningEffort: 'high',
       verbosity: 'low',
       summary: 'auto'
@@ -248,7 +248,7 @@ test.describe('Reasoning Auto-Collapse Setting', () => {
     // Reasoning effort "high" + complex prompt ensures reasoning window appears
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       reasoningEffort: 'high',
       verbosity: 'low',
       summary: 'auto'

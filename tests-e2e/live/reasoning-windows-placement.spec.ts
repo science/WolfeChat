@@ -171,7 +171,7 @@ test.describe('Reasoning Windows Placement', () => {
     // Start with non-reasoning model
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4.1-nano',
       closeAfter: true
     });
 
@@ -210,7 +210,7 @@ test.describe('Reasoning Windows Placement', () => {
     // Send another non-reasoning message to verify no additional reasoning appears
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4.1-nano',
       closeAfter: true
     });
 

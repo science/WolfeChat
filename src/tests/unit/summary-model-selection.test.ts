@@ -57,7 +57,7 @@ test({
 
 test({
   id: 'summary-model-selection-default-fallback',
-  name: 'getEffectiveSummaryModel should fallback to gpt-3.5-turbo if no model set',
+  name: 'getEffectiveSummaryModel should fallback to gpt-4.1-nano if no model set',
   fn: async (assert) => {
     const { summaryModel } = await import('../../stores/summaryModelStore.js');
     const { selectedModel } = await import('../../stores/stores.js');

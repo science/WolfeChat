@@ -150,7 +150,7 @@ Key test utilities:
 1. **For API/Stream Events**: Use `waitForAssistantDone()` or `waitForStreamComplete()` - never create custom loading/streaming selectors
 2. **For Settings**: Use `withSettings()`, `operateQuickSettings()`, `setProviderApiKey()`, `bootstrapLiveAPI()` - never manually interact with settings UI
 3. **For Messages**: Use `sendMessage()` and `getVisibleMessages()` - never manually type or click send buttons
-4. **For Model Selection**: Use specific model patterns like `/gpt-3\.5-turbo/i` for chat models, `/gpt-5-nano/i` for reasoning - never use broad patterns like `/gpt/i` that could match TTS/vision models
+4. **For Model Selection**: Use specific model patterns like `/gpt-3\.5-turbo/i` for chat models, `/gpt-5.4-nano/i` for reasoning - never use broad patterns like `/gpt/i` that could match TTS/vision models
 
 **Debugging Methodology:**
 1. Always examine actual data (screenshots, console logs) rather than making assumptions
@@ -212,9 +212,9 @@ Remember: TDD tests are specifications for how code should behave, written befor
 ### API Integration
 
 The app expects an OpenAI API key to be configured in Settings. It supports:
-- Text completions, streaming models (gpt-3.5-turbo, gpt-4o, gpt-4.1)
+- Text completions, streaming models (gpt-4.1-nano, gpt-4o, gpt-4.1)
 - Vision models (image uploads)
-- Reasoning models (gpt-5, gpt-5-mini, gpt-5-nano, o3, o4)
+- Reasoning models (gpt-5, gpt-5-mini, gpt-5.4-nano, o3, o4)
 - TTS/Speech generation
 - DALL-E image generation
 

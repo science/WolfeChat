@@ -35,7 +35,7 @@ registerTest({
     const fetchedModels = [
       { id: 'gpt-4', provider: 'openai', created: 1687882411 },
       { id: 'gpt-4-vision-preview', provider: 'openai', created: 1698894618 },
-      { id: 'gpt-3.5-turbo', provider: 'openai', created: 1677610602 },
+      { id: 'gpt-4.1-nano', provider: 'openai', created: 1677610602 },
       { id: 'dall-e-3', provider: 'openai', created: 1698785189 }
     ];
 
@@ -94,8 +94,8 @@ registerTest({
       throw new Error('ERROR: No visible options - this explains the E2E failure!');
     }
 
-    // Should have 2 chat models (gpt-4 and gpt-3.5-turbo)
-    const expectedChatModels = ['gpt-4', 'gpt-3.5-turbo'].sort();
+    // Should have 2 chat models (gpt-4 and gpt-4.1-nano)
+    const expectedChatModels = ['gpt-4', 'gpt-4.1-nano'].sort();
     const actualChatModels = filteredModels.map(m => m.id).sort();
 
     if (JSON.stringify(actualChatModels) !== JSON.stringify(expectedChatModels)) {
@@ -117,7 +117,7 @@ registerTest({
 
     const modelsFromOpenAIAPI = [
       { id: 'gpt-4', object: 'model', created: 1687882411, owned_by: 'openai' },
-      { id: 'gpt-3.5-turbo', object: 'model', created: 1677610602, owned_by: 'openai' }
+      { id: 'gpt-4.1-nano', object: 'model', created: 1677610602, owned_by: 'openai' }
       // Note: NO 'provider' field - this is what raw OpenAI API returns
     ];
 

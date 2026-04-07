@@ -1,8 +1,8 @@
 // Centralized test model selection for Wolfechat tests
 // Reasoning-capable default model for tests
-export const REASONING_MODEL = 'gpt-5-nano';
+export const REASONING_MODEL = 'gpt-5.4-nano';
 // Non-reasoning model when tests require a non-reasoning path
-export const NON_REASONING_MODEL = 'gpt-3.5-turbo';
+export const NON_REASONING_MODEL = 'gpt-4.1-nano';
 
 export function getReasoningModel(): string {
   return REASONING_MODEL;

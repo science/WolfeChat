@@ -29,7 +29,7 @@ registerTest({
 
     const nonClaudeModels = [
       'gpt-4',
-      'gpt-3.5-turbo',
+      'gpt-4.1-nano',
       'text-davinci-003',
       'dall-e-3'
     ];

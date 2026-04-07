@@ -47,7 +47,7 @@ if (hasOpenAIKey) {
     timeoutMs: 15000,
     fn: async (t) => {
       const apiKey = process.env.OPENAI_API_KEY!;
-      const model = 'gpt-3.5-turbo';
+      const model = 'gpt-4.1-nano';
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -91,7 +91,7 @@ if (hasOpenAIKey) {
     timeoutMs: 20000,
     fn: async (t) => {
       const apiKey = process.env.OPENAI_API_KEY!;
-      const model = 'gpt-3.5-turbo';
+      const model = 'gpt-4.1-nano';
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',

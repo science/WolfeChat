@@ -182,7 +182,7 @@ registerTest({
         options: [
           { text: 'Select a model...' },
           { text: 'gpt-4' },
-          { text: 'gpt-3.5-turbo' }
+          { text: 'gpt-4.1-nano' }
         ],
         shouldPass: true
       },
@@ -244,7 +244,7 @@ registerTest({
         options: [
           { text: 'gpt-4' },
           { text: 'claude-3-opus' },
-          { text: 'gpt-3.5-turbo' }
+          { text: 'gpt-4.1-nano' }
         ],
         minOptions: 2,
         shouldPass: true
@@ -295,7 +295,7 @@ registerTest({
       { text: 'gpt-4', hasIndicator: false },
       { text: 'gpt-4 (OpenAI)', hasIndicator: true },
       { text: 'claude-3-opus (Anthropic)', hasIndicator: true },
-      { text: 'gpt-3.5-turbo', hasIndicator: false },
+      { text: 'gpt-4.1-nano', hasIndicator: false },
       { text: 'model-name (SomeProvider)', hasIndicator: true },
       { text: 'model (incomplete', hasIndicator: false },
       { text: 'model) incomplete', hasIndicator: false }

@@ -51,7 +51,7 @@ registerTest({
         options: [
           { value: '', text: 'Select a model...', disabled: false },
           { value: 'gpt-4', text: 'gpt-4', disabled: false },
-          { value: 'gpt-3.5-turbo', text: 'gpt-3.5-turbo', disabled: false }
+          { value: 'gpt-4.1-nano', text: 'gpt-4.1-nano', disabled: false }
         ],
         expectedReady: true,
         description: 'Real models are available'
@@ -156,7 +156,7 @@ registerTest({
         options: [
           { value: '', text: 'Select a model...', disabled: false },
           { value: 'gpt-4', text: 'gpt-4', disabled: false },
-          { value: 'gpt-3.5-turbo', text: 'gpt-3.5-turbo', disabled: false }
+          { value: 'gpt-4.1-nano', text: 'gpt-4.1-nano', disabled: false }
         ],
         expectedReady: true
       },
@@ -266,7 +266,7 @@ registerTest({
           options: [
             { text: 'Select a model...', value: '' },
             { text: 'gpt-4', value: 'gpt-4' },
-            { text: 'gpt-3.5-turbo', value: 'gpt-3.5-turbo' }
+            { text: 'gpt-4.1-nano', value: 'gpt-4.1-nano' }
           ]
         },
         expectedReady: true

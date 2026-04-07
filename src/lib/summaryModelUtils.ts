@@ -28,7 +28,7 @@ export function getEffectiveSummaryModel(convId: string): string {
 
   // Otherwise, use the conversation's model (same logic as chat)
   const perConv = conversationQuickSettings.getSettings(convId);
-  return perConv.model || get(selectedModel) || 'gpt-3.5-turbo';
+  return perConv.model || get(selectedModel) || 'gpt-4.1-nano';
 }
 
 /**

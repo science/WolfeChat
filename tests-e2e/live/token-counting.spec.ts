@@ -13,7 +13,7 @@ const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
 const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
 (test as any)[hasOpenAIKey ? 'describe' : 'skip']('Token Counting - OpenAI', () => {
-  test('should count tokens correctly for gpt-5-nano with reasoning', async ({ page }) => {
+  test('should count tokens correctly for gpt-5.4-nano with reasoning', async ({ page }) => {
     test.setTimeout(120000);
 
     // Enable token display via localStorage BEFORE navigating
@@ -23,10 +23,10 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     await bootstrapLiveAPI(page, 'OpenAI');
 
-    // Select gpt-5-nano with reasoning settings
+    // Select gpt-5.4-nano with reasoning settings
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       reasoningEffort: 'low',
       verbosity: 'medium',
       closeAfter: true
@@ -49,10 +49,10 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // If token counting works, we should see > 100 tokens
     expect(tokenCount).toBeGreaterThan(100);
 
-    console.log(`✓ Token count for gpt-5-nano reasoning: ${tokenCount} tokens`);
+    console.log(`✓ Token count for gpt-5.4-nano reasoning: ${tokenCount} tokens`);
   });
 
-  test('should count tokens correctly for gpt-3.5-turbo (non-reasoning)', async ({ page }) => {
+  test('should count tokens correctly for gpt-4.1-nano (non-reasoning)', async ({ page }) => {
     test.setTimeout(120000);
 
     // Enable token display via localStorage BEFORE navigating
@@ -62,10 +62,10 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     await bootstrapLiveAPI(page, 'OpenAI');
 
-    // Use default gpt-3.5-turbo model
+    // Use default gpt-4.1-nano model
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-3\.5-turbo/i,
+      model: /gpt-4\.1-nano/i,
       closeAfter: true
     });
 
@@ -86,7 +86,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // If fixed, we should see 30+ tokens
     expect(tokenCount).toBeGreaterThan(30);
 
-    console.log(`✓ Token count for gpt-3.5-turbo: ${tokenCount} tokens`);
+    console.log(`✓ Token count for gpt-4.1-nano: ${tokenCount} tokens`);
   });
 });
 

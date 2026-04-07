@@ -19,7 +19,7 @@ registerTest({
       data: [
         { id: 'gpt-4', object: 'model', created: 1687882411, owned_by: 'openai' },
         { id: 'gpt-4-vision-preview', object: 'model', created: 1698894618, owned_by: 'openai' },
-        { id: 'gpt-3.5-turbo', object: 'model', created: 1677610602, owned_by: 'openai' },
+        { id: 'gpt-4.1-nano', object: 'model', created: 1677610602, owned_by: 'openai' },
         { id: 'dall-e-3', object: 'model', created: 1698785189, owned_by: 'openai' },
         { id: 'tts-1', object: 'model', created: 1681940951, owned_by: 'openai' }
       ]
@@ -116,12 +116,12 @@ registerTest({
       throw new Error('❌ FLOW ISSUE: No real options would be visible to E2E test!');
     }
 
-    // Should have 2 chat models (gpt-4 and gpt-3.5-turbo)
+    // Should have 2 chat models (gpt-4 and gpt-4.1-nano)
     if (realOptions.length !== 2) {
       throw new Error(`❌ FLOW ISSUE: Expected 2 chat models, E2E would see ${realOptions.length}`);
     }
 
-    const expectedModels = ['gpt-4', 'gpt-3.5-turbo'];
+    const expectedModels = ['gpt-4', 'gpt-4.1-nano'];
     const actualModelTexts = realOptions.map(o => o.text).sort();
 
     if (JSON.stringify(actualModelTexts) !== JSON.stringify(expectedModels.sort())) {
@@ -149,7 +149,7 @@ registerTest({
     // Simulate if fetchModels() fails to add provider field
     const modelsWithoutProvider = [
       { id: 'gpt-4', object: 'model', created: 1687882411, owned_by: 'openai' },
-      { id: 'gpt-3.5-turbo', object: 'model', created: 1677610602, owned_by: 'openai' }
+      { id: 'gpt-4.1-nano', object: 'model', created: 1677610602, owned_by: 'openai' }
       // No provider field!
     ];
 

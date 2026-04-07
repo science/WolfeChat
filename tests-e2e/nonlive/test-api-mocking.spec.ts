@@ -28,7 +28,7 @@ test.describe('API Mocking for Nonlive Tests', () => {
               permission: [{ allow_create_engine: false }]
             },
             {
-              id: 'gpt-3.5-turbo',
+              id: 'gpt-4.1-nano',
               object: 'model',
               created: 1677610602,
               owned_by: 'openai',

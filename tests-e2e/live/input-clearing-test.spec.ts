@@ -12,7 +12,7 @@ test('sequential sends clear input after each message', async ({ page }) => {
 
   await operateQuickSettings(page, {
     mode: 'ensure-open',
-    model: 'gpt-5-nano',
+    model: 'gpt-5.4-nano',
     reasoning: 'low',
     closeAfter: true
   });

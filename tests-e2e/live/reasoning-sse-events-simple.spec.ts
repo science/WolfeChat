@@ -105,7 +105,7 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
     // This is conv3 configuration that shows the bug
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       reasoningEffort: 'minimal',
       verbosity: 'low',
       summary: 'detailed',

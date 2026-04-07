@@ -49,7 +49,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     // Use a reasoning model
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       closeAfter: true
     });
 
@@ -142,7 +142,7 @@ test.describe('Stop Button - Reasoning Models', () => {
     // Use a reasoning model with visible reasoning windows
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       reasoningEffort: 'medium', // Ensure we get reasoning output
       closeAfter: true
     });
@@ -218,7 +218,7 @@ test.describe('Stop Button - Reasoning Models', () => {
 
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       closeAfter: true
     });
 
@@ -303,7 +303,7 @@ test.describe('Stop Button - Reasoning Models', () => {
 
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       reasoningEffort: 'high', // More reasoning = better chance to catch the bug
       closeAfter: true
     });
@@ -503,7 +503,7 @@ test.describe('Stop Button - Reasoning Models', () => {
 
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       reasoningEffort: 'high',
       closeAfter: true
     });
@@ -635,7 +635,7 @@ test.describe('Stop Button - Reasoning Models', () => {
 
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
+      model: /gpt-5\.4-nano/i,
       closeAfter: true
     });
 

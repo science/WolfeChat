@@ -16,7 +16,7 @@ function sseBody(text: string) {
 }
 
 test.describe('Model selection drives request payload.model', () => {
-  test('gpt-3.5-turbo then gpt-5-nano reflected in payload.model', async ({ page }) => {
+  test('gpt-4.1-nano then gpt-5.4-nano reflected in payload.model', async ({ page }) => {
     await page.goto('/');
     await bootstrapLiveAPI(page, 'OpenAI');
 
@@ -37,9 +37,9 @@ test.describe('Model selection drives request payload.model', () => {
       // For the main chat send we expect stream: true. Title generation uses stream: false.
       if (payload && payload.stream === true) {
         if (phase === 'first') {
-          expect(payload.model).toMatch(/gpt-3\.5-turbo/);
+          expect(payload.model).toMatch(/gpt-4\.1-nano/);
         } else {
-          expect(payload.model).toMatch(/gpt-5-nano/);
+          expect(payload.model).toMatch(/gpt-5\.4-nano/);
         }
         return route.fulfill({
           status: 200,
@@ -60,7 +60,14 @@ test.describe('Model selection drives request payload.model', () => {
       });
     });
 
-    // Send first message (uses default model from bootstrap)
+    // Select gpt-4.1-nano for the first phase
+    await operateQuickSettings(page, {
+      mode: 'ensure-open',
+      model: 'gpt-4.1-nano',
+      closeAfter: true
+    });
+
+    // Send first message
     const input = page.getByRole('textbox', { name: 'Chat input' });
     await input.waitFor({ state: 'visible' });
     await input.click({ force: true });
@@ -84,11 +91,11 @@ test.describe('Model selection drives request payload.model', () => {
     // Wait for response
     await page.waitForTimeout(500);
 
-    // Phase 2: Switch model to gpt-5-nano
+    // Phase 2: Switch model to gpt-5.4-nano
     phase = 'second';
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: 'gpt-5-nano',
+      model: 'gpt-5.4-nano',
       closeAfter: true
     });
 

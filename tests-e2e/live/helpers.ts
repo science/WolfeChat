@@ -79,14 +79,14 @@ export async function mockOpenAIAPI(page: Page) {
         object: 'list',
         data: [
           {
-            id: 'gpt-3.5-turbo',
+            id: 'gpt-4.1-nano',
             object: 'model',
             created: 1677610602,
             owned_by: 'openai',
             permission: [{ allow_create_engine: false }]
           },
           {
-            id: 'gpt-5-nano',
+            id: 'gpt-5.4-nano',
             object: 'model',
             created: 1698894618,
             owned_by: 'openai',
@@ -787,12 +787,12 @@ export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-op
       if (prefer.test(label) || prefer.test(value)) { selectedValue = value || label; break; }
     }
     if (!selectedValue) {
-      // fallback to gpt-5-nano, then gpt-5*
+      // fallback to gpt-5.4-nano, then gpt-5*
       for (let i = 0; i < count && !selectedValue; i++) {
         const opt = options.nth(i);
         const label = ((await opt.textContent()) || '').trim();
         const value = (await opt.getAttribute('value')) || '';
-        if (/gpt-5-nano/i.test(label) || /gpt-5-nano/i.test(value)) { selectedValue = value || label; break; }
+        if (/gpt-5\.4-nano/i.test(label) || /gpt-5\.4-nano/i.test(value)) { selectedValue = value || label; break; }
       }
       for (let i = 0; i < count && !selectedValue; i++) {
         const opt = options.nth(i);
@@ -831,6 +831,9 @@ export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-op
 export async function selectReasoningModelInQuickSettings(page: Page) {
   // Open Quick Settings panel
   // Delegate to generalized helper to avoid double-toggling
+  // Use gpt-5-nano for reasoning window tests — it reliably produces
+  // response.reasoning_text.delta SSE events. gpt-5.4-nano embeds reasoning
+  // inline in the response text and doesn't produce separate reasoning events.
   await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, closeAfter: false });
 
   // After ensuring open, continue legacy selection flow (no-op if already selected)

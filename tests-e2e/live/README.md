@@ -79,7 +79,7 @@ Comprehensive Quick Settings panel management:
 ```javascript
 await operateQuickSettings(page, {
   mode: 'ensure-open',           // 'ensure-open' | 'ensure-closed' | 'open' | 'close'
-  model: /gpt-5-nano/i,         // Model selection (string or RegExp)
+  model: /gpt-5\.4-nano/i,         // Model selection (string or RegExp)
   reasoningEffort: 'medium',     // 'minimal' | 'low' | 'medium' | 'high'
   verbosity: 'medium',          // 'low' | 'medium' | 'high'  
   summary: 'auto',              // 'auto' | 'detailed' | 'null'
@@ -135,7 +135,7 @@ const models = await getSettingsModels(page);
 ##### `selectModelInSettings(page, model)`
 Selects a model in Settings (without closing):
 ```javascript
-await selectModelInSettings(page, 'gpt-3.5-turbo');
+await selectModelInSettings(page, 'gpt-4.1-nano');
 // Model selected, Settings still open
 ```
 
@@ -160,7 +160,7 @@ await openSettingsAndSelectProvider(page, 'OpenAI');
 await fillApiKeyAndWaitForModels(page, openaiKey, 'OpenAI');
 
 // Select a model
-await selectModelInSettings(page, 'gpt-3.5-turbo');
+await selectModelInSettings(page, 'gpt-4.1-nano');
 
 // Switch providers without closing
 const providerSelect = page.locator('#provider-selection');
@@ -202,7 +202,7 @@ await page.locator('#api-key').fill(key); // Use setProviderApiKey() instead
 // PREFERRED - robust multi-signal completion detection
 await waitForAssistantDone(page);
 await setProviderApiKey(page, 'OpenAI', openaiKey);
-await operateQuickSettings(page, { model: /gpt-3\.5-turbo/i });
+await operateQuickSettings(page, { model: /gpt-4\.1-nano/i });
 ```
 
 ### ⚠️ Critical Model Selection Patterns
@@ -211,18 +211,18 @@ await operateQuickSettings(page, { model: /gpt-3\.5-turbo/i });
 model: /gpt/i
 
 // ✅ CORRECT - specific chat model
-model: /gpt-3\.5-turbo/i
+model: /gpt-4\.1-nano/i
 
 // ✅ CORRECT - reasoning model
-model: /gpt-5-nano/i
+model: /gpt-5\.4-nano/i
 
 // ✅ CORRECT - Claude model
 model: /claude-3\.5-sonnet/i
 ```
 
 ### Standard Test Models
-- **Non-reasoning tests**: `gpt-3.5-turbo` - Fast, reliable, cost-effective
-- **Reasoning tests**: `gpt-5-nano` - Supports reasoning features with minimal cost
+- **Non-reasoning tests**: `gpt-4.1-nano` - Fast, reliable, cost-effective
+- **Reasoning tests**: `gpt-5.4-nano` - Supports reasoning features with minimal cost
 
 ### Error Handling
 All helpers provide detailed diagnostics on timeout. Enable debugging:

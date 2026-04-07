@@ -48,15 +48,15 @@ test({
     const { buildSummaryPayload } = await import('../../lib/summaryStreamingUtils.js');
 
     // Test with a non-reasoning model
-    const payload = buildSummaryPayload('gpt-3.5-turbo', [
+    const payload = buildSummaryPayload('gpt-4.1-nano', [
       { role: 'user', content: 'Summarize this' }
     ], {});
 
     // Should still use Responses API format for consistency
     assert.that('input' in payload,
       'Non-reasoning model payload should also use Responses API format');
-    assert.that(payload.model === 'gpt-3.5-turbo',
-      `Expected model 'gpt-3.5-turbo', got ${payload.model}`);
+    assert.that(payload.model === 'gpt-4.1-nano',
+      `Expected model 'gpt-4.1-nano', got ${payload.model}`);
   }
 });
 
