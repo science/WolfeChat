@@ -194,7 +194,7 @@ export function createNewConversation(): Conversation {
     id: generateConversationId(),
     history: [],
     conversationTokens: 0,
-    assistantRole: "Don't provide compliments or enthusiastic comments at the start of your responses. Don't provide offers for follow up at the end of your responses.",
+    assistantRole: get(defaultAssistantRole).role,
     title: "",
   };
 }

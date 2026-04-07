@@ -141,14 +141,14 @@ The application uses the `anthropic-dangerous-direct-browser-access: true` heade
 Tests use automatic discovery based on folder placement. Playwright handles browser tests.
 
 Key test utilities:
-- `tests-e2e/live/helpers.ts` - Refer to `tests-e2e/live/README.md` for guidance when writing live E2E tests.
+- `tests-e2e/live/helpers.ts` - Shared helpers used by **all** E2E tests (live and nonlive). Refer to `tests-e2e/live/README.md` for full documentation.
 
 #### Critical E2E Testing Guidelines
 
 **ALWAYS use test helpers - never create custom selectors or waits:**
 
 1. **For API/Stream Events**: Use `waitForAssistantDone()` or `waitForStreamComplete()` - never create custom loading/streaming selectors
-2. **For Settings**: Use `operateQuickSettings()`, `setProviderApiKey()`, `bootstrapLiveAPI()` - never manually interact with settings UI
+2. **For Settings**: Use `withSettings()`, `operateQuickSettings()`, `setProviderApiKey()`, `bootstrapLiveAPI()` - never manually interact with settings UI
 3. **For Messages**: Use `sendMessage()` and `getVisibleMessages()` - never manually type or click send buttons
 4. **For Model Selection**: Use specific model patterns like `/gpt-3\.5-turbo/i` for chat models, `/gpt-5-nano/i` for reasoning - never use broad patterns like `/gpt/i` that could match TTS/vision models
 
