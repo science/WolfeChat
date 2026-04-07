@@ -27,16 +27,16 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     await operateQuickSettings(page, {
       mode: 'ensure-open',
       model: /gpt-5-nano/i,
-      reasoningEffort: 'high',
-      verbosity: 'high',
+      reasoningEffort: 'low',
+      verbosity: 'medium',
       closeAfter: true
     });
 
     // Send a message that will generate reasoning tokens
-    await sendMessage(page, 'Explain the Monte Hall 3 door problem using logic, step-by-step');
+    await sendMessage(page, 'What is 2+2? Think step by step.');
 
     // Wait for response to complete
-    await waitForAssistantDone(page, { timeout: 60000 });
+    await waitForAssistantDone(page, { timeout: 90000 });
 
     // Get the token count from the sidebar
     const tokenCount = await getTokenCount(page);

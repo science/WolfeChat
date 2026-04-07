@@ -188,7 +188,7 @@ test.describe('Reasoning Windows Placement', () => {
     await operateQuickSettings(page, {
       mode: 'ensure-open',
       model: 'gpt-5-nano',
-      reasoning: 'low',
+      reasoningEffort: 'low',
       closeAfter: true
     });
 
@@ -214,6 +214,8 @@ test.describe('Reasoning Windows Placement', () => {
       closeAfter: true
     });
 
+    // Ensure streaming state is fully cleared before sending
+    await page.waitForTimeout(500);
     await sendMessage(page, 'Thank you for the explanation');
     await waitForAssistantDone(page);
 

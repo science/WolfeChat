@@ -4,52 +4,13 @@
 //   DEBUG=3 adds verbose SSE/browser logs via helpers
 
 import { test, expect } from '@playwright/test';
-import { bootstrapLiveAPI, selectReasoningModelInQuickSettings, waitForAssistantDone } from './helpers';
-
-// Semantic locators used throughout
-// (quick settings selectors centralized in helpers)
-// chat input located via role+name pattern within sendMessage()
-// const SEND_BUTTON = /send/i; // accessible name
-
-// Helper: send a message via UI
-async function sendMessage(page: import('@playwright/test').Page, text: string) {
-  // Narrow to the actual chat input, following established e2e pattern
-  let input = page.getByRole('textbox', { name: /chat input/i });
-  if (!(await input.isVisible().catch(() => false))) {
-    input = page.locator('textarea[aria-label="Chat input"]').first();
-  }
-  if (!(await input.isVisible().catch(() => false))) {
-    const candidates = page.getByRole('textbox');
-    const count = await candidates.count();
-    for (let i = 0; i < count; i++) {
-      const c = candidates.nth(i);
-      const ph = (await c.getAttribute('placeholder')) || '';
-      if (/type your message/i.test(ph)) { input = c; break; }
-    }
-  }
-  await expect(input).toBeVisible();
-  await input.click({ force: true });
-  await input.fill(text);
-  // Prefer Ctrl+Enter; fallback to clicking Send if needed
-  await page.keyboard.down('Control');
-  await page.keyboard.press('Enter');
-  await page.keyboard.up('Control');
-}
-
-// Helper: wait for assistant streaming completion now imported from helpers.ts
-
-// Returns ordered texts of chat messages visible
-async function getVisibleMessages(page: import('@playwright/test').Page) {
-  const items = page.locator('[role="listitem"]');
-  const n = await items.count();
-  const out: { text: string; idx: number }[] = [];
-  for (let i = 0; i < n; i++) {
-    const li = items.nth(i);
-    const text = (await li.innerText()).trim();
-    out.push({ text, idx: i });
-  }
-  return out;
-}
+import {
+  bootstrapLiveAPI,
+  selectReasoningModelInQuickSettings,
+  waitForAssistantDone,
+  sendMessage,
+  getVisibleMessages
+} from './helpers';
 
 // Open context/menu for a message at index and click Delete All Below
 async function deleteAllBelowForMessage(page: import('@playwright/test').Page, index: number) {
