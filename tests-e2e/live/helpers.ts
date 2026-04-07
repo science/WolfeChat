@@ -1213,15 +1213,20 @@ export async function sendMessage(page: Page, text: string, opts: SendMessageOpt
 
   if (waitForEmpty) {
     // Poll for empty with retry — if ctrl-enter was silently blocked (e.g., isStreaming
-    // still true), retry the keyboard shortcut after a delay.
+    // still true), retry the keyboard shortcut, then fall back to clicking Send button.
+    //
+    // Why button-click fallback works: the Send button's click handler bypasses
+    // shouldSendOnEnter(). If isStreaming is stuck true, clicking calls closeStream()
+    // which clears the state; a second click then sends. This self-heals stuck state
+    // that keyboard retries alone cannot fix.
     let cleared = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
+
+    // Phase 1: Retry keyboard shortcut (2 attempts)
+    for (let attempt = 0; attempt < 2 && !cleared; attempt++) {
       try {
         await expect(input).toHaveValue('', { timeout: 2000 });
         cleared = true;
-        break;
       } catch {
-        // Input not cleared — ctrl-enter may have been blocked. Re-focus and retry.
         await input.focus();
         await page.waitForTimeout(500);
         if (submitMethod === 'ctrl-enter') {
@@ -1233,7 +1238,31 @@ export async function sendMessage(page: Page, text: string, opts: SendMessageOpt
         }
       }
     }
+
+    // Phase 2: Fall back to clicking the Send button
     if (!cleared) {
+      debugWarn('[sendMessage] Keyboard retries exhausted, falling back to Send button click');
+      const sendBtn = page.getByRole('button', { name: /send/i });
+      if (await sendBtn.isVisible().catch(() => false)) {
+        // First click: sends if not streaming, or calls closeStream() if streaming is stuck
+        await sendBtn.click({ force: true });
+        try {
+          await expect(input).toHaveValue('', { timeout: 2000 });
+          cleared = true;
+        } catch {
+          // If first click cleared stuck streaming state, the input still has text.
+          // Click again to actually send now that streaming is cleared.
+          debugWarn('[sendMessage] First button click cleared streaming state, clicking again to send');
+          await page.waitForTimeout(300);
+          if (await sendBtn.isVisible().catch(() => false)) {
+            await sendBtn.click({ force: true });
+          }
+        }
+      }
+    }
+
+    if (!cleared) {
+      // Final check with generous timeout
       await expect(input).toHaveValue('', { timeout: 5000 });
     }
   }
