@@ -25,7 +25,7 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   }
 
   await bootstrapLiveAPI(page);
-  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'minimal', verbosity: 'low', closeAfter: true });
+  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'low', verbosity: 'low', closeAfter: true });
 
   const input = page.getByRole('textbox', { name: /chat input/i });
 
@@ -54,7 +54,7 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
 
   // Set per-conversation models/reasoning using helper to ensure panel open and model availability
   // conv3: use gpt-5.4-nano (approved test model)
-  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'minimal', verbosity: 'low' });
+  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'low', verbosity: 'low' });
   // Set summary last (helper doesn't include it by default in earlier calls)
   await operateQuickSettings(page, { mode: 'ensure-open', summary: 'detailed', closeAfter: true });
 
@@ -76,7 +76,7 @@ test('Live: per-conversation Quick Settings persist across switches', async ({ p
   const verbositySel = page.locator('#verbosity');
   const summarySel = page.locator('#summary');
   // We use gpt-5.4-nano as the standard test model, and we can assert reasoning control values
-  await expect(reasoningEffortSel).toHaveValue('minimal');
+  await expect(reasoningEffortSel).toHaveValue('low');
   await expect(verbositySel).toHaveValue('low');
   await expect(summarySel).toHaveValue('detailed');
   await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });

@@ -25,6 +25,8 @@ export default defineConfig({
       testMatch: 'tests-e2e/live/**/*.spec.ts',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
       timeout: 60_000,
+      fullyParallel: false,
+      workers: 1,
     },
     {
       name: 'live-regression',

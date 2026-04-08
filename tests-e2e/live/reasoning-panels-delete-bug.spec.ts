@@ -84,7 +84,7 @@ test.describe('Issue #12: Reasoning panels should be deleted with messages', () 
     // 2) Select gpt-5-nano with HIGH reasoning to ensure consistent reasoning window creation
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5\.4-nano/i,
+      model: /gpt-5-nano/i,
       reasoningEffort: 'high',
       closeAfter: true
     });

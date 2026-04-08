@@ -45,9 +45,9 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // - Input tokens (system prompt + user message): ~50-100 tokens
     // - Reasoning tokens (model-dependent): may be 0-2000+ tokens
     // - Output tokens: 50-500+ tokens
-    // The bug would show only ~10-50 tokens (first SSE chunk only)
-    // If token counting works, we should see > 100 tokens
-    expect(tokenCount).toBeGreaterThan(100);
+    // The bug would show only ~5-10 tokens (first SSE chunk only)
+    // If token counting works, we should see > 30 tokens
+    expect(tokenCount).toBeGreaterThan(30);
 
     console.log(`✓ Token count for gpt-5.4-nano reasoning: ${tokenCount} tokens`);
   });

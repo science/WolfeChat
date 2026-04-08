@@ -106,7 +106,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     });
 
     // Ensure quick settings is functional and selects a reasoning-capable model by default
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano|gpt-5/i, reasoningEffort: 'minimal', verbosity: 'low', summary: 'auto', closeAfter: true });
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano|gpt-5/i, reasoningEffort: 'low', verbosity: 'low', summary: 'auto', closeAfter: true });
 
     // Chat input will be resolved by helper when sending messages
 
@@ -133,7 +133,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     // Configure per-conversation settings (Option A: reasoning-capable models only)
     // conv3 (rows.nth(0))
     await rows.nth(0).click({ force: true });
-    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'minimal', verbosity: 'low', summary: 'detailed' });
+    await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5\.4-nano/i, reasoningEffort: 'low', verbosity: 'low', summary: 'detailed' });
     // Ensure UI reflects model before proceeding
     await expect(page.locator('#current-model-select')).toHaveValue(/gpt-5\.4-nano/i);
     await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
@@ -161,7 +161,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
       await operateQuickSettings(page, { mode: 'ensure-open', closeAfter: true });
     };
 
-    await verifyUiFor(0, { effort: 'minimal', verbosity: 'low', summary: 'detailed' });
+    await verifyUiFor(0, { effort: 'low', verbosity: 'low', summary: 'detailed' });
     await verifyUiFor(1, { effort: 'medium', verbosity: 'medium', summary: 'auto' });
     await verifyUiFor(2, { effort: 'medium', verbosity: 'medium', summary: 'null' });
 
@@ -585,7 +585,7 @@ test.describe('Live API: Quick Settings per-conversation settings honored on sub
     };
 
     // Assertions for each conversation
-    await sendAndAssert(0, 'conv3', /gpt-5/i, 'minimal', 'low', 'detailed');
+    await sendAndAssert(0, 'conv3', /gpt-5/i, 'low', 'low', 'detailed');
     await sendAndAssert(1, 'conv2', /gpt-5\.4-nano/i, 'medium', 'medium', 'auto');
     await sendAndAssert(2, 'conv1', /gpt-5\.4-nano/i, 'medium', 'medium', 'null');
 
