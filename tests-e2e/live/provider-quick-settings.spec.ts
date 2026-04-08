@@ -56,17 +56,24 @@ test.describe.configure({ mode: 'serial' });
       // Test Claude model selection works
       await operateQuickSettings(page, { mode: 'ensure-open', model: /claude/i });
 
-      // Get final state with both providers
-      const finalState = await getModelDropdownState(page, {
+      // Get final state with both providers.
+      // Use expect.toPass() to retry — after configuring a second provider,
+      // the QuickSettings dropdown may briefly show only one provider's models
+      // while the model list re-renders from the store update.
+      let finalState = await getModelDropdownState(page, {
         waitForModels: true
       });
 
-      // Verify both providers are present and working
-      expect(finalState.hasMultipleProviders).toBe(true);
-      expect(finalState.providers.openai).toBeDefined();
-      expect(finalState.providers.anthropic).toBeDefined();
-      expect(finalState.providers.openai!.models.length).toBeGreaterThan(0);
-      expect(finalState.providers.anthropic!.models.length).toBeGreaterThan(0);
+      await expect(async () => {
+        finalState = await getModelDropdownState(page, {
+          waitForModels: true
+        });
+        expect(finalState.hasMultipleProviders).toBe(true);
+        expect(finalState.providers.openai).toBeDefined();
+        expect(finalState.providers.anthropic).toBeDefined();
+        expect(finalState.providers.openai!.models.length).toBeGreaterThan(0);
+        expect(finalState.providers.anthropic!.models.length).toBeGreaterThan(0);
+      }).toPass({ timeout: 10000 });
 
       // Verify Claude model was selected
       expect(finalState.selectedModel).toMatch(/claude/i);
