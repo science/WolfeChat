@@ -1097,8 +1097,15 @@ export async function streamResponseViaResponsesAPI(
     if (dataStr === '[DONE]') {
       debugLog.sseParser('sse_stream_done', {
         finalTextLength: finalText.length,
-        activePanels: panelTracker.size
+        activePanels: panelTracker.size,
+        alreadyCompleted: completedEmitted
       }, convIdCtx);
+
+      // The Responses API emits both `response.completed` and `[DONE]` at stream end.
+      // Fire onCompleted exactly once — otherwise the consumer callback runs twice,
+      // and if it resets any captured closure state (e.g. streamText) between invocations
+      // the second call writes empty content over the real message.
+      if (completedEmitted) return;
 
       // Finalize any still-open reasoning panels
       for (const [kind, panelId] of panelTracker.entries()) {
@@ -1300,6 +1307,11 @@ export async function streamResponseViaResponsesAPI(
       if (obj?.usage?.total_tokens) {
         countTokens(obj.usage);
       }
+
+      // Guard against a double-fire: both `response.completed` and `[DONE]` arrive at
+      // stream end, and a second invocation that reads stale closure state (e.g.
+      // streamText after the first invocation cleared it) would clobber the real message.
+      if (completedEmitted) return;
 
       // Finalize any still-open reasoning panels
       for (const [kind, panelId] of panelTracker.entries()) {

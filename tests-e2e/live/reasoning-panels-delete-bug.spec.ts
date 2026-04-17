@@ -74,7 +74,7 @@ async function getReasoningPanelCount(page: import('@playwright/test').Page): Pr
 
 // Main test
 test.describe('Issue #12: Reasoning panels should be deleted with messages', () => {
-  test.setTimeout(90_000); // Increased timeout for high reasoning mode
+  test.setTimeout(240_000); // Allow up to 3 setup retries at ~60s each
 
   test('reasoning panels should be removed when delete-all-below is clicked', async ({ page }) => {
     // 1) Setup
@@ -89,14 +89,49 @@ test.describe('Issue #12: Reasoning panels should be deleted with messages', () 
       closeAfter: true
     });
 
-    // 3) Send a simple reasoning prompt that will complete quickly but still trigger reasoning
-    await sendMessage(page, 'What is 2 + 2? Think step by step.');
-    await waitForAssistantDone(page);
-
-    // 3) Verify reasoning panels were created
-    const panelsBeforeDeletion = await getReasoningPanelCount(page);
-    console.log(`Reasoning panels before deletion: ${panelsBeforeDeletion}`);
-    expect(panelsBeforeDeletion).toBeGreaterThan(0);
+    // 3) Produce at least one reasoning panel before testing delete behavior.
+    //
+    // OpenAI's gpt-5-nano does not deterministically emit `response.reasoning_summary_*`
+    // SSE events — even at effort=high the API may skip reasoning output entirely for
+    // prompts it considers trivial (verified: ~25% of runs of "What is 2 + 2?" emit
+    // zero reasoning events). Without reasoning events the app cannot create a panel.
+    //
+    // Try a simple prompt first (fast, usually sufficient), then fall back to a
+    // harder prompt that almost always triggers reasoning. Each attempt is wrapped
+    // so a waitForAssistantDone timeout still counts as a failed attempt.
+    const setupPrompts = [
+      'What is 2 + 2? Think step by step.',
+      'Compute 47 multiplied by 89 step by step, showing each partial product and sum explicitly.',
+      'Is 91 prime? Explain step by step why or why not.'
+    ];
+    let panelsBeforeDeletion = 0;
+    for (let attempt = 0; attempt < setupPrompts.length; attempt++) {
+      if (attempt > 0) {
+        // Clear Conversation creates a NEW conversation, which resets per-conversation
+        // quick settings — re-apply the reasoning model + effort each retry.
+        await page.locator('button[aria-label="Clear Conversation"]').click({ force: true }).catch(() => {});
+        await page.waitForTimeout(300);
+        await operateQuickSettings(page, {
+          mode: 'ensure-open',
+          model: /gpt-5-nano/i,
+          reasoningEffort: 'high',
+          closeAfter: true
+        });
+      }
+      try {
+        await sendMessage(page, setupPrompts[attempt]);
+        await waitForAssistantDone(page, { timeout: 60_000 });
+        panelsBeforeDeletion = await getReasoningPanelCount(page);
+        console.log(`Reasoning panels after setup prompt #${attempt + 1}: ${panelsBeforeDeletion}`);
+        if (panelsBeforeDeletion > 0) break;
+      } catch (err) {
+        console.log(`Setup prompt #${attempt + 1} threw; trying next: ${(err as Error).message}`);
+      }
+    }
+    expect(
+      panelsBeforeDeletion,
+      'setup: reasoning panel expected — the API emitted no reasoning events across all retry prompts'
+    ).toBeGreaterThan(0);
 
     // 4) Debug: Check store state before deletion
     const storeBeforeDeletion = await page.evaluate(() => {

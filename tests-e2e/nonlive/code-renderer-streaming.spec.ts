@@ -67,26 +67,24 @@ test.describe('Code rendering stays highlighted during streaming updates', () =>
     await input.waitFor({ state: 'visible' });
     await input.fill('please render code');
 
+    // Wait for the full response (not just request start) so SSE body is fully buffered
+    // before we check the DOM. waitForRequest fires too early under parallel worker load.
     const sendButton = page.getByRole('button', { name: /send/i });
-    if (await sendButton.isVisible().catch(() => false)) {
-      await Promise.all([
-        page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        sendButton.click({ force: true }),
-      ]);
-    } else {
-      await Promise.all([
-        page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        input.press('Control+Enter'),
-      ]);
-    }
+    const submitTrigger = (await sendButton.isVisible().catch(() => false))
+      ? sendButton.click({ force: true })
+      : input.press('Control+Enter');
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes('/v1/responses') && r.request().method() === 'POST'),
+      submitTrigger,
+    ]);
 
     // During stream: expect a code element and at least one Prism token
     const assistant = page.locator('[data-role="assistant"], [data-message-role="assistant"], main');
     const code = assistant.locator('pre code').first();
-    await expect(code).toBeVisible();
+    await expect(code).toBeVisible({ timeout: 15000 });
 
     // Wait until tokenized appears (Prism adds .token spans)
-    await expect.poll(async () => await code.locator('.token').count(), { timeout: 5000 }).toBeGreaterThan(0);
+    await expect.poll(async () => await code.locator('.token').count(), { timeout: 15000 }).toBeGreaterThan(0);
 
     // After stream completes, tokens should remain
     await expect(async () => {
@@ -138,45 +136,38 @@ test.describe('Code rendering stays highlighted during streaming updates', () =>
 
     const input = page.getByRole('textbox', { name: 'Chat input' });
     await input.waitFor({ state: 'visible' });
+    const sendButton = page.getByRole('button', { name: /send/i });
+
+    // Helper: submit input and wait for the mocked SSE response to fully arrive.
+    // waitForResponse (not waitForRequest) ensures the SSE body is buffered before
+    // we poll the DOM — otherwise the 5s visibility timeout can race under parallel worker load.
+    const sendAndAwait = async () => {
+      const submitTrigger = (await sendButton.isVisible().catch(() => false))
+        ? sendButton.click({ force: true })
+        : input.press('Control+Enter');
+      await Promise.all([
+        page.waitForResponse((r) => r.url().includes('/v1/responses') && r.request().method() === 'POST'),
+        submitTrigger,
+      ]);
+    };
 
     // First send
     await input.fill('first');
-    const sendButton = page.getByRole('button', { name: /send/i });
-    if (await sendButton.isVisible().catch(() => false)) {
-      await Promise.all([
-        page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        sendButton.click({ force: true }),
-      ]);
-    } else {
-      await Promise.all([
-        page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        input.press('Control+Enter'),
-      ]);
-    }
+    await sendAndAwait();
 
     const assistant = page.locator('[data-role="assistant"], [data-message-role="assistant"], main');
     const code = assistant.locator('pre code').first();
-    await expect(code).toBeVisible();
-    await expect.poll(async () => await code.locator('.token').count(), { timeout: 5000 }).toBeGreaterThan(0);
+    await expect(code).toBeVisible({ timeout: 15000 });
+    await expect.poll(async () => await code.locator('.token').count(), { timeout: 15000 }).toBeGreaterThan(0);
 
     // Second send (simulate update/append scenario)
     phase = 'second';
     await input.fill('second');
-    if (await sendButton.isVisible().catch(() => false)) {
-      await Promise.all([
-        page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        sendButton.click({ force: true }),
-      ]);
-    } else {
-      await Promise.all([
-        page.waitForRequest((r) => r.url().includes('/v1/responses') && r.method() === 'POST'),
-        input.press('Control+Enter'),
-      ]);
-    }
+    await sendAndAwait();
 
     // Ensure the (latest) code block is still tokenized
     const latestCode = assistant.locator('pre code').last();
-    await expect(latestCode).toBeVisible();
-    await expect.poll(async () => await latestCode.locator('.token').count(), { timeout: 5000 }).toBeGreaterThan(0);
+    await expect(latestCode).toBeVisible({ timeout: 15000 });
+    await expect.poll(async () => await latestCode.locator('.token').count(), { timeout: 15000 }).toBeGreaterThan(0);
   });
 });
