@@ -239,7 +239,7 @@ export async function streamAnthropicMessageSDK(
     log.debug('[DEBUG] Creating Anthropic SDK stream with params:', {
       model: configuredParams.model,
       hasThinking: !!configuredParams.thinking,
-      thinkingBudget: configuredParams.thinking?.budget_tokens
+      thinkingConfig: configuredParams.thinking
     });
     const stream = client.messages.stream(configuredParams, { signal: abortSignal });
 

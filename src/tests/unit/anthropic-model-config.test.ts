@@ -141,6 +141,49 @@ registerTest({
   }
 });
 
+// Test: Opus 4.7 Model Configuration (adaptive thinking)
+registerTest({
+  id: 'opus-4-7-model-config',
+  name: 'Should configure Claude Opus 4.7 with adaptive thinking and 128k max tokens',
+  fn: async () => {
+    const { getModelConfig, supportsReasoning, getMaxOutputTokens, usesAdaptiveThinking } =
+      await import('../../services/anthropicModelConfig.js');
+
+    const modelName = 'claude-opus-4-7-20260416';
+    const config = getModelConfig(modelName);
+
+    if (config.maxOutputTokens !== 128000) {
+      throw new Error(`Expected maxOutputTokens 128000, got ${config.maxOutputTokens}`);
+    }
+    if (!config.supportsReasoning) {
+      throw new Error('Opus 4.7 should support reasoning');
+    }
+    if (!config.useAdaptiveThinking) {
+      throw new Error('Opus 4.7 should require adaptive thinking');
+    }
+    if (!supportsReasoning(modelName)) {
+      throw new Error('supportsReasoning should return true for Opus 4.7');
+    }
+    if (!usesAdaptiveThinking(modelName)) {
+      throw new Error('usesAdaptiveThinking should return true for Opus 4.7');
+    }
+    if (getMaxOutputTokens(modelName) !== 128000) {
+      throw new Error(`getMaxOutputTokens should return 128000, got ${getMaxOutputTokens(modelName)}`);
+    }
+
+    // Regression guard: Opus 4.7 must match BEFORE the less-specific 'claude-opus-4' entry
+    // (which has 32000 max tokens and manual thinking)
+    if (usesAdaptiveThinking('claude-opus-4-20250514')) {
+      throw new Error('Opus 4.0 must NOT use adaptive thinking (manual mode only)');
+    }
+    if (usesAdaptiveThinking('claude-opus-4-1-20250805')) {
+      throw new Error('Opus 4.1 must NOT use adaptive thinking (manual mode only)');
+    }
+
+    debugInfo('✓ Opus 4.7 configuration test passed');
+  }
+});
+
 // Test: Unknown Model Safety
 registerTest({
   id: 'unknown-model-safety',

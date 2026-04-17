@@ -15,7 +15,8 @@ import {
 } from '../stores/reasoningStore.js';
 import {
   supportsReasoning as modelSupportsReasoning,
-  getThinkingBudget as getModelThinkingBudget
+  getThinkingBudget as getModelThinkingBudget,
+  usesAdaptiveThinking
 } from './anthropicModelConfig.js';
 import { reasoningAutoCollapse } from '../stores/reasoningAutoCollapseStore.js';
 import { log } from '../lib/logger.js';
@@ -27,6 +28,20 @@ import { log } from '../lib/logger.js';
  */
 export function supportsAnthropicReasoning(model: string): boolean {
   return modelSupportsReasoning(model);
+}
+
+/**
+ * Build the provider-specific thinking payload for a given model.
+ *
+ * Opus 4.7+ require adaptive thinking; older models still use manual budget_tokens.
+ * `display: 'summarized'` is explicit on adaptive because Opus 4.7 defaults to 'omitted',
+ * which would hide reasoning text from the UI's reasoning window.
+ */
+function buildThinkingPayload(model: string, budget: number): Record<string, unknown> {
+  if (usesAdaptiveThinking(model)) {
+    return { type: 'adaptive', display: 'summarized' };
+  }
+  return { type: 'enabled', budget_tokens: budget };
 }
 
 /**
@@ -42,17 +57,14 @@ export function addThinkingConfiguration(params: any): any {
 
   const thinkingBudget = getModelThinkingBudget(params.model);
 
-  // Only add thinking if budget > 0
-  if (thinkingBudget === 0) {
+  // Manual-mode models need a positive budget; adaptive-mode models ignore it
+  if (thinkingBudget === 0 && !usesAdaptiveThinking(params.model)) {
     return params;
   }
 
   return {
     ...params,
-    thinking: {
-      type: 'enabled',
-      budget_tokens: thinkingBudget
-    }
+    thinking: buildThinkingPayload(params.model, thinkingBudget)
   };
 }
 
@@ -251,16 +263,13 @@ export function addThinkingConfigurationWithBudget(params: any, options?: Thinki
   // Use custom budget if provided, otherwise get model-specific budget
   const thinkingBudget = customBudget || getModelThinkingBudget(params.model);
 
-  // Only add thinking if budget > 0
-  if (thinkingBudget === 0) {
+  // Manual-mode models need a positive budget; adaptive-mode models ignore it
+  if (thinkingBudget === 0 && !usesAdaptiveThinking(params.model)) {
     return params;
   }
 
   return {
     ...params,
-    thinking: {
-      type: 'enabled',
-      budget_tokens: thinkingBudget
-    }
+    thinking: buildThinkingPayload(params.model, thinkingBudget)
   };
 }

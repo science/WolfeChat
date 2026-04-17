@@ -15,11 +15,22 @@ interface ModelConfig {
   maxOutputTokens: number;
   supportsReasoning: boolean;
   thinkingBudgetTokens: number; // 25% of max for reasoning models, 0 for others
+  useAdaptiveThinking?: boolean; // Opus 4.7+ rejects thinking.type=enabled and requires adaptive mode
 }
 
 // Model patterns to configuration mapping
 // Based on official Anthropic documentation: https://docs.anthropic.com/claude/docs/about-claude/models
+// NOTE: Patterns are matched via startsWith in insertion order. More specific patterns
+// (e.g. 'claude-opus-4-7') must appear before less specific ones (e.g. 'claude-opus-4').
 const MODEL_CONFIGS: Record<string, ModelConfig> = {
+  // Opus 4.7 family - 128000 max tokens, adaptive thinking ONLY (manual thinking rejected with 400)
+  'claude-opus-4-7': {
+    maxOutputTokens: 128000,
+    supportsReasoning: true,
+    thinkingBudgetTokens: 0, // unused when useAdaptiveThinking is true
+    useAdaptiveThinking: true
+  },
+
   // Opus 4.1 family - 32000 max tokens, supports reasoning
   'claude-opus-4-1': {
     maxOutputTokens: 32000,
@@ -137,6 +148,15 @@ export function getThinkingBudget(modelName: string): number {
 export function getMaxOutputTokens(modelName: string): number {
   const config = getModelConfig(modelName);
   return config.maxOutputTokens;
+}
+
+/**
+ * Whether a model requires adaptive thinking (thinking.type='adaptive') instead of the
+ * legacy manual mode (thinking.type='enabled' + budget_tokens). Opus 4.7 rejects manual
+ * thinking with a 400 error.
+ */
+export function usesAdaptiveThinking(modelName: string): boolean {
+  return !!getModelConfig(modelName).useAdaptiveThinking;
 }
 
 /**

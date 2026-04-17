@@ -116,6 +116,44 @@ registerTest({
   }
 });
 
+// Test: Opus 4.7 yields adaptive thinking payload (no budget_tokens)
+registerTest({
+  id: 'opus-4-7-adaptive-thinking-payload',
+  name: 'Opus 4.7 should produce thinking.type=adaptive with display=summarized and no budget_tokens',
+  fn: async () => {
+    const { addThinkingConfigurationWithBudget } = await import('../../services/anthropicReasoning.js');
+
+    const params = {
+      model: 'claude-opus-4-7-20260416',
+      max_tokens: 128000,
+      messages: [{ role: 'user', content: 'test' }]
+    };
+
+    const configured = addThinkingConfigurationWithBudget(params, { thinkingEnabled: true });
+
+    if (!configured.thinking) {
+      throw new Error('Thinking config should be added for Opus 4.7 when thinkingEnabled is true');
+    }
+    if (configured.thinking.type !== 'adaptive') {
+      throw new Error(`Expected thinking.type 'adaptive', got '${configured.thinking.type}'`);
+    }
+    if (configured.thinking.display !== 'summarized') {
+      throw new Error(`Expected thinking.display 'summarized', got '${configured.thinking.display}'`);
+    }
+    if ('budget_tokens' in configured.thinking) {
+      throw new Error('Adaptive thinking must not include budget_tokens (API rejects it on Opus 4.7)');
+    }
+
+    // When thinkingEnabled is false, no thinking config should be sent (works on all models)
+    const disabled = addThinkingConfigurationWithBudget(params, { thinkingEnabled: false });
+    if (disabled.thinking) {
+      throw new Error('Thinking config should be omitted when thinkingEnabled is false on Opus 4.7');
+    }
+
+    debugInfo('✓ Opus 4.7 produces correct adaptive thinking payload');
+  }
+});
+
 // Test: Custom budget override still works
 registerTest({
   id: 'custom-budget-override',
