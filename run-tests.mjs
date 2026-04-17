@@ -23,7 +23,13 @@ const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
 
 global.window = dom.window;
 global.document = dom.window.document;
-global.navigator = dom.window.navigator;
+// Node 21+ exposes `navigator` as a read-only global. Use defineProperty to override
+// instead of direct assignment (which throws TypeError on Node 21+).
+Object.defineProperty(global, 'navigator', {
+  value: dom.window.navigator,
+  writable: true,
+  configurable: true,
+});
 global.HTMLElement = dom.window.HTMLElement;
 global.Element = dom.window.Element;
 global.requestAnimationFrame = (cb) => setTimeout(() => cb(Date.now()), 16);
