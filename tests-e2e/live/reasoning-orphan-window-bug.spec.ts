@@ -327,8 +327,11 @@ test.describe('Orphaned Reasoning Window Bug', () => {
     debugInfo(`After delete: ${windowsAfterDelete.length} windows`);
     expect(windowsAfterDelete.length).toBe(0);
 
-    // Send new message
-    await sendMessage(page, 'What is 2+2?');
+    // Send new message. Use a prompt substantial enough to reliably trigger
+    // reasoning events — "What is 2+2?" is too trivial and gpt-5.4-nano will
+    // often skip reasoning output for it, causing waitForReasoningToStart to
+    // time out under load.
+    await sendMessage(page, 'Find the smallest prime number greater than 100 and explain step by step why it is prime.');
     await expect(stopIcon).toBeVisible({ timeout: 10000 });
     await waitForReasoningToStart(page);
 
