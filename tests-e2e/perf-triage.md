@@ -5,7 +5,7 @@ First-pass baseline collected against commit `4957a28`. Source data:
 - `tests-e2e/perf-baselines/nonlive.json` — 97 tests, ~82 s total, 0 flaky
 - `tests-e2e/perf-baselines/stability-nonlive.json` — 291 runs (× 3), 0 flaky
 - `tests-e2e/perf-baselines/live.json` — 96 tests, 14.8 min total, 3 failed
-- `tests-e2e/perf-baselines/stability-live.json` — pending (running 3 ×)
+- `tests-e2e/perf-baselines/stability-live.json` — 288 runs (× 3), 41.8 min, 4 flaky, 2 failed
 
 ## Headline
 
@@ -72,8 +72,55 @@ Rough payoff estimate based on ~14.8 min live suite:
 
 Total potential live-suite savings: ~5-7 min of 14.8 min (~35-45 %).
 
-## Deferred until stability-live completes
+## Flakiness results (from stability-live, 3 × 96 tests = 288 runs)
 
-Flakiness stats will show up once the 3× live run finishes. Any test
-with `passRate < 1.0` is a top priority for migration regardless of
-speed.
+### Persistent failures (0 / 3 passed)
+
+| Test | Cause | Action |
+|---|---|---|
+| `probe-fixture-harness :: fixture harness: record+replay OpenAI reasoning SSE` | Fixture `probe-reasoning-openai.body` not committed. Spec is marked "PHASE 0 SMOKE — delete after validated." | **Delete**. |
+| `probe-fixture-anthropic :: fixture harness: record+replay Anthropic reasoning stream` | Same — fixture missing, same marker. | **Delete**. |
+
+### Flaky tests (2 / 3 passed, ≈67 % pass rate)
+
+| Test | Median | p95 | File | Likely cause |
+|---|---|---|---|---|
+| `reasoning window should show content after fresh localStorage clear` | 26 s | 29 s | `reasoning-window-conversation-id-bug-tdd.spec.ts` | TDD test for a reported bug. Flakiness could be the bug manifesting. Needs investigation. |
+| `summary should include message count in header` | 9 s | 66 s | `summary-model-settings.spec.ts` | Huge duration spread (9 s → 66 s) — a failing run hits the full 60 s timeout. Timing-sensitive summary-stream wait. |
+| `should show message count in summary` | 5 s | 6 s | `summary-ui.spec.ts` | Same test that failed 0 / 1 in the single baseline run — so it's genuinely flaky, not a one-off. Likely same underlying cause as the summary-model-settings flake (summary stream race). |
+| `checkApiKeysFromState utility works correctly` | 5 s | 6 s | `test-dropdown-helper.spec.ts` | Utility-test spec; may be dropdown state race. |
+
+### Nothing else flaked
+
+92 of 96 live tests passed 3 / 3. The reasoning-UI specs I migrated last
+week are no longer in the live suite, so this validates that our
+migration eliminated their contribution to live-suite flakiness.
+
+## Suggested action plan (updated)
+
+Priority order, based on combined slow + flaky signal:
+
+1. **Delete the 2 probe specs** (`probe-fixture-*`). They're 100 %
+   failing and marked for deletion. ~1-min payoff per live run.
+2. **Investigate summary flakes** — two tests
+   (`summary-model-settings :: message count in header`,
+   `summary-ui :: should show message count in summary`) share a
+   pattern: summary-stream wait that times out. Likely one root cause,
+   fix yields two tests.
+3. **Swap nonlive consecutive-messages test to `waitForStreamIdle`** —
+   42 s → ~1 s. Easy win.
+4. **Investigate `reasoning-window-conversation-id-bug-tdd` flake** —
+   if the TDD bug is still real, file it separately; if the bug is
+   fixed, the test is stale and can be migrated.
+5. **Investigate `checkApiKeysFromState utility works correctly` flake**
+   — utility tests shouldn't be flaky.
+6. **Migrate the 46–80 s quick-settings & provider-switching tests to
+   replay** — biggest wall-clock payoff (~3–5 min off live suite).
+7. **Migrate the 25–32 s anthropic-reasoning-auto-close tests** — ~55 s
+   off live.
+8. **Investigate 81 s `quick-settings-conversation-state-bug :: Live:
+   settings persist`** — slowest single test.
+
+Estimated total savings from items 1–8:
+- Wall-clock off live suite: ~6–8 min of 14.8 min (~40–55 %).
+- Flakes eliminated: 4 of 4 current flakes, plus 2 persistent failures.

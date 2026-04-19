@@ -1,0 +1,3019 @@
+{
+  "timestamp": "2026-04-19T06:03:30.216Z",
+  "totalMs": 2509346,
+  "runCount": 288,
+  "distinctTestCount": 96,
+  "status": "failed",
+  "flakyCount": 4,
+  "failedCount": 2,
+  "runs": [
+    {
+      "title": "Live: settings persist and are honored when submitting",
+      "file": "tests-e2e/live/quick-settings-conversation-state-bug.spec.ts",
+      "durationMs": 83133,
+      "status": "passed"
+    },
+    {
+      "title": "Live: settings persist and are honored when submitting",
+      "file": "tests-e2e/live/quick-settings-conversation-state-bug.spec.ts",
+      "durationMs": 83041,
+      "status": "passed"
+    },
+    {
+      "title": "Live: settings persist and are honored when submitting",
+      "file": "tests-e2e/live/quick-settings-conversation-state-bug.spec.ts",
+      "durationMs": 81291,
+      "status": "passed"
+    },
+    {
+      "title": "summary should include message count in header",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 66401,
+      "status": "failed"
+    },
+    {
+      "title": "should auto-close for multiple consecutive Anthropic messages",
+      "file": "tests-e2e/live/anthropic-reasoning-auto-close.spec.ts",
+      "durationMs": 50166,
+      "status": "passed"
+    },
+    {
+      "title": "recent models include both providers when both are used",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 48028,
+      "status": "passed"
+    },
+    {
+      "title": "recent models include both providers when both are used",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 47017,
+      "status": "passed"
+    },
+    {
+      "title": "can switch models between providers in Quick Settings",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 46995,
+      "status": "passed"
+    },
+    {
+      "title": "switching models and sending messages builds recent models list",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "durationMs": 46873,
+      "status": "passed"
+    },
+    {
+      "title": "can switch models between providers in Quick Settings",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 46648,
+      "status": "passed"
+    },
+    {
+      "title": "can switch models between providers in Quick Settings",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 46584,
+      "status": "passed"
+    },
+    {
+      "title": "should auto-close for multiple consecutive Anthropic messages",
+      "file": "tests-e2e/live/anthropic-reasoning-auto-close.spec.ts",
+      "durationMs": 33506,
+      "status": "passed"
+    },
+    {
+      "title": "should auto-close for multiple consecutive Anthropic messages",
+      "file": "tests-e2e/live/anthropic-reasoning-auto-close.spec.ts",
+      "durationMs": 32130,
+      "status": "passed"
+    },
+    {
+      "title": "should auto-close reasoning window when assistant message starts",
+      "file": "tests-e2e/live/anthropic-reasoning-auto-close.spec.ts",
+      "durationMs": 29532,
+      "status": "passed"
+    },
+    {
+      "title": "recent models include both providers when both are used",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 29423,
+      "status": "passed"
+    },
+    {
+      "title": "reasoning window should show content after fresh localStorage clear",
+      "file": "tests-e2e/live/reasoning-window-conversation-id-bug-tdd.spec.ts",
+      "durationMs": 29314,
+      "status": "failed"
+    },
+    {
+      "title": "reasoning window should show content after fresh localStorage clear",
+      "file": "tests-e2e/live/reasoning-window-conversation-id-bug-tdd.spec.ts",
+      "durationMs": 26175,
+      "status": "passed"
+    },
+    {
+      "title": "should auto-close reasoning window when assistant message starts",
+      "file": "tests-e2e/live/anthropic-reasoning-auto-close.spec.ts",
+      "durationMs": 25872,
+      "status": "passed"
+    },
+    {
+      "title": "reasoning window should show content after fresh localStorage clear",
+      "file": "tests-e2e/live/reasoning-window-conversation-id-bug-tdd.spec.ts",
+      "durationMs": 25526,
+      "status": "passed"
+    },
+    {
+      "title": "should auto-close reasoning window when assistant message starts",
+      "file": "tests-e2e/live/anthropic-reasoning-auto-close.spec.ts",
+      "durationMs": 25500,
+      "status": "passed"
+    },
+    {
+      "title": "switching models and sending messages builds recent models list",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "durationMs": 25431,
+      "status": "passed"
+    },
+    {
+      "title": "switching models and sending messages builds recent models list",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "durationMs": 25278,
+      "status": "passed"
+    },
+    {
+      "title": "sending message with selected model adds it to recent models section",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "durationMs": 24440,
+      "status": "passed"
+    },
+    {
+      "title": "sending message with selected model adds it to recent models section",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "durationMs": 24420,
+      "status": "passed"
+    },
+    {
+      "title": "sending message with selected model adds it to recent models section",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "durationMs": 24397,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: Reasoning content should stop updating after stop (robust test)",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 21945,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for Claude Sonnet with reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 21479,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for Claude Sonnet with reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 20353,
+      "status": "passed"
+    },
+    {
+      "title": "Invalid API key preserves conversation history",
+      "file": "tests-e2e/live/api-error-preserves-conversation.spec.ts",
+      "durationMs": 20334,
+      "status": "passed"
+    },
+    {
+      "title": "Invalid API key preserves conversation history",
+      "file": "tests-e2e/live/api-error-preserves-conversation.spec.ts",
+      "durationMs": 19829,
+      "status": "passed"
+    },
+    {
+      "title": "Network error during streaming preserves conversation",
+      "file": "tests-e2e/live/api-error-preserves-conversation.spec.ts",
+      "durationMs": 19218,
+      "status": "passed"
+    },
+    {
+      "title": "Invalid API key preserves conversation history",
+      "file": "tests-e2e/live/api-error-preserves-conversation.spec.ts",
+      "durationMs": 19065,
+      "status": "passed"
+    },
+    {
+      "title": "Network error during streaming preserves conversation",
+      "file": "tests-e2e/live/api-error-preserves-conversation.spec.ts",
+      "durationMs": 18990,
+      "status": "passed"
+    },
+    {
+      "title": "Network error during streaming preserves conversation",
+      "file": "tests-e2e/live/api-error-preserves-conversation.spec.ts",
+      "durationMs": 18970,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: Reasoning content should stop updating after stop (robust test)",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 16923,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for Claude Sonnet with reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 16889,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: Reasoning content should stop updating after stop (robust test)",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 16718,
+      "status": "passed"
+    },
+    {
+      "title": "Reasoning panels should stop updating after stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 15961,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: Content should stop arriving after stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 15467,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: Content should stop arriving after stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 15387,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: Content should stop arriving after stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 15347,
+      "status": "passed"
+    },
+    {
+      "title": "Reasoning panels should stop updating after stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 14517,
+      "status": "passed"
+    },
+    {
+      "title": "Capture exact SSE events for reasoning model with effort off",
+      "file": "tests-e2e/live/reasoning-sse-events-simple.spec.ts",
+      "durationMs": 14515,
+      "status": "passed"
+    },
+    {
+      "title": "Capture exact SSE events for reasoning model with effort off",
+      "file": "tests-e2e/live/reasoning-sse-events-simple.spec.ts",
+      "durationMs": 14441,
+      "status": "passed"
+    },
+    {
+      "title": "Reasoning panels should stop updating after stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 14413,
+      "status": "passed"
+    },
+    {
+      "title": "Capture exact SSE events for reasoning model with effort off",
+      "file": "tests-e2e/live/reasoning-sse-events-simple.spec.ts",
+      "durationMs": 14253,
+      "status": "passed"
+    },
+    {
+      "title": "helper correctly identifies empty dropdown state",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 11799,
+      "status": "passed"
+    },
+    {
+      "title": "helper correctly identifies empty dropdown state",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 11717,
+      "status": "passed"
+    },
+    {
+      "title": "helper correctly identifies empty dropdown state",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 11701,
+      "status": "passed"
+    },
+    {
+      "title": "Two Anthropic reasoning messages with adequate wait",
+      "file": "tests-e2e/live/anthropic_two_messages_simple.spec.ts",
+      "durationMs": 11648,
+      "status": "passed"
+    },
+    {
+      "title": "Two Anthropic reasoning messages with adequate wait",
+      "file": "tests-e2e/live/anthropic_two_messages_simple.spec.ts",
+      "durationMs": 11185,
+      "status": "passed"
+    },
+    {
+      "title": "Two Anthropic reasoning messages with adequate wait",
+      "file": "tests-e2e/live/anthropic_two_messages_simple.spec.ts",
+      "durationMs": 10773,
+      "status": "passed"
+    },
+    {
+      "title": "Stop button should prevent reasoning windows from completing in background",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 10438,
+      "status": "passed"
+    },
+    {
+      "title": "Stop button should prevent reasoning windows from completing in background",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 10436,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: stopping stream, deleting message, sending new message should show only ONE reasoning window",
+      "file": "tests-e2e/live/reasoning-orphan-window-bug.spec.ts",
+      "durationMs": 10388,
+      "status": "passed"
+    },
+    {
+      "title": "Stop button should prevent reasoning windows from completing in background",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 10163,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: stopping stream, deleting message, sending new message should show only ONE reasoning window",
+      "file": "tests-e2e/live/reasoning-orphan-window-bug.spec.ts",
+      "durationMs": 9866,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: stopping stream, deleting message, sending new message should show only ONE reasoning window",
+      "file": "tests-e2e/live/reasoning-orphan-window-bug.spec.ts",
+      "durationMs": 9711,
+      "status": "passed"
+    },
+    {
+      "title": "summary should include message count in header",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 9377,
+      "status": "passed"
+    },
+    {
+      "title": "deletes messages below pivot and remains usable",
+      "file": "tests-e2e/live/delete-all-below.spec.ts",
+      "durationMs": 9357,
+      "status": "passed"
+    },
+    {
+      "title": "summary content should be preserved after abort",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 9305,
+      "status": "passed"
+    },
+    {
+      "title": "deletes messages below pivot and remains usable",
+      "file": "tests-e2e/live/delete-all-below.spec.ts",
+      "durationMs": 9276,
+      "status": "passed"
+    },
+    {
+      "title": "deletes messages below pivot and remains usable",
+      "file": "tests-e2e/live/delete-all-below.spec.ts",
+      "durationMs": 9137,
+      "status": "passed"
+    },
+    {
+      "title": "summary content should be preserved after abort",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 8842,
+      "status": "passed"
+    },
+    {
+      "title": "Stop button should ACTUALLY stop the stream, not just update UI",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 8681,
+      "status": "passed"
+    },
+    {
+      "title": "Stop button should ACTUALLY stop the stream, not just update UI",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 8593,
+      "status": "passed"
+    },
+    {
+      "title": "Stop button should ACTUALLY stop the stream, not just update UI",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 8436,
+      "status": "passed"
+    },
+    {
+      "title": "stop button should be visible during summary generation",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 8387,
+      "status": "passed"
+    },
+    {
+      "title": "stop button should be visible during summary generation",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 8291,
+      "status": "passed"
+    },
+    {
+      "title": "Quick Settings shows models with provider indicators when both providers configured",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 8246,
+      "status": "passed"
+    },
+    {
+      "title": "title generation should not block main message response",
+      "file": "tests-e2e/live/title-generation-async-timing.spec.ts",
+      "durationMs": 8065,
+      "status": "passed"
+    },
+    {
+      "title": "summary content should be preserved after abort",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 8052,
+      "status": "passed"
+    },
+    {
+      "title": "should display summary with distinct visual styling",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 7790,
+      "status": "passed"
+    },
+    {
+      "title": "should display summary with distinct visual styling",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 7675,
+      "status": "passed"
+    },
+    {
+      "title": "user can switch between different model types",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 7586,
+      "status": "passed"
+    },
+    {
+      "title": "summary block should appear immediately when button is clicked",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 7379,
+      "status": "passed"
+    },
+    {
+      "title": "should persist summary across page reload",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 7337,
+      "status": "passed"
+    },
+    {
+      "title": "user can switch between different model types",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 7166,
+      "status": "passed"
+    },
+    {
+      "title": "streaming content should appear progressively",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 7095,
+      "status": "passed"
+    },
+    {
+      "title": "summary should show loading state while generating",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 7062,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for TEST_MODEL with reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 7028,
+      "status": "passed"
+    },
+    {
+      "title": "checkbox should be disabled while summary is loading",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 6938,
+      "status": "passed"
+    },
+    {
+      "title": "Quick Settings shows models with provider indicators when both providers configured",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 6869,
+      "status": "passed"
+    },
+    {
+      "title": "isStreaming store should remain true until stream actually ends",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 6840,
+      "status": "passed"
+    },
+    {
+      "title": "Quick Settings shows models with provider indicators when both providers configured",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 6781,
+      "status": "passed"
+    },
+    {
+      "title": "should display summary with distinct visual styling",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 6779,
+      "status": "passed"
+    },
+    {
+      "title": "streaming content should appear progressively",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 6775,
+      "status": "passed"
+    },
+    {
+      "title": "should delete summary",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 6710,
+      "status": "passed"
+    },
+    {
+      "title": "title generation should not block main message response",
+      "file": "tests-e2e/live/title-generation-async-timing.spec.ts",
+      "durationMs": 6673,
+      "status": "passed"
+    },
+    {
+      "title": "user can switch between different model types",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 6640,
+      "status": "passed"
+    },
+    {
+      "title": "isStreaming store should remain true until stream actually ends",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 6617,
+      "status": "passed"
+    },
+    {
+      "title": "streaming content should appear progressively",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 6467,
+      "status": "passed"
+    },
+    {
+      "title": "title generation should not block main message response",
+      "file": "tests-e2e/live/title-generation-async-timing.spec.ts",
+      "durationMs": 6378,
+      "status": "passed"
+    },
+    {
+      "title": "user can switch between providers dynamically",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 6350,
+      "status": "passed"
+    },
+    {
+      "title": "checkbox should be disabled while summary is loading",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 6330,
+      "status": "passed"
+    },
+    {
+      "title": "stop button should be visible during summary generation",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 6258,
+      "status": "passed"
+    },
+    {
+      "title": "isStreaming store should remain true until stream actually ends",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 6243,
+      "status": "passed"
+    },
+    {
+      "title": "user can switch between providers dynamically",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 6169,
+      "status": "passed"
+    },
+    {
+      "title": "summary should include message count in header",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 6136,
+      "status": "passed"
+    },
+    {
+      "title": "should show message count in summary",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 6051,
+      "status": "failed"
+    },
+    {
+      "title": "summary should use conversation model by default",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 6049,
+      "status": "passed"
+    },
+    {
+      "title": "user can switch between providers dynamically",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 6031,
+      "status": "passed"
+    },
+    {
+      "title": "should edit summary content",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 6015,
+      "status": "passed"
+    },
+    {
+      "title": "checkApiKeysFromState utility works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 5978,
+      "status": "passed"
+    },
+    {
+      "title": "checkbox should be disabled while summary is loading",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 5942,
+      "status": "passed"
+    },
+    {
+      "title": "should send system prompt with reasoning models (Claude Sonnet 4)",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "durationMs": 5814,
+      "status": "passed"
+    },
+    {
+      "title": "should toggle summary active state via checkbox",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 5754,
+      "status": "passed"
+    },
+    {
+      "title": "should persist summary across page reload",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 5736,
+      "status": "passed"
+    },
+    {
+      "title": "summary block should appear immediately when button is clicked",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 5633,
+      "status": "passed"
+    },
+    {
+      "title": "should send system prompt with reasoning models (Claude Sonnet 4)",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "durationMs": 5625,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: Stop button should abort stream when clicked",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "durationMs": 5562,
+      "status": "passed"
+    },
+    {
+      "title": "should send system prompt with reasoning models (Claude Sonnet 4)",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "durationMs": 5556,
+      "status": "passed"
+    },
+    {
+      "title": "should show message count in summary",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 5496,
+      "status": "passed"
+    },
+    {
+      "title": "checkApiKeysFromState utility works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 5414,
+      "status": "passed"
+    },
+    {
+      "title": "summary should show loading state while generating",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 5390,
+      "status": "passed"
+    },
+    {
+      "title": "should show message count in summary",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 5342,
+      "status": "passed"
+    },
+    {
+      "title": "Network request should be aborted when stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 5337,
+      "status": "passed"
+    },
+    {
+      "title": "Network request should be aborted when stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 5289,
+      "status": "passed"
+    },
+    {
+      "title": "should send system prompt with reasoning models (GPT-5 nano)",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "durationMs": 5246,
+      "status": "passed"
+    },
+    {
+      "title": "checkApiKeysFromState utility works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 5233,
+      "status": "failed"
+    },
+    {
+      "title": "should persist summary across page reload",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 5220,
+      "status": "passed"
+    },
+    {
+      "title": "should edit summary content",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 5204,
+      "status": "passed"
+    },
+    {
+      "title": "should create and display summary when button clicked",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 5197,
+      "status": "passed"
+    },
+    {
+      "title": "summary should use conversation model by default",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 5127,
+      "status": "passed"
+    },
+    {
+      "title": "helper detects multiple providers with optgroups",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 5117,
+      "status": "passed"
+    },
+    {
+      "title": "should delete summary",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 5088,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for TEST_MODEL with reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 5084,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for TEST_MODEL with reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 5052,
+      "status": "passed"
+    },
+    {
+      "title": "should delete summary",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 5017,
+      "status": "passed"
+    },
+    {
+      "title": "Network request should be aborted when stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "durationMs": 4991,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for TEST_MODEL without reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 4963,
+      "status": "passed"
+    },
+    {
+      "title": "summary should show loading state while generating",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 4952,
+      "status": "passed"
+    },
+    {
+      "title": "should create and display summary when button clicked",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 4908,
+      "status": "passed"
+    },
+    {
+      "title": "Quick Settings model selection persists per conversation",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 4887,
+      "status": "passed"
+    },
+    {
+      "title": "should edit summary content",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 4872,
+      "status": "passed"
+    },
+    {
+      "title": "user can select and use models for conversation",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 4848,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: Stop button should abort stream when clicked",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "durationMs": 4793,
+      "status": "passed"
+    },
+    {
+      "title": "helper closeAfter option works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 4781,
+      "status": "passed"
+    },
+    {
+      "title": "summary should display model name in header",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 4748,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: Stop button should abort stream when clicked",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "durationMs": 4733,
+      "status": "passed"
+    },
+    {
+      "title": "should include custom conversation system prompt in Anthropic API request",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "durationMs": 4723,
+      "status": "passed"
+    },
+    {
+      "title": "should toggle summary active state via checkbox",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 4695,
+      "status": "passed"
+    },
+    {
+      "title": "should show summarize button in message toolbelt",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 4672,
+      "status": "passed"
+    },
+    {
+      "title": "conversation title updates after first message",
+      "file": "tests-e2e/live/title-update.spec.ts",
+      "durationMs": 4629,
+      "status": "passed"
+    },
+    {
+      "title": "helper detects multiple providers with optgroups",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 4623,
+      "status": "passed"
+    },
+    {
+      "title": "summary block should appear immediately when button is clicked",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "durationMs": 4588,
+      "status": "passed"
+    },
+    {
+      "title": "Quick Settings model selection persists per conversation",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 4583,
+      "status": "passed"
+    },
+    {
+      "title": "user can select and use models for conversation",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 4557,
+      "status": "passed"
+    },
+    {
+      "title": "should send non-streaming message via SDK with claude-3-haiku",
+      "file": "tests-e2e/live/anthropic-sdk-nonstreaming.spec.ts",
+      "durationMs": 4551,
+      "status": "passed"
+    },
+    {
+      "title": "helper works with Settings dropdown",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 4529,
+      "status": "passed"
+    },
+    {
+      "title": "summary should use conversation model by default",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 4517,
+      "status": "passed"
+    },
+    {
+      "title": "helper closeAfter option works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 4514,
+      "status": "passed"
+    },
+    {
+      "title": "should include custom conversation system prompt in OpenAI API request",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "durationMs": 4503,
+      "status": "passed"
+    },
+    {
+      "title": "API validation error messages are provider-specific",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 4477,
+      "status": "passed"
+    },
+    {
+      "title": "API validation error messages are provider-specific",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 4476,
+      "status": "passed"
+    },
+    {
+      "title": "summary should display model name in header",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 4474,
+      "status": "passed"
+    },
+    {
+      "title": "helper works with Settings dropdown",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 4454,
+      "status": "passed"
+    },
+    {
+      "title": "should toggle summary active state via checkbox",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 4447,
+      "status": "passed"
+    },
+    {
+      "title": "helper detects multiple providers with optgroups",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 4446,
+      "status": "passed"
+    },
+    {
+      "title": "should create and display summary when button clicked",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 4443,
+      "status": "passed"
+    },
+    {
+      "title": "should send system prompt with reasoning models (GPT-5 nano)",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "durationMs": 4403,
+      "status": "passed"
+    },
+    {
+      "title": "should include default system prompt in Anthropic API request",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "durationMs": 4388,
+      "status": "passed"
+    },
+    {
+      "title": "user can select and use models for conversation",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 4388,
+      "status": "passed"
+    },
+    {
+      "title": "helper works with Settings dropdown",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 4387,
+      "status": "passed"
+    },
+    {
+      "title": "API validation error messages are provider-specific",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 4372,
+      "status": "passed"
+    },
+    {
+      "title": "helper closeAfter option works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 4310,
+      "status": "passed"
+    },
+    {
+      "title": "should include custom conversation system prompt in Anthropic API request",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "durationMs": 4266,
+      "status": "passed"
+    },
+    {
+      "title": "should include default system prompt in Anthropic API request",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "durationMs": 4207,
+      "status": "passed"
+    },
+    {
+      "title": "Quick Settings model selection persists per conversation",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 4202,
+      "status": "passed"
+    },
+    {
+      "title": "conversation title updates after first message",
+      "file": "tests-e2e/live/title-update.spec.ts",
+      "durationMs": 4192,
+      "status": "passed"
+    },
+    {
+      "title": "should send non-streaming message via SDK with claude-3-haiku",
+      "file": "tests-e2e/live/anthropic-sdk-nonstreaming.spec.ts",
+      "durationMs": 4159,
+      "status": "passed"
+    },
+    {
+      "title": "summary should display model name in header",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 4156,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for Claude Haiku",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 4098,
+      "status": "passed"
+    },
+    {
+      "title": "Live SSE: output completion and stream done (response.completed or [DONE])",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "durationMs": 4096,
+      "status": "passed"
+    },
+    {
+      "title": "should include custom conversation system prompt in Anthropic API request",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "durationMs": 4094,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for Claude Haiku",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 4083,
+      "status": "passed"
+    },
+    {
+      "title": "should show summarize button in message toolbelt",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 4037,
+      "status": "passed"
+    },
+    {
+      "title": "user experience remains consistent when provider keys are invalid",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 4001,
+      "status": "passed"
+    },
+    {
+      "title": "should include default system prompt in Anthropic API request",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "durationMs": 3991,
+      "status": "passed"
+    },
+    {
+      "title": "helper handles allModels flat array correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3951,
+      "status": "passed"
+    },
+    {
+      "title": "helper correctly identifies selected model and provider",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3949,
+      "status": "passed"
+    },
+    {
+      "title": "helper handles allModels flat array correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3945,
+      "status": "passed"
+    },
+    {
+      "title": "user experience remains consistent when provider keys are invalid",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 3936,
+      "status": "passed"
+    },
+    {
+      "title": "user experience remains consistent when provider keys are invalid",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 3930,
+      "status": "passed"
+    },
+    {
+      "title": "helper detectProvider function works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3915,
+      "status": "passed"
+    },
+    {
+      "title": "provider switching in Settings updates Quick Settings model list",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 3912,
+      "status": "passed"
+    },
+    {
+      "title": "conversation title updates after first message",
+      "file": "tests-e2e/live/title-update.spec.ts",
+      "durationMs": 3892,
+      "status": "passed"
+    },
+    {
+      "title": "helper correctly identifies selected model and provider",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3840,
+      "status": "passed"
+    },
+    {
+      "title": "provider switching in Settings updates Quick Settings model list",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 3785,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for TEST_MODEL without reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 3764,
+      "status": "passed"
+    },
+    {
+      "title": "user can access models from multiple providers",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 3719,
+      "status": "passed"
+    },
+    {
+      "title": "helper handles allModels flat array correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3710,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for TEST_MODEL without reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 3707,
+      "status": "passed"
+    },
+    {
+      "title": "helper correctly identifies selected model and provider",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3696,
+      "status": "passed"
+    },
+    {
+      "title": "helper detects single provider models",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3664,
+      "status": "passed"
+    },
+    {
+      "title": "helper detectProvider function works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3655,
+      "status": "passed"
+    },
+    {
+      "title": "provider switching in Settings updates Quick Settings model list",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 3648,
+      "status": "passed"
+    },
+    {
+      "title": "should send system prompt with reasoning models (GPT-5 nano)",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "durationMs": 3642,
+      "status": "passed"
+    },
+    {
+      "title": "should show summarize button in message toolbelt",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "durationMs": 3612,
+      "status": "passed"
+    },
+    {
+      "title": "helper handles captureHtml option for debugging",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3610,
+      "status": "passed"
+    },
+    {
+      "title": "helper handles captureHtml option for debugging",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3603,
+      "status": "passed"
+    },
+    {
+      "title": "helper handles captureHtml option for debugging",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3589,
+      "status": "passed"
+    },
+    {
+      "title": "user can access models when single provider is configured",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 3557,
+      "status": "passed"
+    },
+    {
+      "title": "helper detects single provider models",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3551,
+      "status": "passed"
+    },
+    {
+      "title": "user can access models from multiple providers",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 3545,
+      "status": "passed"
+    },
+    {
+      "title": "Live SSE: output completion and stream done (response.completed or [DONE])",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "durationMs": 3538,
+      "status": "passed"
+    },
+    {
+      "title": "should send non-streaming message via SDK with claude-3-haiku",
+      "file": "tests-e2e/live/anthropic-sdk-nonstreaming.spec.ts",
+      "durationMs": 3482,
+      "status": "passed"
+    },
+    {
+      "title": "helper detects single provider models",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3478,
+      "status": "passed"
+    },
+    {
+      "title": "helper detectProvider function works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "durationMs": 3466,
+      "status": "passed"
+    },
+    {
+      "title": "should count tokens correctly for Claude Haiku",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "durationMs": 3461,
+      "status": "passed"
+    },
+    {
+      "title": "streams tokens via streaming Responses API",
+      "file": "tests-e2e/live/responses-streaming.spec.ts",
+      "durationMs": 3460,
+      "status": "passed"
+    },
+    {
+      "title": "should include custom conversation system prompt in OpenAI API request",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "durationMs": 3451,
+      "status": "passed"
+    },
+    {
+      "title": "should include custom conversation system prompt in OpenAI API request",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "durationMs": 3427,
+      "status": "passed"
+    },
+    {
+      "title": "returns text via non-streaming Responses API",
+      "file": "tests-e2e/live/responses-nonstream.spec.ts",
+      "durationMs": 3424,
+      "status": "passed"
+    },
+    {
+      "title": "Live: per-conversation Quick Settings persist across switches",
+      "file": "tests-e2e/live/quick-settings-per-conversation-live.spec.ts",
+      "durationMs": 3407,
+      "status": "passed"
+    },
+    {
+      "title": "user can access models when single provider is configured",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 3345,
+      "status": "passed"
+    },
+    {
+      "title": "streams tokens via streaming Responses API",
+      "file": "tests-e2e/live/responses-streaming.spec.ts",
+      "durationMs": 3342,
+      "status": "passed"
+    },
+    {
+      "title": "Quick Settings reflects global model selection changes",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 3332,
+      "status": "passed"
+    },
+    {
+      "title": "user can access models when single provider is configured",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 3314,
+      "status": "passed"
+    },
+    {
+      "title": "user can access models from multiple providers",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 3306,
+      "status": "passed"
+    },
+    {
+      "title": "Live: per-conversation Quick Settings persist across switches",
+      "file": "tests-e2e/live/quick-settings-per-conversation-live.spec.ts",
+      "durationMs": 3244,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: Stop button should appear during streaming",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "durationMs": 3241,
+      "status": "passed"
+    },
+    {
+      "title": "should include default system prompt in OpenAI API request",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "durationMs": 3220,
+      "status": "passed"
+    },
+    {
+      "title": "should include default system prompt in OpenAI API request",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "durationMs": 3194,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: Stop button should appear during streaming",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "durationMs": 3164,
+      "status": "passed"
+    },
+    {
+      "title": "Quick Settings reflects global model selection changes",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 3163,
+      "status": "passed"
+    },
+    {
+      "title": "Live SSE: output completion for a very short answer",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "durationMs": 3154,
+      "status": "passed"
+    },
+    {
+      "title": "returns text via non-streaming Responses API",
+      "file": "tests-e2e/live/responses-nonstream.spec.ts",
+      "durationMs": 3149,
+      "status": "passed"
+    },
+    {
+      "title": "returns text via non-streaming Responses API",
+      "file": "tests-e2e/live/responses-nonstream.spec.ts",
+      "durationMs": 3131,
+      "status": "passed"
+    },
+    {
+      "title": "should handle errors gracefully with invalid model via SDK",
+      "file": "tests-e2e/live/anthropic-sdk-nonstreaming.spec.ts",
+      "durationMs": 3124,
+      "status": "passed"
+    },
+    {
+      "title": "streams tokens via streaming Responses API",
+      "file": "tests-e2e/live/responses-streaming.spec.ts",
+      "durationMs": 3121,
+      "status": "passed"
+    },
+    {
+      "title": "Live SSE: output completion for a very short answer",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "durationMs": 3090,
+      "status": "passed"
+    },
+    {
+      "title": "should handle errors gracefully with invalid model via SDK",
+      "file": "tests-e2e/live/anthropic-sdk-nonstreaming.spec.ts",
+      "durationMs": 3089,
+      "status": "passed"
+    },
+    {
+      "title": "Quick Settings reflects global model selection changes",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "durationMs": 3085,
+      "status": "passed"
+    },
+    {
+      "title": "summary model setting should appear in Settings menu",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 3084,
+      "status": "passed"
+    },
+    {
+      "title": "should include default system prompt in OpenAI API request",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "durationMs": 3077,
+      "status": "passed"
+    },
+    {
+      "title": "user model selection persists across UI operations",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 3073,
+      "status": "passed"
+    },
+    {
+      "title": "should handle errors gracefully with invalid model via SDK",
+      "file": "tests-e2e/live/anthropic-sdk-nonstreaming.spec.ts",
+      "durationMs": 3026,
+      "status": "passed"
+    },
+    {
+      "title": "gpt-4.1-nano then gpt-5.4-nano reflected in payload.model",
+      "file": "tests-e2e/live/model-selection-payload.spec.ts",
+      "durationMs": 3020,
+      "status": "passed"
+    },
+    {
+      "title": "Live: per-conversation Quick Settings persist across switches",
+      "file": "tests-e2e/live/quick-settings-per-conversation-live.spec.ts",
+      "durationMs": 2974,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: Stop button should appear during streaming",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "durationMs": 2952,
+      "status": "passed"
+    },
+    {
+      "title": "summary model setting should appear in Settings menu",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 2915,
+      "status": "passed"
+    },
+    {
+      "title": "user model selection persists across UI operations",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 2871,
+      "status": "passed"
+    },
+    {
+      "title": "summary model setting should appear in Settings menu",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "durationMs": 2850,
+      "status": "passed"
+    },
+    {
+      "title": "user model selection persists across UI operations",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 2845,
+      "status": "passed"
+    },
+    {
+      "title": "gpt-4.1-nano then gpt-5.4-nano reflected in payload.model",
+      "file": "tests-e2e/live/model-selection-payload.spec.ts",
+      "durationMs": 2840,
+      "status": "passed"
+    },
+    {
+      "title": "Live SSE: output completion and stream done (response.completed or [DONE])",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "durationMs": 2817,
+      "status": "passed"
+    },
+    {
+      "title": "gpt-4.1-nano then gpt-5.4-nano reflected in payload.model",
+      "file": "tests-e2e/live/model-selection-payload.spec.ts",
+      "durationMs": 2813,
+      "status": "passed"
+    },
+    {
+      "title": "Live SSE: output completion for a very short answer",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "durationMs": 2653,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: Stop button should appear during streaming",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "durationMs": 2626,
+      "status": "passed"
+    },
+    {
+      "title": "validates Anthropic API key successfully",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 2463,
+      "status": "passed"
+    },
+    {
+      "title": "validates Anthropic API key successfully",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 2447,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: Stop button should appear during streaming",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "durationMs": 2421,
+      "status": "passed"
+    },
+    {
+      "title": "validates Anthropic API key successfully",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 2396,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: Stop button should appear during streaming",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "durationMs": 2362,
+      "status": "passed"
+    },
+    {
+      "title": "Live SSE: hook-based waits for reasoning and completion",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "durationMs": 2334,
+      "status": "passed"
+    },
+    {
+      "title": "Live SSE: hook-based waits for reasoning and completion",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "durationMs": 2255,
+      "status": "passed"
+    },
+    {
+      "title": "Live SSE: hook-based waits for reasoning and completion",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "durationMs": 2147,
+      "status": "passed"
+    },
+    {
+      "title": "initial state has no recent models, all models in main list",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "durationMs": 1949,
+      "status": "passed"
+    },
+    {
+      "title": "initial state has no recent models, all models in main list",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "durationMs": 1778,
+      "status": "passed"
+    },
+    {
+      "title": "initial state has no recent models, all models in main list",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "durationMs": 1768,
+      "status": "passed"
+    },
+    {
+      "title": "user sees appropriate feedback when no providers configured",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 1398,
+      "status": "passed"
+    },
+    {
+      "title": "user sees appropriate feedback when no providers configured",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 1388,
+      "status": "passed"
+    },
+    {
+      "title": "validates OpenAI API key successfully",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 1383,
+      "status": "passed"
+    },
+    {
+      "title": "user sees appropriate feedback when no providers configured",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "durationMs": 1354,
+      "status": "passed"
+    },
+    {
+      "title": "validates OpenAI API key successfully",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 1338,
+      "status": "passed"
+    },
+    {
+      "title": "validates OpenAI API key successfully",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 1328,
+      "status": "passed"
+    },
+    {
+      "title": "API validation maintains provider context",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 1325,
+      "status": "passed"
+    },
+    {
+      "title": "API validation maintains provider context",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 1284,
+      "status": "passed"
+    },
+    {
+      "title": "API validation maintains provider context",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 1251,
+      "status": "passed"
+    },
+    {
+      "title": "shows error for invalid OpenAI API key",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 766,
+      "status": "passed"
+    },
+    {
+      "title": "shows error for invalid Anthropic API key",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 755,
+      "status": "passed"
+    },
+    {
+      "title": "shows error for invalid Anthropic API key",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 746,
+      "status": "passed"
+    },
+    {
+      "title": "shows error for invalid OpenAI API key",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 740,
+      "status": "passed"
+    },
+    {
+      "title": "shows error for invalid OpenAI API key",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 733,
+      "status": "passed"
+    },
+    {
+      "title": "shows error for invalid Anthropic API key",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 729,
+      "status": "passed"
+    },
+    {
+      "title": "check API button is present and clickable for both providers",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 413,
+      "status": "passed"
+    },
+    {
+      "title": "check API button is present and clickable for both providers",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 402,
+      "status": "passed"
+    },
+    {
+      "title": "empty API key shows appropriate state",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 388,
+      "status": "passed"
+    },
+    {
+      "title": "empty API key shows appropriate state",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 383,
+      "status": "passed"
+    },
+    {
+      "title": "empty API key shows appropriate state",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 381,
+      "status": "passed"
+    },
+    {
+      "title": "check API button is present and clickable for both providers",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "durationMs": 380,
+      "status": "passed"
+    },
+    {
+      "title": "fixture harness: record+replay OpenAI reasoning SSE",
+      "file": "tests-e2e/live/probe-fixture-harness.spec.ts",
+      "durationMs": 161,
+      "status": "failed"
+    },
+    {
+      "title": "fixture harness: record+replay OpenAI reasoning SSE",
+      "file": "tests-e2e/live/probe-fixture-harness.spec.ts",
+      "durationMs": 158,
+      "status": "failed"
+    },
+    {
+      "title": "fixture harness: record+replay Anthropic reasoning stream",
+      "file": "tests-e2e/live/probe-fixture-anthropic.spec.ts",
+      "durationMs": 139,
+      "status": "failed"
+    },
+    {
+      "title": "fixture harness: record+replay OpenAI reasoning SSE",
+      "file": "tests-e2e/live/probe-fixture-harness.spec.ts",
+      "durationMs": 135,
+      "status": "failed"
+    },
+    {
+      "title": "fixture harness: record+replay Anthropic reasoning stream",
+      "file": "tests-e2e/live/probe-fixture-anthropic.spec.ts",
+      "durationMs": 124,
+      "status": "failed"
+    },
+    {
+      "title": "fixture harness: record+replay Anthropic reasoning stream",
+      "file": "tests-e2e/live/probe-fixture-anthropic.spec.ts",
+      "durationMs": 120,
+      "status": "failed"
+    }
+  ],
+  "tests": [
+    {
+      "title": "Live: settings persist and are honored when submitting",
+      "file": "tests-e2e/live/quick-settings-conversation-state-bug.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 83041,
+      "p95Ms": 83133
+    },
+    {
+      "title": "recent models include both providers when both are used",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 47017,
+      "p95Ms": 48028
+    },
+    {
+      "title": "can switch models between providers in Quick Settings",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 46648,
+      "p95Ms": 46995
+    },
+    {
+      "title": "should auto-close for multiple consecutive Anthropic messages",
+      "file": "tests-e2e/live/anthropic-reasoning-auto-close.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 33506,
+      "p95Ms": 50166
+    },
+    {
+      "title": "reasoning window should show content after fresh localStorage clear",
+      "file": "tests-e2e/live/reasoning-window-conversation-id-bug-tdd.spec.ts",
+      "runs": 3,
+      "passes": 2,
+      "fails": 1,
+      "skipped": 0,
+      "passRate": 0.6666666666666666,
+      "status": "flaky",
+      "medianMs": 26175,
+      "p95Ms": 29314
+    },
+    {
+      "title": "should auto-close reasoning window when assistant message starts",
+      "file": "tests-e2e/live/anthropic-reasoning-auto-close.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 25872,
+      "p95Ms": 29532
+    },
+    {
+      "title": "switching models and sending messages builds recent models list",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 25431,
+      "p95Ms": 46873
+    },
+    {
+      "title": "sending message with selected model adds it to recent models section",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 24420,
+      "p95Ms": 24440
+    },
+    {
+      "title": "should count tokens correctly for Claude Sonnet with reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 20353,
+      "p95Ms": 21479
+    },
+    {
+      "title": "Invalid API key preserves conversation history",
+      "file": "tests-e2e/live/api-error-preserves-conversation.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 19829,
+      "p95Ms": 20334
+    },
+    {
+      "title": "Network error during streaming preserves conversation",
+      "file": "tests-e2e/live/api-error-preserves-conversation.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 18990,
+      "p95Ms": 19218
+    },
+    {
+      "title": "OpenAI: Reasoning content should stop updating after stop (robust test)",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 16923,
+      "p95Ms": 21945
+    },
+    {
+      "title": "Anthropic: Content should stop arriving after stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 15387,
+      "p95Ms": 15467
+    },
+    {
+      "title": "Reasoning panels should stop updating after stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 14517,
+      "p95Ms": 15961
+    },
+    {
+      "title": "Capture exact SSE events for reasoning model with effort off",
+      "file": "tests-e2e/live/reasoning-sse-events-simple.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 14441,
+      "p95Ms": 14515
+    },
+    {
+      "title": "helper correctly identifies empty dropdown state",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 11717,
+      "p95Ms": 11799
+    },
+    {
+      "title": "Two Anthropic reasoning messages with adequate wait",
+      "file": "tests-e2e/live/anthropic_two_messages_simple.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 11185,
+      "p95Ms": 11648
+    },
+    {
+      "title": "Stop button should prevent reasoning windows from completing in background",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 10436,
+      "p95Ms": 10438
+    },
+    {
+      "title": "Anthropic: stopping stream, deleting message, sending new message should show only ONE reasoning window",
+      "file": "tests-e2e/live/reasoning-orphan-window-bug.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 9866,
+      "p95Ms": 10388
+    },
+    {
+      "title": "summary should include message count in header",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "runs": 3,
+      "passes": 2,
+      "fails": 1,
+      "skipped": 0,
+      "passRate": 0.6666666666666666,
+      "status": "flaky",
+      "medianMs": 9377,
+      "p95Ms": 66401
+    },
+    {
+      "title": "deletes messages below pivot and remains usable",
+      "file": "tests-e2e/live/delete-all-below.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 9276,
+      "p95Ms": 9357
+    },
+    {
+      "title": "summary content should be preserved after abort",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 8842,
+      "p95Ms": 9305
+    },
+    {
+      "title": "Stop button should ACTUALLY stop the stream, not just update UI",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 8593,
+      "p95Ms": 8681
+    },
+    {
+      "title": "stop button should be visible during summary generation",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 8291,
+      "p95Ms": 8387
+    },
+    {
+      "title": "should display summary with distinct visual styling",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 7675,
+      "p95Ms": 7790
+    },
+    {
+      "title": "user can switch between different model types",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 7166,
+      "p95Ms": 7586
+    },
+    {
+      "title": "Quick Settings shows models with provider indicators when both providers configured",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 6869,
+      "p95Ms": 8246
+    },
+    {
+      "title": "streaming content should appear progressively",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 6775,
+      "p95Ms": 7095
+    },
+    {
+      "title": "title generation should not block main message response",
+      "file": "tests-e2e/live/title-generation-async-timing.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 6673,
+      "p95Ms": 8065
+    },
+    {
+      "title": "isStreaming store should remain true until stream actually ends",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 6617,
+      "p95Ms": 6840
+    },
+    {
+      "title": "checkbox should be disabled while summary is loading",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 6330,
+      "p95Ms": 6938
+    },
+    {
+      "title": "user can switch between providers dynamically",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 6169,
+      "p95Ms": 6350
+    },
+    {
+      "title": "should persist summary across page reload",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 5736,
+      "p95Ms": 7337
+    },
+    {
+      "title": "summary block should appear immediately when button is clicked",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 5633,
+      "p95Ms": 7379
+    },
+    {
+      "title": "should send system prompt with reasoning models (Claude Sonnet 4)",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 5625,
+      "p95Ms": 5814
+    },
+    {
+      "title": "should show message count in summary",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "runs": 3,
+      "passes": 2,
+      "fails": 1,
+      "skipped": 0,
+      "passRate": 0.6666666666666666,
+      "status": "flaky",
+      "medianMs": 5496,
+      "p95Ms": 6051
+    },
+    {
+      "title": "checkApiKeysFromState utility works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "runs": 3,
+      "passes": 2,
+      "fails": 1,
+      "skipped": 0,
+      "passRate": 0.6666666666666666,
+      "status": "flaky",
+      "medianMs": 5414,
+      "p95Ms": 5978
+    },
+    {
+      "title": "summary should show loading state while generating",
+      "file": "tests-e2e/live/summary-streaming.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 5390,
+      "p95Ms": 7062
+    },
+    {
+      "title": "Network request should be aborted when stop is clicked",
+      "file": "tests-e2e/live/stop-button-reasoning.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 5289,
+      "p95Ms": 5337
+    },
+    {
+      "title": "should edit summary content",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 5204,
+      "p95Ms": 6015
+    },
+    {
+      "title": "summary should use conversation model by default",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 5127,
+      "p95Ms": 6049
+    },
+    {
+      "title": "should delete summary",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 5088,
+      "p95Ms": 6710
+    },
+    {
+      "title": "should count tokens correctly for TEST_MODEL with reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 5084,
+      "p95Ms": 7028
+    },
+    {
+      "title": "should create and display summary when button clicked",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4908,
+      "p95Ms": 5197
+    },
+    {
+      "title": "OpenAI: Stop button should abort stream when clicked",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4793,
+      "p95Ms": 5562
+    },
+    {
+      "title": "should toggle summary active state via checkbox",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4695,
+      "p95Ms": 5754
+    },
+    {
+      "title": "helper detects multiple providers with optgroups",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4623,
+      "p95Ms": 5117
+    },
+    {
+      "title": "Quick Settings model selection persists per conversation",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4583,
+      "p95Ms": 4887
+    },
+    {
+      "title": "user can select and use models for conversation",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4557,
+      "p95Ms": 4848
+    },
+    {
+      "title": "helper closeAfter option works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4514,
+      "p95Ms": 4781
+    },
+    {
+      "title": "API validation error messages are provider-specific",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4476,
+      "p95Ms": 4477
+    },
+    {
+      "title": "summary should display model name in header",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4474,
+      "p95Ms": 4748
+    },
+    {
+      "title": "helper works with Settings dropdown",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4454,
+      "p95Ms": 4529
+    },
+    {
+      "title": "should send system prompt with reasoning models (GPT-5 nano)",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4403,
+      "p95Ms": 5246
+    },
+    {
+      "title": "should include custom conversation system prompt in Anthropic API request",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4266,
+      "p95Ms": 4723
+    },
+    {
+      "title": "should include default system prompt in Anthropic API request",
+      "file": "tests-e2e/live/anthropic-system-prompt.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4207,
+      "p95Ms": 4388
+    },
+    {
+      "title": "conversation title updates after first message",
+      "file": "tests-e2e/live/title-update.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4192,
+      "p95Ms": 4629
+    },
+    {
+      "title": "should send non-streaming message via SDK with claude-3-haiku",
+      "file": "tests-e2e/live/anthropic-sdk-nonstreaming.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4159,
+      "p95Ms": 4551
+    },
+    {
+      "title": "should count tokens correctly for Claude Haiku",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4083,
+      "p95Ms": 4098
+    },
+    {
+      "title": "should show summarize button in message toolbelt",
+      "file": "tests-e2e/live/summary-ui.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4037,
+      "p95Ms": 4672
+    },
+    {
+      "title": "helper handles allModels flat array correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3945,
+      "p95Ms": 3951
+    },
+    {
+      "title": "user experience remains consistent when provider keys are invalid",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3936,
+      "p95Ms": 4001
+    },
+    {
+      "title": "helper correctly identifies selected model and provider",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3840,
+      "p95Ms": 3949
+    },
+    {
+      "title": "provider switching in Settings updates Quick Settings model list",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3785,
+      "p95Ms": 3912
+    },
+    {
+      "title": "should count tokens correctly for TEST_MODEL without reasoning",
+      "file": "tests-e2e/live/token-counting.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3764,
+      "p95Ms": 4963
+    },
+    {
+      "title": "helper detectProvider function works correctly",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3655,
+      "p95Ms": 3915
+    },
+    {
+      "title": "helper handles captureHtml option for debugging",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3603,
+      "p95Ms": 3610
+    },
+    {
+      "title": "helper detects single provider models",
+      "file": "tests-e2e/live/test-dropdown-helper.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3551,
+      "p95Ms": 3664
+    },
+    {
+      "title": "user can access models from multiple providers",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3545,
+      "p95Ms": 3719
+    },
+    {
+      "title": "Live SSE: output completion and stream done (response.completed or [DONE])",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3538,
+      "p95Ms": 4096
+    },
+    {
+      "title": "should include custom conversation system prompt in OpenAI API request",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3451,
+      "p95Ms": 4503
+    },
+    {
+      "title": "user can access models when single provider is configured",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3345,
+      "p95Ms": 3557
+    },
+    {
+      "title": "streams tokens via streaming Responses API",
+      "file": "tests-e2e/live/responses-streaming.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3342,
+      "p95Ms": 3460
+    },
+    {
+      "title": "Live: per-conversation Quick Settings persist across switches",
+      "file": "tests-e2e/live/quick-settings-per-conversation-live.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3244,
+      "p95Ms": 3407
+    },
+    {
+      "title": "should include default system prompt in OpenAI API request",
+      "file": "tests-e2e/live/openai-system-prompt.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3194,
+      "p95Ms": 3220
+    },
+    {
+      "title": "OpenAI: Stop button should appear during streaming",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3164,
+      "p95Ms": 3241
+    },
+    {
+      "title": "Quick Settings reflects global model selection changes",
+      "file": "tests-e2e/live/provider-quick-settings.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3163,
+      "p95Ms": 3332
+    },
+    {
+      "title": "returns text via non-streaming Responses API",
+      "file": "tests-e2e/live/responses-nonstream.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3149,
+      "p95Ms": 3424
+    },
+    {
+      "title": "Live SSE: output completion for a very short answer",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3090,
+      "p95Ms": 3154
+    },
+    {
+      "title": "should handle errors gracefully with invalid model via SDK",
+      "file": "tests-e2e/live/anthropic-sdk-nonstreaming.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3089,
+      "p95Ms": 3124
+    },
+    {
+      "title": "summary model setting should appear in Settings menu",
+      "file": "tests-e2e/live/summary-model-settings.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2915,
+      "p95Ms": 3084
+    },
+    {
+      "title": "user model selection persists across UI operations",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2871,
+      "p95Ms": 3073
+    },
+    {
+      "title": "gpt-4.1-nano then gpt-5.4-nano reflected in payload.model",
+      "file": "tests-e2e/live/model-selection-payload.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2840,
+      "p95Ms": 3020
+    },
+    {
+      "title": "validates Anthropic API key successfully",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2447,
+      "p95Ms": 2463
+    },
+    {
+      "title": "Anthropic: Stop button should appear during streaming",
+      "file": "tests-e2e/live/stop-button.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2421,
+      "p95Ms": 2626
+    },
+    {
+      "title": "Live SSE: hook-based waits for reasoning and completion",
+      "file": "tests-e2e/live/sse-events-live.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2255,
+      "p95Ms": 2334
+    },
+    {
+      "title": "initial state has no recent models, all models in main list",
+      "file": "tests-e2e/live/quick-settings-recent-models.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1778,
+      "p95Ms": 1949
+    },
+    {
+      "title": "user sees appropriate feedback when no providers configured",
+      "file": "tests-e2e/live/provider-model-management.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1388,
+      "p95Ms": 1398
+    },
+    {
+      "title": "validates OpenAI API key successfully",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1338,
+      "p95Ms": 1383
+    },
+    {
+      "title": "API validation maintains provider context",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1284,
+      "p95Ms": 1325
+    },
+    {
+      "title": "shows error for invalid Anthropic API key",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 746,
+      "p95Ms": 755
+    },
+    {
+      "title": "shows error for invalid OpenAI API key",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 740,
+      "p95Ms": 766
+    },
+    {
+      "title": "check API button is present and clickable for both providers",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 402,
+      "p95Ms": 413
+    },
+    {
+      "title": "empty API key shows appropriate state",
+      "file": "tests-e2e/live/provider-api-validation.spec.ts",
+      "runs": 3,
+      "passes": 3,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 383,
+      "p95Ms": 388
+    },
+    {
+      "title": "fixture harness: record+replay OpenAI reasoning SSE",
+      "file": "tests-e2e/live/probe-fixture-harness.spec.ts",
+      "runs": 3,
+      "passes": 0,
+      "fails": 3,
+      "skipped": 0,
+      "passRate": 0,
+      "status": "failed",
+      "medianMs": 158,
+      "p95Ms": 161
+    },
+    {
+      "title": "fixture harness: record+replay Anthropic reasoning stream",
+      "file": "tests-e2e/live/probe-fixture-anthropic.spec.ts",
+      "runs": 3,
+      "passes": 0,
+      "fails": 3,
+      "skipped": 0,
+      "passRate": 0,
+      "status": "failed",
+      "medianMs": 124,
+      "p95Ms": 139
+    }
+  ],
+  "byFile": {
+    "provider-quick-settings": {
+      "totalMs": 321188,
+      "count": 18
+    },
+    "quick-settings-conversation-state-bug": {
+      "totalMs": 247465,
+      "count": 3
+    },
+    "stop-button-reasoning": {
+      "totalMs": 238742,
+      "count": 21
+    },
+    "anthropic-reasoning-auto-close": {
+      "totalMs": 196706,
+      "count": 6
+    },
+    "quick-settings-recent-models": {
+      "totalMs": 176334,
+      "count": 9
+    },
+    "test-dropdown-helper": {
+      "totalMs": 148625,
+      "count": 30
+    },
+    "summary-ui": {
+      "totalMs": 132097,
+      "count": 24
+    },
+    "summary-streaming": {
+      "totalMs": 123686,
+      "count": 18
+    },
+    "summary-model-settings": {
+      "totalMs": 119834,
+      "count": 12
+    },
+    "api-error-preserves-conversation": {
+      "totalMs": 116406,
+      "count": 6
+    },
+    "token-counting": {
+      "totalMs": 99961,
+      "count": 12
+    },
+    "provider-model-management": {
+      "totalMs": 99317,
+      "count": 24
+    },
+    "reasoning-window-conversation-id-bug-tdd": {
+      "totalMs": 81015,
+      "count": 3
+    },
+    "reasoning-sse-events-simple": {
+      "totalMs": 43209,
+      "count": 3
+    },
+    "anthropic-system-prompt": {
+      "totalMs": 42664,
+      "count": 9
+    },
+    "provider-api-validation": {
+      "totalMs": 35356,
+      "count": 24
+    },
+    "openai-system-prompt": {
+      "totalMs": 34163,
+      "count": 9
+    },
+    "anthropic_two_messages_simple": {
+      "totalMs": 33606,
+      "count": 3
+    },
+    "stop-button": {
+      "totalMs": 31854,
+      "count": 9
+    },
+    "reasoning-orphan-window-bug": {
+      "totalMs": 29965,
+      "count": 3
+    },
+    "delete-all-below": {
+      "totalMs": 27770,
+      "count": 3
+    },
+    "sse-events-live": {
+      "totalMs": 26084,
+      "count": 9
+    },
+    "anthropic-sdk-nonstreaming": {
+      "totalMs": 21431,
+      "count": 6
+    },
+    "title-generation-async-timing": {
+      "totalMs": 21116,
+      "count": 3
+    },
+    "title-update": {
+      "totalMs": 12713,
+      "count": 3
+    },
+    "responses-streaming": {
+      "totalMs": 9923,
+      "count": 3
+    },
+    "responses-nonstream": {
+      "totalMs": 9704,
+      "count": 3
+    },
+    "quick-settings-per-conversation-live": {
+      "totalMs": 9625,
+      "count": 3
+    },
+    "model-selection-payload": {
+      "totalMs": 8673,
+      "count": 3
+    },
+    "probe-fixture-harness": {
+      "totalMs": 454,
+      "count": 3
+    },
+    "probe-fixture-anthropic": {
+      "totalMs": 383,
+      "count": 3
+    }
+  }
+}
