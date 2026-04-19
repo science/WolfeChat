@@ -1,0 +1,39 @@
+event: message_start
+data: {"type":"message_start","message":{"model":"claude-sonnet-4-5-20250929","id":"msg_01ACJSp3BRS6tecrqNSNrihx","type":"message","role":"assistant","content":[],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":83,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":0},"output_tokens":2,"service_tier":"standard","inference_geo":"not_available"}}   }
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""}              }
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user"} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" is asking me to calculate 2+2. This is a simple arithmetic problem.\n\n2 + 2 = 4\n\nFollowing the guidelines"}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":", I should provide a straightforward answer without compliments, enthusiasm, or offers for follow-up."} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"Ep0DCmQIDBgCKkC6jCzbwUdzPgO5WJaJEKfgHInv7xHKFPxRDlPFtNBuXc+IzMWadI20HcuLgARlKIlkHRSfNF2Aw2z9bP375BZmMhpjbGF1ZGUtc29ubmV0LTQtNS0yMDI1MDkyOTgAEgxHvsiD1oea/xjSXTUaDJsWC65tWWWtFOi6aCIwelqizMmW5UC4+CYPnjSGlthx9HcgTxevdlHUYws/p+bvlU6fJQ8KFDnKu4fao3O0KuYBfS1mvbC25OQEBY1HyZHY3DO1GTr6yd6ONu3sNsbNQ6lpKz23s9cSkETuusuE4DPhWO4w4pcRL58S2hicZGBqBMoJP5gESJkCXencdQFq7J9UbUdCM2Z6JNY43OpJLEt3rk7n0OMCVi7N5CYz8MOQqkwFjIGxgz5WYqzLhDPaLmLvj4K6r+pIYV90f3xMrWUD9dYwQWNDw2YDWu9oXGE5JjsapIg8y8MCncvOFSaAOHKepIEDq+Rt3VM3WP8mj/kbv09qf2WQR22rhkzwJZk0Y8qWpWSj2tZzxFPBT2mTZ8aa6/sMlakYAQ=="}       }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0               }
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"4"}       }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1             }
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null,"stop_details":null},"usage":{"input_tokens":83,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":66} }
+
+event: message_stop
+data: {"type":"message_stop"              }
+

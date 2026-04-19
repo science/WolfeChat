@@ -1,0 +1,42 @@
+event: message_start
+data: {"type":"message_start","message":{"model":"claude-sonnet-4-5-20250929","id":"msg_01LWcKSS4QPPHpV2UaMbQYsG","type":"message","role":"assistant","content":[],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":71,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":0},"output_tokens":1,"service_tier":"standard","inference_geo":"not_available"}} }
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""}             }
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"This"}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" is a simple arithmetic question. 1 + 1 = 2.\n\nThe user has asked me to be"}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" direct and concise, avoid conversational fluff, not provide compliments or enthusiastic comments at the start, and not offer"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" follow-ups at the end.\n\nSo I should just answer: 2"}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"EsQDCmQIDBgCKkCCQVmoqdekU9WgcK7Vu9qepl45LacNsoGe4QBiKHSSmPtCqOzp8zO5QwxEZpPuPB47DcwExmiW0zdFuWIsgkOSMhpjbGF1ZGUtc29ubmV0LTQtNS0yMDI1MDkyOTgAEgwoQuehB+RSkUU/gFQaDK0CWrj/2Fh7aFHe9CIwjjLZPL8iyWZjjGwbbFGD2n15Xbcj61VaCiwFaAiA8e4Eee6umgTM565XlmFJNYdSKo0C78Klh6RJaMygFDoZwU5TEdwUdKOVIrsr8U0mqZAH+4VUTOnXuGIn16bunb3u2EfvQJRB2EPZsCiK3GNqGQTdvlZ22M0RvMG6ekdXv77d/YrmmWsExlrOgAJiI4B1SUit9b3mc5n2s0oEULAqfeSEGfX4FOqsqnVNkkRyAsXk+uAPRccaaWFy/Yx9qvzCvrnqYI8hNFJat0KyZ7K3eSCf7WVz2J2rjLtkz6PTf+P4ZMz1xNl1GnKjkhoDz7y+w5XEvkI2B+KCsQ2Ml5dHf8B5cC7UOBiumwDgDnZ+klHXYt+CMfLXZ05O5ELssf9Md3N4F3rp1m/de0eLIayrpylW6ysKcwMjjNpLX89A1FoYAQ=="}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0}
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"2"}   }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1      }
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null,"stop_details":null},"usage":{"input_tokens":71,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":80}            }
+
+event: message_stop
+data: {"type":"message_stop"          }
+
