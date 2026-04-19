@@ -1,0 +1,99 @@
+event: response.created
+data: {"type":"response.created","response":{"id":"resp_0f9775972b3122cc0169e4753836408194a5c8d48c81428b04","object":"response","created_at":1776579896,"status":"in_progress","background":false,"completed_at":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-4.1-nano-2025-04-14","output":[],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":"in_memory","reasoning":{"effort":null,"summary":null},"safety_identifier":null,"service_tier":"auto","store":false,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}},"sequence_number":0}
+
+event: response.in_progress
+data: {"type":"response.in_progress","response":{"id":"resp_0f9775972b3122cc0169e4753836408194a5c8d48c81428b04","object":"response","created_at":1776579896,"status":"in_progress","background":false,"completed_at":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-4.1-nano-2025-04-14","output":[],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":"in_memory","reasoning":{"effort":null,"summary":null},"safety_identifier":null,"service_tier":"auto","store":false,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}},"sequence_number":1}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","type":"message","status":"in_progress","content":[],"role":"assistant"},"output_index":0,"sequence_number":2}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","content_index":0,"item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","output_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":""},"sequence_number":3}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"The","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"jjBHWKtwl4F3P","output_index":0,"sequence_number":4}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" conversation","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"1SC","output_index":0,"sequence_number":5}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" involved","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"AXs8Jkd","output_index":0,"sequence_number":6}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" initial","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"DGjByTTo","output_index":0,"sequence_number":7}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" image","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"igtr1BPuof","output_index":0,"sequence_number":8}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" sharing","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"0OEEclI4","output_index":0,"sequence_number":9}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" and","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"0eVxdA0Fl0I1","output_index":0,"sequence_number":10}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" requesting","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"mpvag","output_index":0,"sequence_number":11}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" clarification","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"dp","output_index":0,"sequence_number":12}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" to","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"kkyPBakl9Uyih","output_index":0,"sequence_number":13}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" assist","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"gIkWwmX9c","output_index":0,"sequence_number":14}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"SOqTIr7YSdPotKA","output_index":0,"sequence_number":15}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" but","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"CHlRC6NFiwWh","output_index":0,"sequence_number":16}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" no","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"3qA9f8SDZi8nT","output_index":0,"sequence_number":17}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" specific","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"KwdS5Uo","output_index":0,"sequence_number":18}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" topics","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"HEi90XLK9","output_index":0,"sequence_number":19}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"4nun1nIMVgIkfeM","output_index":0,"sequence_number":20}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" decisions","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"isLuKn","output_index":0,"sequence_number":21}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"KqPZViBIK0Oavmw","output_index":0,"sequence_number":22}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" or","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"GkarFkHquxuPp","output_index":0,"sequence_number":23}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" action","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"h8krkR9e7","output_index":0,"sequence_number":24}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" steps","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"Mt9skyDNmo","output_index":0,"sequence_number":25}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" were","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"js5qrvlYC95","output_index":0,"sequence_number":26}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" discussed","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"1roLlP","output_index":0,"sequence_number":27}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":".","item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"obfuscation":"iLzDjVOfbG2fFa7","output_index":0,"sequence_number":28}
+
+event: response.output_text.done
+data: {"type":"response.output_text.done","content_index":0,"item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","logprobs":[],"output_index":0,"sequence_number":29,"text":"The conversation involved initial image sharing and requesting clarification to assist, but no specific topics, decisions, or action steps were discussed."}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","content_index":0,"item_id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","output_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":"The conversation involved initial image sharing and requesting clarification to assist, but no specific topics, decisions, or action steps were discussed."},"sequence_number":30}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"The conversation involved initial image sharing and requesting clarification to assist, but no specific topics, decisions, or action steps were discussed."}],"role":"assistant"},"output_index":0,"sequence_number":31}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"resp_0f9775972b3122cc0169e4753836408194a5c8d48c81428b04","object":"response","created_at":1776579896,"status":"completed","background":false,"completed_at":1776579896,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-4.1-nano-2025-04-14","output":[{"id":"msg_0f9775972b3122cc0169e475387eec8194b2a867f1240d2584","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"The conversation involved initial image sharing and requesting clarification to assist, but no specific topics, decisions, or action steps were discussed."}],"role":"assistant"}],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":"in_memory","reasoning":{"effort":null,"summary":null},"safety_identifier":null,"service_tier":"default","store":false,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":{"input_tokens":122,"input_tokens_details":{"cached_tokens":0},"output_tokens":26,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":148},"user":null,"metadata":{}},"sequence_number":32}
+

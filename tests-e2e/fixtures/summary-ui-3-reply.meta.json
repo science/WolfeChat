@@ -1,0 +1,8 @@
+{
+  "url": "https://api.openai.com/v1/responses",
+  "method": "POST",
+  "mimeType": "text/event-stream; charset=utf-8",
+  "recordedAt": "2026-04-19T06:24:40.403Z",
+  "bytes": 6808,
+  "promptPreview": "summary visual styling (#1)"
+}
