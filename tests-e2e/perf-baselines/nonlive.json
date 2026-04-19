@@ -1,0 +1,1881 @@
+{
+  "timestamp": "2026-04-19T05:01:45.329Z",
+  "totalMs": 61900,
+  "runCount": 97,
+  "distinctTestCount": 97,
+  "status": "passed",
+  "flakyCount": 0,
+  "failedCount": 0,
+  "runs": [
+    {
+      "title": "should verify that fixed helpers work with API mocking",
+      "file": "tests-e2e/nonlive/verify-fixes.spec.ts",
+      "durationMs": 4393,
+      "status": "passed"
+    },
+    {
+      "title": "should use correct selector and debug model population",
+      "file": "tests-e2e/nonlive/test-correct-selector.spec.ts",
+      "durationMs": 4392,
+      "status": "passed"
+    },
+    {
+      "title": "should mock OpenAI API and verify complete model flow",
+      "file": "tests-e2e/nonlive/test-api-mocking.spec.ts",
+      "durationMs": 3416,
+      "status": "passed"
+    },
+    {
+      "title": "summary messages: button present on summary when not last",
+      "file": "tests-e2e/nonlive/delete-all-below-button.spec.ts",
+      "durationMs": 3032,
+      "status": "passed"
+    },
+    {
+      "title": "single message: no delete-all-below button",
+      "file": "tests-e2e/nonlive/delete-all-below-button.spec.ts",
+      "durationMs": 2992,
+      "status": "passed"
+    },
+    {
+      "title": "regular messages: button present on all but last message",
+      "file": "tests-e2e/nonlive/delete-all-below-button.spec.ts",
+      "durationMs": 2962,
+      "status": "passed"
+    },
+    {
+      "title": "should test the complete E2E flow with proper expansion",
+      "file": "tests-e2e/nonlive/test-quicksettings-expansion.spec.ts",
+      "durationMs": 2910,
+      "status": "passed"
+    },
+    {
+      "title": "Settings: min height can be changed and persists",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "durationMs": 2619,
+      "status": "passed"
+    },
+    {
+      "title": "Settings: checkbox state persists across page reloads",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "durationMs": 2572,
+      "status": "passed"
+    },
+    {
+      "title": "Settings: max height can be changed and persists",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "durationMs": 2572,
+      "status": "passed"
+    },
+    {
+      "title": "Up/Down navigates between message anchors",
+      "file": "tests-e2e/nonlive/conversation-navigation-anchors.spec.ts",
+      "durationMs": 2304,
+      "status": "passed"
+    },
+    {
+      "title": "TEST 4: Draft Persistence Through New Chat",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "durationMs": 2278,
+      "status": "passed"
+    },
+    {
+      "title": "TEST 5: Rapid New Chat Clicking",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "durationMs": 2159,
+      "status": "passed"
+    },
+    {
+      "title": "Textarea uses min height as initial height",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "durationMs": 2010,
+      "status": "passed"
+    },
+    {
+      "title": "reasoning window reopens and minimizes correctly for consecutive messages",
+      "file": "tests-e2e/nonlive/reasoning-windows.spec.ts",
+      "durationMs": 1993,
+      "status": "passed"
+    },
+    {
+      "title": "new conversation should use custom system prompt set in Settings",
+      "file": "tests-e2e/nonlive/system-prompt-new-conversation.spec.ts",
+      "durationMs": 1965,
+      "status": "passed"
+    },
+    {
+      "title": "should examine DOM changes when clicking QuickSettings",
+      "file": "tests-e2e/nonlive/debug-quicksettings-click.spec.ts",
+      "durationMs": 1816,
+      "status": "passed"
+    },
+    {
+      "title": "should verify original E2E test pattern works",
+      "file": "tests-e2e/nonlive/verify-fixes.spec.ts",
+      "durationMs": 1734,
+      "status": "passed"
+    },
+    {
+      "title": "TEST 7: Topbar New Chat Button",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "durationMs": 1682,
+      "status": "passed"
+    },
+    {
+      "title": "Textarea respects max height setting when expanding",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "durationMs": 1663,
+      "status": "passed"
+    },
+    {
+      "title": "TEST 6: Complex Text Preservation",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "durationMs": 1589,
+      "status": "passed"
+    },
+    {
+      "title": "Settings: max height has default value of 288",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "durationMs": 1555,
+      "status": "passed"
+    },
+    {
+      "title": "Settings: shows textarea height controls",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "durationMs": 1482,
+      "status": "passed"
+    },
+    {
+      "title": "TEST 1: Basic New Chat Button Preserves Input",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "durationMs": 1473,
+      "status": "passed"
+    },
+    {
+      "title": "Settings: min height has default value of 96",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "durationMs": 1428,
+      "status": "passed"
+    },
+    {
+      "title": "Settings: min height input has valid bounds (32-200)",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "durationMs": 1416,
+      "status": "passed"
+    },
+    {
+      "title": "Settings: max height input has valid bounds (100-600)",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "durationMs": 1404,
+      "status": "passed"
+    },
+    {
+      "title": "new conversation should use default prompt when Settings prompt is unchanged",
+      "file": "tests-e2e/nonlive/system-prompt-new-conversation.spec.ts",
+      "durationMs": 1396,
+      "status": "passed"
+    },
+    {
+      "title": "should clear input after conversation with messages",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "durationMs": 1356,
+      "status": "passed"
+    },
+    {
+      "title": "Non-reasoning model shows no RW, reasoning model shows RW",
+      "file": "tests-e2e/nonlive/reasoning-windows-placement.spec.ts",
+      "durationMs": 1304,
+      "status": "passed"
+    },
+    {
+      "title": "textarea remains visible after auto-expand on mobile viewport",
+      "file": "tests-e2e/nonlive/input-visibility-mobile.spec.ts",
+      "durationMs": 1261,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: with auto-collapse disabled, reasoning window stays open when response completes",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "durationMs": 1252,
+      "status": "passed"
+    },
+    {
+      "title": "Quick Settings: checkbox appears for reasoning models and syncs with Settings",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "durationMs": 1217,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: with auto-collapse enabled, reasoning window closes when response completes",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "durationMs": 1189,
+      "status": "passed"
+    },
+    {
+      "title": "extreme case - very long message with simulated keyboard",
+      "file": "tests-e2e/nonlive/input-visibility-mobile.spec.ts",
+      "durationMs": 1174,
+      "status": "passed"
+    },
+    {
+      "title": "Settings: checkbox is not visible when non-reasoning model is selected",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "durationMs": 1126,
+      "status": "passed"
+    },
+    {
+      "title": "Settings: checkbox appears when reasoning model is selected and defaults to checked",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "durationMs": 1105,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: with auto-collapse disabled, reasoning window stays open when response completes",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "durationMs": 1091,
+      "status": "passed"
+    },
+    {
+      "title": "textarea scrolls into view when expanding on constrained desktop viewport",
+      "file": "tests-e2e/nonlive/input-visibility-mobile.spec.ts",
+      "durationMs": 1042,
+      "status": "passed"
+    },
+    {
+      "title": "Anthropic: with auto-collapse enabled, reasoning window closes when response completes",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "durationMs": 1030,
+      "status": "passed"
+    },
+    {
+      "title": "viewport remains stable while streaming",
+      "file": "tests-e2e/nonlive/chat-streaming-scroll.spec.ts",
+      "durationMs": 958,
+      "status": "passed"
+    },
+    {
+      "title": "should boot without JavaScript errors",
+      "file": "tests-e2e/nonlive/app-boot-no-errors.spec.ts",
+      "durationMs": 953,
+      "status": "passed"
+    },
+    {
+      "title": "OpenAI: after deleting a reasoning message, a new one produces exactly one window",
+      "file": "tests-e2e/nonlive/reasoning-orphan-window-openai.spec.ts",
+      "durationMs": 943,
+      "status": "passed"
+    },
+    {
+      "title": "reasoning window streams content and reaches done on a longer prompt",
+      "file": "tests-e2e/nonlive/reasoning-windows.spec.ts",
+      "durationMs": 929,
+      "status": "passed"
+    },
+    {
+      "title": "reasoning panels should be removed when delete-all-below is clicked",
+      "file": "tests-e2e/nonlive/reasoning-panels-delete-bug.spec.ts",
+      "durationMs": 894,
+      "status": "passed"
+    },
+    {
+      "title": "RW placement remains stable when new messages are added",
+      "file": "tests-e2e/nonlive/reasoning-windows-placement.spec.ts",
+      "durationMs": 887,
+      "status": "passed"
+    },
+    {
+      "title": "should maintain input box state after rapid button clicks",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "durationMs": 851,
+      "status": "passed"
+    },
+    {
+      "title": "should have a valid favicon href that loads successfully",
+      "file": "tests-e2e/nonlive/favicon-and-title.spec.ts",
+      "durationMs": 851,
+      "status": "passed"
+    },
+    {
+      "title": "gpt-5.1 shows \"none\" option, hides \"minimal\" in Settings",
+      "file": "tests-e2e/nonlive/reasoning-effort-options.spec.ts",
+      "durationMs": 842,
+      "status": "passed"
+    },
+    {
+      "title": "provider settings persist across page reloads",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "durationMs": 840,
+      "status": "passed"
+    },
+    {
+      "title": "new user can open Settings and configure API key",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "durationMs": 837,
+      "status": "passed"
+    },
+    {
+      "title": "reasoning window renders and panel reaches done",
+      "file": "tests-e2e/nonlive/reasoning-windows.spec.ts",
+      "durationMs": 834,
+      "status": "passed"
+    },
+    {
+      "title": "app boots successfully with corrupted anthropic_api_key in localStorage",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "durationMs": 828,
+      "status": "passed"
+    },
+    {
+      "title": "should show \"WolfeChat\" for new conversation without title",
+      "file": "tests-e2e/nonlive/favicon-and-title.spec.ts",
+      "durationMs": 826,
+      "status": "passed"
+    },
+    {
+      "title": "should find model selection in Quick Settings area",
+      "file": "tests-e2e/nonlive/debug-page-elements.spec.ts",
+      "durationMs": 810,
+      "status": "passed"
+    },
+    {
+      "title": "app boots successfully with completely empty localStorage",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "durationMs": 807,
+      "status": "passed"
+    },
+    {
+      "title": "should find what elements exist on page",
+      "file": "tests-e2e/nonlive/debug-page-elements.spec.ts",
+      "durationMs": 802,
+      "status": "passed"
+    },
+    {
+      "title": "should expand QuickSettings and find model dropdown",
+      "file": "tests-e2e/nonlive/test-quicksettings-expansion.spec.ts",
+      "durationMs": 801,
+      "status": "passed"
+    },
+    {
+      "title": "RW appear with reasoning content and bind to correct message",
+      "file": "tests-e2e/nonlive/reasoning-windows-placement.spec.ts",
+      "durationMs": 797,
+      "status": "passed"
+    },
+    {
+      "title": "app boots successfully with corrupted api_key in localStorage",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "durationMs": 795,
+      "status": "passed"
+    },
+    {
+      "title": "should examine QuickSettings component source",
+      "file": "tests-e2e/nonlive/debug-quicksettings-click.spec.ts",
+      "durationMs": 790,
+      "status": "passed"
+    },
+    {
+      "title": "reasoning window auto-minimizes after assistant starts replying",
+      "file": "tests-e2e/nonlive/reasoning-windows.spec.ts",
+      "durationMs": 754,
+      "status": "passed"
+    },
+    {
+      "title": "app boots with various malformed localStorage values",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "durationMs": 720,
+      "status": "passed"
+    },
+    {
+      "title": "should show \"WolfeChat: [chat title]\" when conversation has a title",
+      "file": "tests-e2e/nonlive/favicon-and-title.spec.ts",
+      "durationMs": 711,
+      "status": "passed"
+    },
+    {
+      "title": "app boots successfully with corrupted openai_api_key in localStorage",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "durationMs": 706,
+      "status": "passed"
+    },
+    {
+      "title": "gpt-5.1 shows \"none\" option, hides \"minimal\" in Quick Settings",
+      "file": "tests-e2e/nonlive/reasoning-effort-options.spec.ts",
+      "durationMs": 681,
+      "status": "passed"
+    },
+    {
+      "title": "gpt-5-nano shows \"minimal\" option, hides \"none\" in Settings",
+      "file": "tests-e2e/nonlive/reasoning-effort-options.spec.ts",
+      "durationMs": 661,
+      "status": "passed"
+    },
+    {
+      "title": "sequential sends clear input after each message",
+      "file": "tests-e2e/nonlive/input-clearing-test.spec.ts",
+      "durationMs": 657,
+      "status": "passed"
+    },
+    {
+      "title": "Highlighting persists across updated content (append within same block)",
+      "file": "tests-e2e/nonlive/code-renderer-streaming.spec.ts",
+      "durationMs": 634,
+      "status": "passed"
+    },
+    {
+      "title": "API key field maintains separate values for each provider",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "durationMs": 609,
+      "status": "passed"
+    },
+    {
+      "title": "Prism tokens present during and after stream for fenced block",
+      "file": "tests-e2e/nonlive/code-renderer-streaming.spec.ts",
+      "durationMs": 585,
+      "status": "passed"
+    },
+    {
+      "title": "TEST 2: Multiple Conversations Input Preservation",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "durationMs": 554,
+      "status": "passed"
+    },
+    {
+      "title": "visual grouping container exists around provider settings",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "durationMs": 539,
+      "status": "passed"
+    },
+    {
+      "title": "isolated per chat across content sizes",
+      "file": "tests-e2e/nonlive/chat-scroll-state.spec.ts",
+      "durationMs": 529,
+      "status": "passed"
+    },
+    {
+      "title": "should clear input when clicking Clear Chat button in sidebar",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "durationMs": 520,
+      "status": "passed"
+    },
+    {
+      "title": "TEST 3: New Chat vs Clear Chat Behavior Difference",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "durationMs": 501,
+      "status": "passed"
+    },
+    {
+      "title": "can type text into input field",
+      "file": "tests-e2e/nonlive/browser-smoke.spec.ts",
+      "durationMs": 500,
+      "status": "passed"
+    },
+    {
+      "title": "provider dropdown has correct options and default selection",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "durationMs": 490,
+      "status": "passed"
+    },
+    {
+      "title": "visiting empty chat does not reset other chats",
+      "file": "tests-e2e/nonlive/chat-scroll-state.spec.ts",
+      "durationMs": 480,
+      "status": "passed"
+    },
+    {
+      "title": "should clear input when clicking Clear Chat button in QuickSettings",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "durationMs": 479,
+      "status": "passed"
+    },
+    {
+      "title": "can send a prompt and receive a mocked response",
+      "file": "tests-e2e/nonlive/browser-smoke.spec.ts",
+      "durationMs": 471,
+      "status": "passed"
+    },
+    {
+      "title": "should clear input with multi-line text",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "durationMs": 468,
+      "status": "passed"
+    },
+    {
+      "title": "mode selection dropdown is not visible",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "durationMs": 460,
+      "status": "passed"
+    },
+    {
+      "title": "should clear input with partially typed message",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "durationMs": 459,
+      "status": "passed"
+    },
+    {
+      "title": "should clear input with special characters and emojis",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "durationMs": 449,
+      "status": "passed"
+    },
+    {
+      "title": "does not override custom title",
+      "file": "tests-e2e/nonlive/title-generation.spec.ts",
+      "durationMs": 445,
+      "status": "passed"
+    },
+    {
+      "title": "should clear input when clicking New Chat button in mobile topbar",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "durationMs": 433,
+      "status": "passed"
+    },
+    {
+      "title": "gpt-5-nano shows \"minimal\" option, hides \"none\" in Quick Settings",
+      "file": "tests-e2e/nonlive/reasoning-effort-options.spec.ts",
+      "durationMs": 433,
+      "status": "passed"
+    },
+    {
+      "title": "provider switching preserves other settings",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "durationMs": 427,
+      "status": "passed"
+    },
+    {
+      "title": "API key field label changes based on selected provider",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "durationMs": 415,
+      "status": "passed"
+    },
+    {
+      "title": "sanitizes quotes and Title: prefix",
+      "file": "tests-e2e/nonlive/title-generation.spec.ts",
+      "durationMs": 415,
+      "status": "passed"
+    },
+    {
+      "title": "switching empty->long restores saved ratio",
+      "file": "tests-e2e/nonlive/chat-scroll-state.spec.ts",
+      "durationMs": 409,
+      "status": "passed"
+    },
+    {
+      "title": "sets title from Responses output after first reply",
+      "file": "tests-e2e/nonlive/title-generation.spec.ts",
+      "durationMs": 403,
+      "status": "passed"
+    },
+    {
+      "title": "fallback on invalid structure",
+      "file": "tests-e2e/nonlive/title-generation.spec.ts",
+      "durationMs": 383,
+      "status": "passed"
+    },
+    {
+      "title": "app boots and chat UI renders",
+      "file": "tests-e2e/nonlive/scroll-and-stream.spec.ts",
+      "durationMs": 364,
+      "status": "passed"
+    },
+    {
+      "title": "should clear input when clicking New Chat button in sidebar",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "durationMs": 347,
+      "status": "passed"
+    },
+    {
+      "title": "scroll container maintains position when streaming placeholder grows",
+      "file": "tests-e2e/nonlive/scroll-and-stream.spec.ts",
+      "durationMs": 335,
+      "status": "passed"
+    }
+  ],
+  "tests": [
+    {
+      "title": "should verify that fixed helpers work with API mocking",
+      "file": "tests-e2e/nonlive/verify-fixes.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4393,
+      "p95Ms": 4393
+    },
+    {
+      "title": "should use correct selector and debug model population",
+      "file": "tests-e2e/nonlive/test-correct-selector.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 4392,
+      "p95Ms": 4392
+    },
+    {
+      "title": "should mock OpenAI API and verify complete model flow",
+      "file": "tests-e2e/nonlive/test-api-mocking.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3416,
+      "p95Ms": 3416
+    },
+    {
+      "title": "summary messages: button present on summary when not last",
+      "file": "tests-e2e/nonlive/delete-all-below-button.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 3032,
+      "p95Ms": 3032
+    },
+    {
+      "title": "single message: no delete-all-below button",
+      "file": "tests-e2e/nonlive/delete-all-below-button.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2992,
+      "p95Ms": 2992
+    },
+    {
+      "title": "regular messages: button present on all but last message",
+      "file": "tests-e2e/nonlive/delete-all-below-button.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2962,
+      "p95Ms": 2962
+    },
+    {
+      "title": "should test the complete E2E flow with proper expansion",
+      "file": "tests-e2e/nonlive/test-quicksettings-expansion.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2910,
+      "p95Ms": 2910
+    },
+    {
+      "title": "Settings: min height can be changed and persists",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2619,
+      "p95Ms": 2619
+    },
+    {
+      "title": "Settings: checkbox state persists across page reloads",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2572,
+      "p95Ms": 2572
+    },
+    {
+      "title": "Settings: max height can be changed and persists",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2572,
+      "p95Ms": 2572
+    },
+    {
+      "title": "Up/Down navigates between message anchors",
+      "file": "tests-e2e/nonlive/conversation-navigation-anchors.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2304,
+      "p95Ms": 2304
+    },
+    {
+      "title": "TEST 4: Draft Persistence Through New Chat",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2278,
+      "p95Ms": 2278
+    },
+    {
+      "title": "TEST 5: Rapid New Chat Clicking",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2159,
+      "p95Ms": 2159
+    },
+    {
+      "title": "Textarea uses min height as initial height",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 2010,
+      "p95Ms": 2010
+    },
+    {
+      "title": "reasoning window reopens and minimizes correctly for consecutive messages",
+      "file": "tests-e2e/nonlive/reasoning-windows.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1993,
+      "p95Ms": 1993
+    },
+    {
+      "title": "new conversation should use custom system prompt set in Settings",
+      "file": "tests-e2e/nonlive/system-prompt-new-conversation.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1965,
+      "p95Ms": 1965
+    },
+    {
+      "title": "should examine DOM changes when clicking QuickSettings",
+      "file": "tests-e2e/nonlive/debug-quicksettings-click.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1816,
+      "p95Ms": 1816
+    },
+    {
+      "title": "should verify original E2E test pattern works",
+      "file": "tests-e2e/nonlive/verify-fixes.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1734,
+      "p95Ms": 1734
+    },
+    {
+      "title": "TEST 7: Topbar New Chat Button",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1682,
+      "p95Ms": 1682
+    },
+    {
+      "title": "Textarea respects max height setting when expanding",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1663,
+      "p95Ms": 1663
+    },
+    {
+      "title": "TEST 6: Complex Text Preservation",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1589,
+      "p95Ms": 1589
+    },
+    {
+      "title": "Settings: max height has default value of 288",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1555,
+      "p95Ms": 1555
+    },
+    {
+      "title": "Settings: shows textarea height controls",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1482,
+      "p95Ms": 1482
+    },
+    {
+      "title": "TEST 1: Basic New Chat Button Preserves Input",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1473,
+      "p95Ms": 1473
+    },
+    {
+      "title": "Settings: min height has default value of 96",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1428,
+      "p95Ms": 1428
+    },
+    {
+      "title": "Settings: min height input has valid bounds (32-200)",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1416,
+      "p95Ms": 1416
+    },
+    {
+      "title": "Settings: max height input has valid bounds (100-600)",
+      "file": "tests-e2e/nonlive/textarea-settings.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1404,
+      "p95Ms": 1404
+    },
+    {
+      "title": "new conversation should use default prompt when Settings prompt is unchanged",
+      "file": "tests-e2e/nonlive/system-prompt-new-conversation.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1396,
+      "p95Ms": 1396
+    },
+    {
+      "title": "should clear input after conversation with messages",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1356,
+      "p95Ms": 1356
+    },
+    {
+      "title": "Non-reasoning model shows no RW, reasoning model shows RW",
+      "file": "tests-e2e/nonlive/reasoning-windows-placement.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1304,
+      "p95Ms": 1304
+    },
+    {
+      "title": "textarea remains visible after auto-expand on mobile viewport",
+      "file": "tests-e2e/nonlive/input-visibility-mobile.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1261,
+      "p95Ms": 1261
+    },
+    {
+      "title": "OpenAI: with auto-collapse disabled, reasoning window stays open when response completes",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1252,
+      "p95Ms": 1252
+    },
+    {
+      "title": "Quick Settings: checkbox appears for reasoning models and syncs with Settings",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1217,
+      "p95Ms": 1217
+    },
+    {
+      "title": "OpenAI: with auto-collapse enabled, reasoning window closes when response completes",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1189,
+      "p95Ms": 1189
+    },
+    {
+      "title": "extreme case - very long message with simulated keyboard",
+      "file": "tests-e2e/nonlive/input-visibility-mobile.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1174,
+      "p95Ms": 1174
+    },
+    {
+      "title": "Settings: checkbox is not visible when non-reasoning model is selected",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1126,
+      "p95Ms": 1126
+    },
+    {
+      "title": "Settings: checkbox appears when reasoning model is selected and defaults to checked",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1105,
+      "p95Ms": 1105
+    },
+    {
+      "title": "Anthropic: with auto-collapse disabled, reasoning window stays open when response completes",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1091,
+      "p95Ms": 1091
+    },
+    {
+      "title": "textarea scrolls into view when expanding on constrained desktop viewport",
+      "file": "tests-e2e/nonlive/input-visibility-mobile.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1042,
+      "p95Ms": 1042
+    },
+    {
+      "title": "Anthropic: with auto-collapse enabled, reasoning window closes when response completes",
+      "file": "tests-e2e/nonlive/reasoning-auto-collapse-setting.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 1030,
+      "p95Ms": 1030
+    },
+    {
+      "title": "viewport remains stable while streaming",
+      "file": "tests-e2e/nonlive/chat-streaming-scroll.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 958,
+      "p95Ms": 958
+    },
+    {
+      "title": "should boot without JavaScript errors",
+      "file": "tests-e2e/nonlive/app-boot-no-errors.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 953,
+      "p95Ms": 953
+    },
+    {
+      "title": "OpenAI: after deleting a reasoning message, a new one produces exactly one window",
+      "file": "tests-e2e/nonlive/reasoning-orphan-window-openai.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 943,
+      "p95Ms": 943
+    },
+    {
+      "title": "reasoning window streams content and reaches done on a longer prompt",
+      "file": "tests-e2e/nonlive/reasoning-windows.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 929,
+      "p95Ms": 929
+    },
+    {
+      "title": "reasoning panels should be removed when delete-all-below is clicked",
+      "file": "tests-e2e/nonlive/reasoning-panels-delete-bug.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 894,
+      "p95Ms": 894
+    },
+    {
+      "title": "RW placement remains stable when new messages are added",
+      "file": "tests-e2e/nonlive/reasoning-windows-placement.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 887,
+      "p95Ms": 887
+    },
+    {
+      "title": "should maintain input box state after rapid button clicks",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 851,
+      "p95Ms": 851
+    },
+    {
+      "title": "should have a valid favicon href that loads successfully",
+      "file": "tests-e2e/nonlive/favicon-and-title.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 851,
+      "p95Ms": 851
+    },
+    {
+      "title": "gpt-5.1 shows \"none\" option, hides \"minimal\" in Settings",
+      "file": "tests-e2e/nonlive/reasoning-effort-options.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 842,
+      "p95Ms": 842
+    },
+    {
+      "title": "provider settings persist across page reloads",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 840,
+      "p95Ms": 840
+    },
+    {
+      "title": "new user can open Settings and configure API key",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 837,
+      "p95Ms": 837
+    },
+    {
+      "title": "reasoning window renders and panel reaches done",
+      "file": "tests-e2e/nonlive/reasoning-windows.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 834,
+      "p95Ms": 834
+    },
+    {
+      "title": "app boots successfully with corrupted anthropic_api_key in localStorage",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 828,
+      "p95Ms": 828
+    },
+    {
+      "title": "should show \"WolfeChat\" for new conversation without title",
+      "file": "tests-e2e/nonlive/favicon-and-title.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 826,
+      "p95Ms": 826
+    },
+    {
+      "title": "should find model selection in Quick Settings area",
+      "file": "tests-e2e/nonlive/debug-page-elements.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 810,
+      "p95Ms": 810
+    },
+    {
+      "title": "app boots successfully with completely empty localStorage",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 807,
+      "p95Ms": 807
+    },
+    {
+      "title": "should find what elements exist on page",
+      "file": "tests-e2e/nonlive/debug-page-elements.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 802,
+      "p95Ms": 802
+    },
+    {
+      "title": "should expand QuickSettings and find model dropdown",
+      "file": "tests-e2e/nonlive/test-quicksettings-expansion.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 801,
+      "p95Ms": 801
+    },
+    {
+      "title": "RW appear with reasoning content and bind to correct message",
+      "file": "tests-e2e/nonlive/reasoning-windows-placement.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 797,
+      "p95Ms": 797
+    },
+    {
+      "title": "app boots successfully with corrupted api_key in localStorage",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 795,
+      "p95Ms": 795
+    },
+    {
+      "title": "should examine QuickSettings component source",
+      "file": "tests-e2e/nonlive/debug-quicksettings-click.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 790,
+      "p95Ms": 790
+    },
+    {
+      "title": "reasoning window auto-minimizes after assistant starts replying",
+      "file": "tests-e2e/nonlive/reasoning-windows.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 754,
+      "p95Ms": 754
+    },
+    {
+      "title": "app boots with various malformed localStorage values",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 720,
+      "p95Ms": 720
+    },
+    {
+      "title": "should show \"WolfeChat: [chat title]\" when conversation has a title",
+      "file": "tests-e2e/nonlive/favicon-and-title.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 711,
+      "p95Ms": 711
+    },
+    {
+      "title": "app boots successfully with corrupted openai_api_key in localStorage",
+      "file": "tests-e2e/nonlive/cold-start.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 706,
+      "p95Ms": 706
+    },
+    {
+      "title": "gpt-5.1 shows \"none\" option, hides \"minimal\" in Quick Settings",
+      "file": "tests-e2e/nonlive/reasoning-effort-options.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 681,
+      "p95Ms": 681
+    },
+    {
+      "title": "gpt-5-nano shows \"minimal\" option, hides \"none\" in Settings",
+      "file": "tests-e2e/nonlive/reasoning-effort-options.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 661,
+      "p95Ms": 661
+    },
+    {
+      "title": "sequential sends clear input after each message",
+      "file": "tests-e2e/nonlive/input-clearing-test.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 657,
+      "p95Ms": 657
+    },
+    {
+      "title": "Highlighting persists across updated content (append within same block)",
+      "file": "tests-e2e/nonlive/code-renderer-streaming.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 634,
+      "p95Ms": 634
+    },
+    {
+      "title": "API key field maintains separate values for each provider",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 609,
+      "p95Ms": 609
+    },
+    {
+      "title": "Prism tokens present during and after stream for fenced block",
+      "file": "tests-e2e/nonlive/code-renderer-streaming.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 585,
+      "p95Ms": 585
+    },
+    {
+      "title": "TEST 2: Multiple Conversations Input Preservation",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 554,
+      "p95Ms": 554
+    },
+    {
+      "title": "visual grouping container exists around provider settings",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 539,
+      "p95Ms": 539
+    },
+    {
+      "title": "isolated per chat across content sizes",
+      "file": "tests-e2e/nonlive/chat-scroll-state.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 529,
+      "p95Ms": 529
+    },
+    {
+      "title": "should clear input when clicking Clear Chat button in sidebar",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 520,
+      "p95Ms": 520
+    },
+    {
+      "title": "TEST 3: New Chat vs Clear Chat Behavior Difference",
+      "file": "tests-e2e/nonlive/new-chat-preserves-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 501,
+      "p95Ms": 501
+    },
+    {
+      "title": "can type text into input field",
+      "file": "tests-e2e/nonlive/browser-smoke.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 500,
+      "p95Ms": 500
+    },
+    {
+      "title": "provider dropdown has correct options and default selection",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 490,
+      "p95Ms": 490
+    },
+    {
+      "title": "visiting empty chat does not reset other chats",
+      "file": "tests-e2e/nonlive/chat-scroll-state.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 480,
+      "p95Ms": 480
+    },
+    {
+      "title": "should clear input when clicking Clear Chat button in QuickSettings",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 479,
+      "p95Ms": 479
+    },
+    {
+      "title": "can send a prompt and receive a mocked response",
+      "file": "tests-e2e/nonlive/browser-smoke.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 471,
+      "p95Ms": 471
+    },
+    {
+      "title": "should clear input with multi-line text",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 468,
+      "p95Ms": 468
+    },
+    {
+      "title": "mode selection dropdown is not visible",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 460,
+      "p95Ms": 460
+    },
+    {
+      "title": "should clear input with partially typed message",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 459,
+      "p95Ms": 459
+    },
+    {
+      "title": "should clear input with special characters and emojis",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 449,
+      "p95Ms": 449
+    },
+    {
+      "title": "does not override custom title",
+      "file": "tests-e2e/nonlive/title-generation.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 445,
+      "p95Ms": 445
+    },
+    {
+      "title": "should clear input when clicking New Chat button in mobile topbar",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 433,
+      "p95Ms": 433
+    },
+    {
+      "title": "gpt-5-nano shows \"minimal\" option, hides \"none\" in Quick Settings",
+      "file": "tests-e2e/nonlive/reasoning-effort-options.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 433,
+      "p95Ms": 433
+    },
+    {
+      "title": "provider switching preserves other settings",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 427,
+      "p95Ms": 427
+    },
+    {
+      "title": "API key field label changes based on selected provider",
+      "file": "tests-e2e/nonlive/provider-switching.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 415,
+      "p95Ms": 415
+    },
+    {
+      "title": "sanitizes quotes and Title: prefix",
+      "file": "tests-e2e/nonlive/title-generation.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 415,
+      "p95Ms": 415
+    },
+    {
+      "title": "switching empty->long restores saved ratio",
+      "file": "tests-e2e/nonlive/chat-scroll-state.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 409,
+      "p95Ms": 409
+    },
+    {
+      "title": "sets title from Responses output after first reply",
+      "file": "tests-e2e/nonlive/title-generation.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 403,
+      "p95Ms": 403
+    },
+    {
+      "title": "fallback on invalid structure",
+      "file": "tests-e2e/nonlive/title-generation.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 383,
+      "p95Ms": 383
+    },
+    {
+      "title": "app boots and chat UI renders",
+      "file": "tests-e2e/nonlive/scroll-and-stream.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 364,
+      "p95Ms": 364
+    },
+    {
+      "title": "should clear input when clicking New Chat button in sidebar",
+      "file": "tests-e2e/nonlive/clear-new-chat-input.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 347,
+      "p95Ms": 347
+    },
+    {
+      "title": "scroll container maintains position when streaming placeholder grows",
+      "file": "tests-e2e/nonlive/scroll-and-stream.spec.ts",
+      "runs": 1,
+      "passes": 1,
+      "fails": 0,
+      "skipped": 0,
+      "passRate": 1,
+      "status": "passed",
+      "medianMs": 335,
+      "p95Ms": 335
+    }
+  ],
+  "byFile": {
+    "tests-e2e/nonlive/textarea-settings": {
+      "totalMs": 16149,
+      "count": 9
+    },
+    "tests-e2e/nonlive/reasoning-auto-collapse-setting": {
+      "totalMs": 10582,
+      "count": 8
+    },
+    "tests-e2e/nonlive/new-chat-preserves-input": {
+      "totalMs": 10236,
+      "count": 7
+    },
+    "tests-e2e/nonlive/delete-all-below-button": {
+      "totalMs": 8986,
+      "count": 3
+    },
+    "tests-e2e/nonlive/verify-fixes": {
+      "totalMs": 6127,
+      "count": 2
+    },
+    "tests-e2e/nonlive/clear-new-chat-input": {
+      "totalMs": 5362,
+      "count": 9
+    },
+    "tests-e2e/nonlive/cold-start": {
+      "totalMs": 4693,
+      "count": 6
+    },
+    "tests-e2e/nonlive/reasoning-windows": {
+      "totalMs": 4510,
+      "count": 4
+    },
+    "tests-e2e/nonlive/test-correct-selector": {
+      "totalMs": 4392,
+      "count": 1
+    },
+    "tests-e2e/nonlive/provider-switching": {
+      "totalMs": 3780,
+      "count": 7
+    },
+    "tests-e2e/nonlive/test-quicksettings-expansion": {
+      "totalMs": 3711,
+      "count": 2
+    },
+    "tests-e2e/nonlive/input-visibility-mobile": {
+      "totalMs": 3477,
+      "count": 3
+    },
+    "tests-e2e/nonlive/test-api-mocking": {
+      "totalMs": 3416,
+      "count": 1
+    },
+    "tests-e2e/nonlive/system-prompt-new-conversation": {
+      "totalMs": 3361,
+      "count": 2
+    },
+    "tests-e2e/nonlive/reasoning-windows-placement": {
+      "totalMs": 2988,
+      "count": 3
+    },
+    "tests-e2e/nonlive/reasoning-effort-options": {
+      "totalMs": 2617,
+      "count": 4
+    },
+    "tests-e2e/nonlive/debug-quicksettings-click": {
+      "totalMs": 2606,
+      "count": 2
+    },
+    "tests-e2e/nonlive/favicon-and-title": {
+      "totalMs": 2388,
+      "count": 3
+    },
+    "tests-e2e/nonlive/conversation-navigation-anchors": {
+      "totalMs": 2304,
+      "count": 1
+    },
+    "tests-e2e/nonlive/title-generation": {
+      "totalMs": 1646,
+      "count": 4
+    },
+    "tests-e2e/nonlive/debug-page-elements": {
+      "totalMs": 1612,
+      "count": 2
+    },
+    "tests-e2e/nonlive/chat-scroll-state": {
+      "totalMs": 1418,
+      "count": 3
+    },
+    "tests-e2e/nonlive/code-renderer-streaming": {
+      "totalMs": 1219,
+      "count": 2
+    },
+    "tests-e2e/nonlive/browser-smoke": {
+      "totalMs": 971,
+      "count": 2
+    },
+    "tests-e2e/nonlive/chat-streaming-scroll": {
+      "totalMs": 958,
+      "count": 1
+    },
+    "tests-e2e/nonlive/app-boot-no-errors": {
+      "totalMs": 953,
+      "count": 1
+    },
+    "tests-e2e/nonlive/reasoning-orphan-window-openai": {
+      "totalMs": 943,
+      "count": 1
+    },
+    "tests-e2e/nonlive/reasoning-panels-delete-bug": {
+      "totalMs": 894,
+      "count": 1
+    },
+    "tests-e2e/nonlive/scroll-and-stream": {
+      "totalMs": 699,
+      "count": 2
+    },
+    "tests-e2e/nonlive/input-clearing-test": {
+      "totalMs": 657,
+      "count": 1
+    }
+  }
+}
