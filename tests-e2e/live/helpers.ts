@@ -1093,17 +1093,6 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
     return false;
   };
 
-  // Phase 2: Set up network monitoring for SSE streams (updated for Responses API)
-  const ssePromise = page.waitForResponse(
-    response => {
-      const url = response.url();
-      return (url.includes('api.openai.com') || url.includes('api.anthropic.com')) &&
-             (url.includes('/chat/completions') || url.includes('/responses') || url.includes('/v1/messages')) &&
-             response.status() === 200;
-    },
-    { timeout: Math.min(20000, timeout) }
-  ).catch(() => null);  // Don't fail if no network request
-
   // Phase 3: Wait for assistant message to appear (with optional minimum count)
   const phase3Deadline = Date.now() + timeout;
   let assistantOk = false;
@@ -1171,9 +1160,6 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
   );
 
   try {
-    // Wait for SSE to complete (may already have finished)
-    await ssePromise;
-
     debugInfo('[WAIT-ASSISTANT] Completion signals:', {
       assistantAppeared: assistantOk,
       uiComplete: uiOk,

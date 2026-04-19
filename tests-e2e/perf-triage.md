@@ -163,3 +163,38 @@ Priority order, based on combined slow + flaky signal:
 Estimated total savings from items 1–8:
 - Wall-clock off live suite: ~6–8 min of 14.8 min (~40–55 %).
 - Flakes eliminated: 4 of 4 current flakes, plus 2 persistent failures.
+
+## `waitForAssistantDone` wait-phase fix (2026-04-19, session 3)
+
+Removed a broken `page.waitForResponse(...)` phase in
+`waitForAssistantDone` (`tests-e2e/live/helpers.ts`). The listener was
+subscribed after `sendMessage()` kicked off the request, so fast SSE
+responses completed before the subscription and the call timed out at
+~20 s. Phases 3/4 (DOM/UI idle polling) already established completion
+independently, so deleting the broken phase strictly shortens the happy
+path without changing semantics.
+
+### Live suite wall-clock
+
+| Stage | Tests | Wall-clock |
+|---|---|---|
+| Pre-migration baseline | 96 | 14.8 min |
+| Post-replay-migration | 73 | ~12.8 min |
+| **Post wait-phase fix** | **73** | **6.5 min** |
+
+Roughly **half** the wall-clock on the live suite disappeared with a
+10-line delete. All 73 tests passed, 0 flakes across the smoke /
+medium / full verification sequence (`--repeat-each=3` on 2 spec
+groups, plus full suite once).
+
+### Per-test impact (sampled)
+
+| Spec | Per-test before | Per-test after |
+|---|---|---|
+| `title-update` | ~25 s | ~4.4 s |
+| `openai-system-prompt` (3 tests) | ~15–25 s each | ~3.5–5.2 s each |
+| `api-error-preserves-conversation` (2 tests) | 19.4 + 20.5 s | ~4 s each |
+| `token-counting :: Haiku` | 7+ s | 3.7 s |
+
+Token-counting Sonnet-with-reasoning tests still ~18 s because that's
+real reasoning-LLM time — no fix available on the test side.
