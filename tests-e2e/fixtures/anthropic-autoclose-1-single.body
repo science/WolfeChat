@@ -1,0 +1,54 @@
+event: message_start
+data: {"type":"message_start","message":{"model":"claude-sonnet-4-5-20250929","id":"msg_017GwwjMrUPgGfinR9PEJhP9","type":"message","role":"assistant","content":[],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":79,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":0},"output_tokens":7,"service_tier":"standard","inference_geo":"not_available"}}    }
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""}     }
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user is asking me to calculate"}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" 2+2 step by step. This is a simple arithmetic problem.\n\nLet me break this down:\n- I start with the"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" number 2\n- I need to add another 2 to it\n- 2 + 2 = 4\n\nI should show"}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" this in a step-by-step manner as requested, but keep it straightforward and not overly enthusiastic based"}       }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" on the custom instructions."}       }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"EpYECmQIDBgCKkCDj/D/hIhJDmE/H5fV67IvxeL1ZuZbKZ04aJjwaesba51nohrDtNMt3CsLQ7H9yF2KhOOOdGQOwiILKy/v8rsTMhpjbGF1ZGUtc29ubmV0LTQtNS0yMDI1MDkyOTgAEgxYpb+G7wZ5xohazvoaDE6F+xz2yOLfBgEU9SIwtps9YD9esgnYLKRSvSz6gKf+8sDIjA14ThN8ji2iHI4IWu1XhKxx8ca4afV6pGaaKt8CkOAauM0GGaxXFAvFALbyZ7Mt3iDKSnsxyvclZUz5jWr+vysLt+zkSMM0U1HLjplPTzseVZQvncpLg9kYmGPHpRSoquy+JwzbEqiPRtu2qs8/dywPceNY40Kup/Afri1GVbb98PCe/phKkBiugQc+RUKkbAcuEOydKgTpah2AiVWWbG2FdgKuBpUeREC39sIwFp+j/Bsqwe+6g2TAJxjaFbybHlTnxIeGMTc61yZQi4UEVnF1GOeSTUEDv6GZt4bJNBvtOoi0Y7PPs38nKi6kl136+uhZjjZBWqVexbN+AwGMdA/B8x9zcZUa6rbW+LaqifInN0T2/QXNz2hxTJuZ6km2RfVLqT5qa139QX372EYHlofM7SpzTS+YK9M5fgSh6r2/93o9fnDt4W18GPGjPkBkcO84oIZ/tTVzQiVxJj142VDoTVC38Ab650JKeCNJdsAYIVLDE36Dkn0tuiHTGAE="}     }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0     }
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"Starting with 2, I need to add 2 more.\n\nStep 1: Begin with the"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":" first number: 2\n\nStep 2: Add the second number: 2\n\nStep 3: Count up from 2 by"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":" 2 units: 2 → 3 → 4\n\nOr alternatively:"}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":" 2 + 2 = 4\n\nThe answer is 4."}    }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1       }
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null,"stop_details":null},"usage":{"input_tokens":79,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":194}            }
+
+event: message_stop
+data: {"type":"message_stop"            }
+

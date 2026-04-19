@@ -1,0 +1,63 @@
+event: message_start
+data: {"type":"message_start","message":{"model":"claude-sonnet-4-5-20250929","id":"msg_01VMyK1Qw2iJgRjv6LhRewMt","type":"message","role":"assistant","content":[],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":79,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":0},"output_tokens":8,"service_tier":"standard","inference_geo":"not_available"}}         }
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""} }
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The Monty Hall problem is a"}          }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" probability puzzle. Let me explain it concisely in one sentence.\n\nThe key elements are:\n- Three"}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" doors (one has a prize, two have goats)\n- You pick one"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"\n- Host opens a door with a goat\n- You can switch or stay\n- Switching gives"}       }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" you 2/3 probability of winning\n\nOne sentence explanation:\n\n\"In the"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" Monty Hall problem, a contestant picks one of three doors (one hiding a car, two hiding"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" goats), the host opens one of the remaining doors to reveal a goat, and the contestant has"}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" a 2/3 chance of winning by switching to the other unopened door versus 1/3 by"}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" staying with their original choice.\"\n\nThat's accurate and complete."}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"EssGCmQIDBgCKkD2E3mnGv3iMUoM5CR8a69bvmCbMwumIdL1HNHps91Bi+SYg9cG3I+x4GSZhzxsWfeNu8VJ0i3U7GBgiY2n+YB4MhpjbGF1ZGUtc29ubmV0LTQtNS0yMDI1MDkyOTgAEgx6r+oFEhw/NjDQ0nQaDDy+W0T5yR35mBC9iSIwM0gKXa174YN1EmbOkBiQLrxKT9fBKjX0dVGtgV27cVg3DdHPnjnlxdJBQai0jZuBKpQFk3q0fEORu0JGVEmkl7p/m/I8jVhCjx1zMA7HReiYDjdgMw6Znm5cXNCXkxsNga+1SGxgqrKLz47AcUXfmhXSHerRepzuPQGJmmhMr2Qwt+2Kea2tcH7cq292S9HcgKBdJ752gucRZG05OSDEvI6gXYViVPE/9EqQv6iBONyj4O3Ra7k+qXCawDTdvKw62GGa7mgZ/IKidu/VjTtsVD/xvkOO5ii6gliH4wLDG8cnvbAgQ6ZEkSnx6aExgjwbQ1WbOGGWWHpPJP9BScMmgkbGBROwB+eZiIraniZ4bwtUcDROW6lGymyqchGzrEWtbO7CjhBtMt+Z8dr6XFDWxgnG10zg2Ywac/vQOPFFYIYdJD2qnBRR4pCem7i3/i3VQAJQC8z0h1tYZGorExNZd2XD6tm3xn1D2HiaFtAqje9vRHarf88qBMew+1TfNT7kJVujtebZaLTfaiLL/AgEHRRDuyy9VXbqNq9Nky17B1Tmm0p3gaYZTvcNxE9y77cGk3U4UTt7RfxDTYSBggE0L4gUGSQUfEF51do/erkXcm+dwQZVcEB5uXdSXThQRhdG4CnyUoX+l4rA4Ossi/TP6Ajk+ZvG78bRW4kHNh7mksTOt9+1vFAbNrKgGhutIUIIPMDESivm/TZAC8CDUrVcajTGOkpmFMaZH/P7VXgzIN0mqsYw9ZPCGiw/R3McjCwJLshGJ++KNRx9Ahmjk82aelBFCssCSLRTc5rPWf3OHZsxpqCYDR/cy/vevz7BnCXdX6Tu7FepY95wEbRSEOUr2sSWmMog4DPl7K4lQnYDiIqKTNo0kcyxY6YESabLpmX5srrUAdN36tdPZdcHNGDhoAYLgb2PDNsKdcTRM0guEcYupjLwoMfqGAE="}    }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0              }
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"In the Monty Hall problem, a"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":" contestant picks one of three doors (one hiding a car, two hiding goats), the host then opens a different door revealing a goat, and the contestant doubles"}       }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":" their chances of winning the car from 1/3 to 2/3 by switching to the remaining unopened door."}      }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1      }
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null,"stop_details":null},"usage":{"input_tokens":79,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":247}        }
+
+event: message_stop
+data: {"type":"message_stop"     }
+

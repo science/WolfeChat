@@ -1,0 +1,8 @@
+{
+  "url": "https://api.anthropic.com/v1/messages",
+  "method": "POST",
+  "mimeType": "text/event-stream; charset=utf-8",
+  "recordedAt": "2026-04-19T06:33:22.074Z",
+  "bytes": 3808,
+  "promptPreview": "single message auto-close"
+}

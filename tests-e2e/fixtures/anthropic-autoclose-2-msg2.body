@@ -1,0 +1,60 @@
+event: message_start
+data: {"type":"message_start","message":{"model":"claude-sonnet-4-5-20250929","id":"msg_01L1tKDy5Mm6fcUSEyCu9FDU","type":"message","role":"assistant","content":[],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":166,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":0},"output_tokens":5,"service_tier":"standard","inference_geo":"not_available"}}   }
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""} }
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user is asking why"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" the prisoner's dilemma matters in game theory. I should provide a concise explanation of"} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" its significance. Let me think about the key reasons:\n\n1. It demonstrates how rational individual decision"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"-making can lead to collectively suboptimal outcomes\n2. It shows the tension between cooperation and self-interest\n3. It's a fundamental"}               }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" model for understanding strategic interaction\n4. It applies to many real-world situations (arms races, environmental issues, olig"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"opoly pricing, etc.)\n5. It illustrates concepts like Nash equilibrium and dominant strategies\n\nI should keep this straight"}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"forward and informative without unnecessary enthusiasm."}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"EtwGCmQIDBgCKkCC6GL3HmdZ/DGVOV6aB3llOm6j5JLJyP2KDLHGFxg1dfR92evfjzRk/IMgCvO2yPtyB+m4yWTsJ63JndXxMp60MhpjbGF1ZGUtc29ubmV0LTQtNS0yMDI1MDkyOTgAEgzHTwGlcnBpDadkm38aDIF2va1FHb6KMSXJmCIwA6S/s+PK1BojEsHhm4lEU/ErJjCQKFIKU+MKnOjckLcAqL2R1cmz4lmsqX0jU0A2KqUFVgQj2EtgBxpibmNkc1vHI6HDB8z901Un+N3JEv7in4k7FLNYtP5qvy5dISrd+ZdVdm01TBy97XSUz7oyQLI5MvoDwXqqixx8ziDRV3Ik8ddnHl75MG8XccoGIpMwTBtRs3L+ItRx/yflHcjczxwzlrL5/z8Cw5UtD5fv4MNe4c4vxlDdHJvAhgRJEMgqMZrJFpSWvwceLbsHMGechJZhArtJ0FsqinsHSR/W+K6cnsFFPx4EJdsk1xhxu7ZQk1r7e064nOGK3B37K16h7xOelIlIr8DSWUoZUPuuUhtsn6nd1LYDWaFPET77OY0m5gWJ84zzfaNyEFtv/iwaA/A2HUDzs+gmgfO1csTPFD/guVraCj1DdH0bt5ELHM+AHYabnAIJUvJ8K7aJJD07PzoLuZ9nki6+CEOKGj8q2/FWZOLAU/L580gF+q37i81gBFfRqyLSdGqez9AnNKaSeNCwKF3HHIjao2sLFKoLUZXPExz0TLbCsdx/Z1eT/J1StxUyhsxwbnn5la07TJZkRTt56qY3GI72WZMZ8PuHNsU6Lov9VY1CO7s5v0jlCVqErkauftOQEZmsnTHRN7GYeTqgzg4f2geTEyuoxej6bMQep+sHKkHVhO6a93X+J8hHKM2BUIzjgNvD/ovvEKV+gMjv6DR3WFnIfGsvjw84uoxPB8jPM/qBtUzzeBiV6LQosvMGiWzArfgTofvxnvgvixnuSbdD6n4B6fjgmyIfgb2nW8JwtKJmNRbq2xdwEOBF3MWJQpM2EvGRSlkSIAg5/iyZRc7QwGQg6tq8RycX2Jm5sc0+6BoyUbuXz51yEjUR5074jUg/DCFMLDoIy4eEYTPkJQDo5zOtAED8OONMgQs3WAsZXQ+rVLx9gnKeVED7gvhfLq7Gj+kYAQ=="}               }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0     }
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"The prisoner's dilemma matters because it demonstrates"} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":" how individually rational choices can lead to collectively worse outcomes, illustrating the fundamental tension between cooperation and self-interest that"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":" appears in economics, politics, evolutionary biology, and social interactions where trust and"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":" strategic decision-making are involved."}   }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1   }
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null,"stop_details":null},"usage":{"input_tokens":166,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":198}      }
+
+event: message_stop
+data: {"type":"message_stop"   }
+
