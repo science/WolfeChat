@@ -128,14 +128,20 @@ test.describe('Model Dropdown Helper Tests', () => {
 
     await setProviderApiKey(page, 'Anthropic', process.env.ANTHROPIC_API_KEY!);
 
-    const state2 = await getModelDropdownState(page, {
-      waitForModels: true
-    });
-    const keys2 = checkApiKeysFromState(state2);
-
-    expect(keys2.openaiKeySet).toBe(true);
-    expect(keys2.anthropicKeySet).toBe(true);
-    expect(keys2.bothKeysSet).toBe(true);
+    // After a provider-add, the QuickSettings model list re-renders from a
+    // Svelte store update — there's a brief window where QS still shows only
+    // the prior provider's models. `waitForModels: true` waits for count to
+    // stabilise, but an OpenAI-only count is already stable at that moment,
+    // so the poll returns with incomplete data and anthropicKeySet comes back
+    // false. Same race that provider-quick-settings.spec.ts works around at
+    // line ~61-76. expect.toPass() re-polls until the dropdown catches up.
+    await expect(async () => {
+      const state2 = await getModelDropdownState(page, { waitForModels: true });
+      const keys2 = checkApiKeysFromState(state2);
+      expect(keys2.openaiKeySet).toBe(true);
+      expect(keys2.anthropicKeySet).toBe(true);
+      expect(keys2.bothKeysSet).toBe(true);
+    }).toPass({ timeout: 10_000 });
   });
 
   test('helper handles captureHtml option for debugging', async ({ page }) => {
