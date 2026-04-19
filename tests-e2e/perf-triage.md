@@ -96,6 +96,45 @@ Total potential live-suite savings: ~5-7 min of 14.8 min (~35-45 %).
 week are no longer in the live suite, so this validates that our
 migration eliminated their contribution to live-suite flakiness.
 
+## Migrations completed (2026-04-19, session 2)
+
+8 additional live specs moved to replay in this session (on top of the
+5 reasoning-UI specs already at commit 56f2fe9 and the 6 UI-only
+migrations at commit 0d668fb):
+
+| Spec | Tests | Live time | Replay time | Commit |
+|---|---|---|---|---|
+| `summary-ui` | 8 | ~105 s | ~5 s | `f9f…` |
+| `summary-model-settings` | 4 | ~35 s | ~5 s | `f9f…` |
+| `reasoning-window-conversation-id-bug-tdd` | 1 | 26 s | 1.6 s | `f9f…` |
+| `anthropic-reasoning-auto-close` | 2 | 57 s | ~2 s | `next` |
+| `quick-settings-recent-models` | 3 | 75 s | ~3 s | `next` |
+| `anthropic_two_messages_simple` | 1 | 11 s | ~1 s | `next` |
+| `delete-all-below` | 1 | 11 s | ~1.3 s | `next` |
+| `quick-settings-conversation-state-bug` | 1 | 81 s | 2.7 s | `next` |
+| **TOTAL** | **21** | **~400 s** | **~20 s** | |
+
+Live suite pre-migration: 96 tests, 14.8 min
+Live suite post-migration: ~75 tests, estimated 8-9 min (rerun to confirm)
+
+## Remaining live specs — triage disposition
+
+**Migration candidates remaining (not done this session):**
+- `provider-quick-settings` (~95 s total, 2 slow tests): multi-provider
+  state, needs thought on how to simulate incremental "add Anthropic after
+  OpenAI" flow. Deferrable.
+
+**Keep live — out of scope for replay:**
+- `stop-button-reasoning` (18 s + 15 s + 15 s): mid-stream abort
+  semantics can't be faithfully replayed (fixture is buffered body).
+- `reasoning-sse-events-simple` (14 s): whole point is real SSE shape.
+- `token-counting` (21 s): real token counts only come from real APIs.
+- `api-error-preserves-conversation` (2 tests, ~40 s): real API error
+  shapes. Could be faked but plan flagged this family as keep-live.
+- `probe-fixture-*` specs: marked "delete after validated" in their
+  headers. They were the Phase 0 smoke probes for the record/replay
+  harness; should be deleted.
+
 ## Suggested action plan (updated)
 
 Priority order, based on combined slow + flaky signal:
