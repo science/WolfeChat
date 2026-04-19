@@ -8,8 +8,10 @@ import {
   setProviderApiKey,
   bootstrapBothProviders,
   getRecentModelsFromQuickSettings,
-  getModelDropdownState
+  getModelDropdownState,
+  disableAutoTitleGeneration
 } from './helpers';
+import { waitForStreamIdle } from '../nonlive/mock-helpers';
 import { debugInfo } from '../debug-utils';
 
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
@@ -19,10 +21,15 @@ test.describe.configure({ mode: 'serial' });
 
 (test as any)[hasOpenAIKey ? 'describe' : 'skip']('Provider Quick Settings Integration', () => {
   test.beforeEach(async ({ page }) => {
+    // Disable title-gen so each sendMessage doesn't fire an extra API call.
+    // On this spec's 2 slow tests that alone saved ~5 s per run.
+    await disableAutoTitleGeneration(page);
     await page.goto('/');
     // Clear localStorage to ensure clean state
     await page.evaluate(() => {
       localStorage.clear();
+      // Re-apply after the test's own localStorage.clear()
+      localStorage.setItem('title_generation_enabled', 'false');
     });
     await page.reload();
     await page.waitForLoadState('networkidle');
@@ -104,20 +111,27 @@ test.describe.configure({ mode: 'serial' });
       });
 
       await sendMessage(page, 'Hello from GPT', { submitMethod: 'ctrl-enter' });
-      await waitForStreamComplete(page, { timeout: 60000 });
+      await waitForStreamIdle(page, 1, 30_000);
 
       // Switch to Anthropic provider
       await setProviderApiKey(page, 'Anthropic', anthropicKey);
 
-      // Select Claude model and send message
+      // Wait for Haiku to actually appear in the QS dropdown before selecting.
+      // Without this, operateQuickSettings may run before the Svelte store has
+      // pushed Anthropic models into QS, and its regex match fails → fallback
+      // to TEST_MODEL (gpt-5.4-nano, a reasoning model → huge time cost).
+      await operateQuickSettings(page, { mode: 'ensure-open' });
+      await expect(
+        page.locator('#current-model-select option').filter({ hasText: /haiku/i })
+      ).not.toHaveCount(0, { timeout: 10_000 });
       await operateQuickSettings(page, {
         mode: 'ensure-open',
-        model: /claude/i,
+        model: /haiku/i,
         closeAfter: true
       });
 
       await sendMessage(page, 'Hello from Claude', { submitMethod: 'ctrl-enter' });
-      await waitForStreamComplete(page, { timeout: 60000 });
+      await waitForStreamIdle(page, 2, 30_000);
 
       // Verify both messages exist
       const messages = page.locator('[role="listitem"][data-message-role="assistant"]');
@@ -133,26 +147,31 @@ test.describe.configure({ mode: 'serial' });
     // Use a GPT model
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-4\.1/i,
+      model: /gpt-4\.1-nano/i,
       closeAfter: true
     });
 
     await sendMessage(page, 'Test with GPT', { submitMethod: 'ctrl-enter' });
-    await waitForStreamComplete(page, { timeout: 60000 });
+    await waitForStreamIdle(page, 1, 30_000);
 
     if (hasAnthropicKey) {
       const anthropicKey = process.env.ANTHROPIC_API_KEY!;
       await setProviderApiKey(page, 'Anthropic', anthropicKey);
 
-      // Use a Claude model
+      // Wait for Haiku to populate in QS before selecting — see note in
+      // the prior test (same Svelte race, same mitigation).
+      await operateQuickSettings(page, { mode: 'ensure-open' });
+      await expect(
+        page.locator('#current-model-select option').filter({ hasText: /haiku/i })
+      ).not.toHaveCount(0, { timeout: 10_000 });
       await operateQuickSettings(page, {
         mode: 'ensure-open',
-        model: /claude/i,
+        model: /haiku/i,
         closeAfter: true
       });
 
       await sendMessage(page, 'Test with Claude', { submitMethod: 'ctrl-enter' });
-      await waitForStreamComplete(page, { timeout: 60000 });
+      await waitForStreamIdle(page, 2, 30_000);
 
       // Check recent models in Quick Settings
       const recentModels = await getRecentModelsFromQuickSettings(page);
@@ -175,7 +194,7 @@ test.describe.configure({ mode: 'serial' });
     // Set model for first conversation
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-4\.1/i,
+      model: /gpt-4\.1-nano/i,
       closeAfter: true
     });
 
