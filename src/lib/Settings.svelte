@@ -22,6 +22,7 @@
     summarySummaryOption,
     summaryClaudeThinkingEnabled
   } from '../stores/summaryModelStore.js';
+  import { titleGenerationEnabled, titleGenerationModel } from '../stores/titleGenerationStore.js';
 
   import {
     apiKey,
@@ -689,6 +690,50 @@ handleClose();
       {/if}
     </div>
     <!-- End Summary Model configuration -->
+
+    <!-- Title Generation configuration -->
+    <div class="border border-gray-600 rounded-lg p-4 mb-6">
+      <h3 class="font-medium mb-4">Title Generation</h3>
+      <div class="mb-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            id="title-generation-enabled"
+            bind:checked={$titleGenerationEnabled}
+            class="w-4 h-4"
+          />
+          <span class="font-medium">Automatically generate titles for new conversations</span>
+        </label>
+        <p class="text-xs text-gray-400 mt-1 ml-6">When off, new conversations keep the default "New Conversation" label.</p>
+      </div>
+
+      {#if $titleGenerationEnabled}
+        <div class="mb-2">
+          <label for="title-model-selection" class="block font-medium mb-2">Title Model</label>
+          <select bind:value={$titleGenerationModel} class="border text-black border-gray-300 p-2 rounded w-full" id="title-model-selection">
+            <option value={null}>Use conversation model (default)</option>
+            {#if $filteredModels && $filteredModels.length > 0}
+              {#if get(openaiApiKey) && $filteredModels.filter(m => m.provider === 'openai').length > 0}
+                <optgroup label="OpenAI">
+                  {#each $filteredModels.filter(m => m.provider === 'openai').sort((a, b) => a.id.localeCompare(b.id)) as model}
+                    <option value={model.id}>{model.id}</option>
+                  {/each}
+                </optgroup>
+              {/if}
+              {#if get(anthropicApiKey) && $filteredModels.filter(m => m.provider === 'anthropic').length > 0}
+                <optgroup label="Anthropic">
+                  {#each $filteredModels.filter(m => m.provider === 'anthropic').sort((a, b) => a.id.localeCompare(b.id)) as model}
+                    <option value={model.id}>{model.id}</option>
+                  {/each}
+                </optgroup>
+              {/if}
+            {/if}
+          </select>
+          <p class="text-xs text-gray-400 mt-1">Reasoning is turned off for this call to keep titles fast and cheap.</p>
+        </div>
+      {/if}
+    </div>
+    <!-- End Title Generation configuration -->
 
       {#if $selectedModel.startsWith('tts')}
 <div class="mb-4">

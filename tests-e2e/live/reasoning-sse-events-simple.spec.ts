@@ -1,14 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { bootstrapLiveAPI, operateQuickSettings, sendMessage } from './helpers';
+import { bootstrapLiveAPI, operateQuickSettings, sendMessage, TEST_MODEL_REGEX } from './helpers';
+import { REASONING_OFF } from '../../src/tests/testModel';
 import { debugInfo, debugErr, debugWarn } from '../debug-utils';
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173';
 
-test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
+test.describe('Simple SSE Event Capture for reasoning model', () => {
   test.setTimeout(60_000);
 
-  test('Capture exact SSE events for gpt-5-nano reasoning model', async ({ page }) => {
-    debugInfo('[TEST] Starting simple SSE event capture for gpt-5-nano');
+  test('Capture exact SSE events for reasoning model with effort off', async ({ page }) => {
+    debugInfo('[TEST] Starting simple SSE event capture');
 
     // Capture ALL SSE events directly
     const sseEvents: string[] = [];
@@ -101,12 +102,13 @@ test.describe('Simple SSE Event Capture for gpt-5-nano', () => {
 
     await bootstrapLiveAPI(page);
 
-    // Use EXACT configuration from failing test case
-    // This is conv3 configuration that shows the bug
+    // Lowest-effort reasoning config, matches the "conv3" scenario the original
+    // bug was filed against (reasoning model selected, but effort set so that
+    // the API is expected NOT to emit reasoning events).
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
-      reasoningEffort: 'minimal',
+      model: TEST_MODEL_REGEX,
+      reasoningEffort: REASONING_OFF,
       verbosity: 'low',
       summary: 'detailed',
       closeAfter: true

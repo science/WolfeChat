@@ -53,7 +53,7 @@ test.describe('Delete All Below - live UAT', () => {
     await page.goto('/');
     await bootstrapLiveAPI(page);
 
-    // 2) Select reasoning-capable model (gpt-5-nano for reasoning window support)
+    // 2) Select reasoning-capable model (TEST_MODEL — see selectReasoningModelInQuickSettings)
     await selectReasoningModelInQuickSettings(page);
 
     // 3) Seed conversation: three messages

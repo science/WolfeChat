@@ -13,7 +13,8 @@ import {
   operateQuickSettings,
   sendMessage,
   waitForAssistantDone,
-  setConversationSystemPrompt
+  setConversationSystemPrompt,
+  findUserMessageRequest
 } from './helpers';
 
 test.describe('Anthropic System Prompt Integration', () => {
@@ -64,7 +65,8 @@ test.describe('Anthropic System Prompt Integration', () => {
     // Verify API request was captured
     expect(anthropicRequests.length).toBeGreaterThan(0);
 
-    const request = anthropicRequests[0];
+    const request = findUserMessageRequest(anthropicRequests);
+    expect(request, "no user-message request captured (only title-gen?)").toBeDefined();
 
     // Verify structure
     expect(request).toHaveProperty('model');
@@ -123,7 +125,8 @@ test.describe('Anthropic System Prompt Integration', () => {
     // Verify API request includes custom system prompt
     expect(anthropicRequests.length).toBeGreaterThan(0);
 
-    const request = anthropicRequests[0];
+    const request = findUserMessageRequest(anthropicRequests);
+    expect(request, "no user-message request captured (only title-gen?)").toBeDefined();
 
     // Verify custom system prompt is present
     expect(request).toHaveProperty('system');
@@ -172,7 +175,8 @@ test.describe('Anthropic System Prompt Integration', () => {
     // Verify request structure
     expect(anthropicRequests.length).toBeGreaterThan(0);
 
-    const request = anthropicRequests[0];
+    const request = findUserMessageRequest(anthropicRequests);
+    expect(request, "no user-message request captured (only title-gen?)").toBeDefined();
 
     // Verify system prompt is present
     expect(request).toHaveProperty('system');

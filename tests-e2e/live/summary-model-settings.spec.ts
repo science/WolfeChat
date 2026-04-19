@@ -14,7 +14,8 @@ import {
   sendMessage,
   waitForAssistantDone,
   openSettings,
-  saveAndCloseSettings
+  saveAndCloseSettings,
+  disableAutoTitleGeneration
 } from './helpers.js';
 import {
   clickSummarizeButton,
@@ -30,8 +31,15 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 (hasKey ? test.describe : test.describe.skip)('Summary Model Settings', () => {
 
   test.beforeEach(async ({ page }) => {
+    // Disable title-gen so every message send doesn't fire an extra API call —
+    // reduces cumulative load that otherwise makes the final summary request
+    // fail intermittently when run in the full suite.
+    await disableAutoTitleGeneration(page);
     await page.goto('/');
-    await page.evaluate(() => localStorage.clear());
+    await page.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem('title_generation_enabled', 'false');
+    });
     await page.reload();
     await page.waitForLoadState('networkidle');
   });

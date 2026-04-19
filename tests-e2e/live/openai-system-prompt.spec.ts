@@ -13,7 +13,8 @@ import {
   operateQuickSettings,
   sendMessage,
   waitForAssistantDone,
-  setConversationSystemPrompt
+  setConversationSystemPrompt,
+  findUserMessageRequest
 } from './helpers';
 
 test.describe('OpenAI System Prompt Integration', () => {
@@ -54,7 +55,8 @@ test.describe('OpenAI System Prompt Integration', () => {
     // Verify API request was captured
     expect(openaiRequests.length).toBeGreaterThan(0);
 
-    const request = openaiRequests[0];
+    const request = findUserMessageRequest(openaiRequests);
+    expect(request, "no user-message request captured (only title-gen?)").toBeDefined();
 
     // Verify structure
     expect(request).toHaveProperty('input');
@@ -119,7 +121,8 @@ test.describe('OpenAI System Prompt Integration', () => {
     // Verify API request includes custom system prompt
     expect(openaiRequests.length).toBeGreaterThan(0);
 
-    const request = openaiRequests[0];
+    const request = findUserMessageRequest(openaiRequests);
+    expect(request, "no user-message request captured (only title-gen?)").toBeDefined();
 
     // Find system message in input array
     const systemMessage = request.input.find((msg: any) => msg.role === 'system');
@@ -173,7 +176,8 @@ test.describe('OpenAI System Prompt Integration', () => {
     // Verify request structure
     expect(openaiRequests.length).toBeGreaterThan(0);
 
-    const request = openaiRequests[0];
+    const request = findUserMessageRequest(openaiRequests);
+    expect(request, "no user-message request captured (only title-gen?)").toBeDefined();
 
     // Verify system prompt is present
     const systemMessage = request.input.find((msg: any) => msg.role === 'system');

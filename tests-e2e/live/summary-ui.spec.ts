@@ -9,7 +9,8 @@ import {
   bootstrapLiveAPI,
   sendMessage,
   waitForAssistantDone,
-  getVisibleMessages
+  getVisibleMessages,
+  disableAutoTitleGeneration
 } from './helpers.js';
 import {
   clickSummarizeButton,
@@ -30,8 +31,16 @@ const hasKey = !!process.env.OPENAI_API_KEY;
 (hasKey ? test.describe : test.describe.skip)('Summary UI', () => {
 
   test.beforeEach(async ({ page }) => {
+    // Disable title-gen so every message send doesn't fire an extra API call.
+    // Reduces per-test load and eliminates title-gen as a source of pollution
+    // for tests that assert on summary/request shape.
+    await disableAutoTitleGeneration(page);
     await page.goto('/');
-    await page.evaluate(() => localStorage.clear());
+    await page.evaluate(() => {
+      localStorage.clear();
+      // Re-apply after the test's own localStorage.clear()
+      localStorage.setItem('title_generation_enabled', 'false');
+    });
     await page.reload();
     await page.waitForLoadState('networkidle');
   });
@@ -147,12 +156,16 @@ const hasKey = !!process.env.OPENAI_API_KEY;
     await sendMessage(page, 'Second message');
     await waitForAssistantDone(page, { timeout: 60000 });
 
-    // Summarize up to 4th message (2 user + 2 assistant = 4 messages)
+    // Read the actual message count and derive the target index from it,
+    // rather than hardcoding index 3. If prior state somehow left extra
+    // listitems, a hardcoded index would silently click the wrong row;
+    // using messages.length - 1 always lands on the last message that exists.
     const messages = await getVisibleMessages(page);
     debugInfo(`Total messages before summary: ${messages.length}`);
+    expect(messages.length, 'expected 4 messages (user/assistant × 2) before summarize').toBe(4);
+    const lastMessageIndex = messages.length - 1;
 
-    // Click summarize on the last message before current
-    await clickSummarizeButton(page, 3); // 4th message (0-indexed)
+    await clickSummarizeButton(page, lastMessageIndex);
     await waitForSummaryComplete(page, { timeout: 60000 });
 
     // Verify the count shows appropriate number

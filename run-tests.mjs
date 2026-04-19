@@ -100,13 +100,15 @@ global.Prism = {
 
 // Seed stores; map env key if available
 function seedTestStores() {
-  // Seed model cache with reasoning-capable models
+  // Seed model cache. Keep in sync with src/tests/testModel.ts TEST_MODEL
+  // (currently gpt-5.4-nano). Duplicated here because this seed runs before
+  // the test bundle, outside the TS module graph.
   const models = [
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
-    { id: 'gpt-5-nano', name: 'GPT-5 Nano' }
+    { id: 'gpt-5.4-nano', name: 'GPT-5.4 Nano' }
   ];
   localStorageMap.set('models', JSON.stringify(models));
-  localStorageMap.set('selectedModel', 'gpt-5-nano'); // Use reasoning-capable model
+  localStorageMap.set('selectedModel', 'gpt-5.4-nano'); // TEST_MODEL — reasoning-capable
   
   // Seed reasoning settings with defaults
   localStorageMap.set('reasoning_effort', 'medium');

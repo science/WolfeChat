@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { bootstrapLiveAPI, operateQuickSettings, sendMessage, waitForStreamComplete } from './helpers';
+import { bootstrapLiveAPI, operateQuickSettings, sendMessage, waitForStreamComplete, TEST_MODEL_REGEX } from './helpers';
+import { REASONING_HEAVY } from '../../src/tests/testModel';
 import { debugInfo, debugWarn } from '../debug-utils';
 
 test.describe('TDD: Reasoning Window Conversation ID Bug', () => {
@@ -34,12 +35,13 @@ test.describe('TDD: Reasoning Window Conversation ID Bug', () => {
 
     await bootstrapLiveAPI(page);
 
-    // Use gpt-5-nano with HIGH reasoning effort for reliable reasoning event production.
-    // Medium effort sometimes doesn't produce reasoning events under API load.
+    // Use TEST_MODEL with HEAVY reasoning effort for reliable reasoning event
+    // production. Medium effort sometimes doesn't produce reasoning events
+    // under API load, so we default to 'high' for tests that gate on panel creation.
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5-nano/i,
-      reasoningEffort: 'high',
+      model: TEST_MODEL_REGEX,
+      reasoningEffort: REASONING_HEAVY,
       closeAfter: true
     });
 

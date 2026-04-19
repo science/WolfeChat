@@ -1,5 +1,42 @@
 import { expect, Page, Locator } from '@playwright/test';
 import { debugLog, debugErr, debugWarn, debugInfo, DEBUG_LEVELS, isDebugLevel } from '../debug-utils';
+import { TEST_MODEL } from '../../src/tests/testModel';
+
+// Regex that matches the current TEST_MODEL string with no interference from
+// similarly-named model ids in the dropdown (e.g. "gpt-5.4-nano" must not
+// match the older "gpt-5-nano"). Built from the constant so future model
+// upgrades require zero helper changes. Exported so specs can pass it to
+// operateQuickSettings() without re-building the regex.
+export const TEST_MODEL_REGEX = new RegExp(
+  `^${TEST_MODEL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+  'i'
+);
+
+// ==================== PROFILING ====================
+// Lightweight per-call timing that activates when PROFILE env is set.
+// Prints a single line per helper call showing elapsed time.
+
+const _profiling = !!process.env.PROFILE;
+
+interface TimingEntry { label: string; startMs: number; }
+const _activeTimers: TimingEntry[] = [];
+
+function _profileStart(label: string) {
+  if (!_profiling) return;
+  _activeTimers.push({ label, startMs: Date.now() });
+}
+
+function _profileEnd(label?: string) {
+  if (!_profiling || _activeTimers.length === 0) return;
+  const entry = label
+    ? _activeTimers.splice(_activeTimers.findIndex(t => t.label === label), 1)[0]
+    : _activeTimers.pop();
+  if (entry) {
+    const ms = Date.now() - entry.startMs;
+    const fmt = ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+    console.log(`  [PROFILE] ${entry.label.padEnd(35)} ${fmt}`);
+  }
+}
 
 // ==================== CLICK WORKAROUND ====================
 // Playwright 1.57 + Chromium headless on WSL2 has a known issue where
@@ -232,13 +269,63 @@ export async function getTokenCount(page: Page): Promise<number> {
   return parseInt(tokenText?.trim() || '0', 10);
 }
 
+/**
+ * Disable automatic title generation via localStorage BEFORE navigating.
+ *
+ * Tests that capture /v1/responses or /v1/messages requests get a second
+ * request fired by the title-generation path — its system prompt is
+ * "You generate a short, clear chat title..." which causes assertions
+ * against the user's own system prompt or reasoning config to fail.
+ *
+ * Call this BEFORE page.goto() so the store initializes with the flag off.
+ */
+export async function disableAutoTitleGeneration(page: Page) {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('title_generation_enabled', 'false');
+    } catch {}
+  });
+}
+
+const TITLE_GEN_SYSTEM_MARKER = 'generate a short, clear chat title';
+
+/**
+ * Returns true if the captured request is the title-generation call rather
+ * than a user-message call. Used to filter captures in tests that assert on
+ * the user's own request shape.
+ */
+export function isTitleGenRequest(req: any): boolean {
+  if (!req) return false;
+  // OpenAI Responses API: look for title-gen system prompt in input[].content[].text
+  if (Array.isArray(req.input)) {
+    for (const item of req.input) {
+      if (item?.role === 'system' && Array.isArray(item.content)) {
+        for (const c of item.content) {
+          if (typeof c?.text === 'string' && c.text.includes(TITLE_GEN_SYSTEM_MARKER)) return true;
+        }
+      }
+    }
+  }
+  // Anthropic Messages API: top-level `system` string
+  if (typeof req.system === 'string' && req.system.includes(TITLE_GEN_SYSTEM_MARKER)) return true;
+  return false;
+}
+
+/** Convenience: first captured request that is NOT a title-generation call. */
+export function findUserMessageRequest<T = any>(requests: T[]): T | undefined {
+  return requests.find(r => !isTitleGenRequest(r));
+}
+
 export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthropic' = 'OpenAI') {
+  _profileStart(`bootstrapLiveAPI(${provider})`);
   const key = provider === 'OpenAI'
     ? process.env.OPENAI_API_KEY
     : process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error(`${provider} API key env not set for live tests.`);
 
+  _profileStart('  bootstrap:openSettings');
   await openSettings(page);
+  _profileEnd('  bootstrap:openSettings');
 
   // Select provider first
   const providerSelect = page.locator('#provider-selection');
@@ -251,6 +338,7 @@ export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthrop
 
   const checkBtn = page.getByRole('button', { name: /check api/i });
   await expect(checkBtn).toBeVisible();
+  _profileStart('  bootstrap:checkAPI+models');
   await checkBtn.click({ force: true });
 
   // Wait for success or for models to populate in Settings select
@@ -289,12 +377,17 @@ export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthrop
     throw new Error(`Models did not populate within timeout. Options seen: [${lastTexts.join(' | ')}]. Message: ${msg}`);
   }
 
+  _profileEnd('  bootstrap:checkAPI+models');
+
   // Save and close
+  _profileStart('  bootstrap:save+close');
   const saveBtn = page.getByRole('button', { name: /^save$/i });
   await expect(saveBtn).toBeVisible();
   await saveBtn.click({ force: true });
   await expect(page.getByRole('heading', { name: /settings/i })).toBeHidden({ timeout: 5000 });
   await page.waitForTimeout(500); // Wait for dialog animations to complete
+  _profileEnd('  bootstrap:save+close');
+  _profileEnd(`bootstrapLiveAPI(${provider})`);
 }
 
 export async function selectProvider(page: Page, provider: 'OpenAI' | 'Anthropic') {
@@ -725,6 +818,7 @@ export async function bootstrapBothProviders(page: Page) {
 }
 
 export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-open' | 'ensure-closed' | 'open' | 'close', model?: string | RegExp, reasoningEffort?: 'none' | 'minimal' | 'low' | 'medium' | 'high', verbosity?: 'low' | 'medium' | 'high', summary?: 'auto' | 'detailed' | 'null', closeAfter?: boolean } = {}) {
+  _profileStart('operateQuickSettings');
   const { mode = 'ensure-open', model, reasoningEffort, verbosity, summary, closeAfter = false } = opts;
 
   // Automatic conflict resolution: Close Settings if open
@@ -787,12 +881,12 @@ export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-op
       if (prefer.test(label) || prefer.test(value)) { selectedValue = value || label; break; }
     }
     if (!selectedValue) {
-      // fallback to gpt-5.4-nano, then gpt-5*
+      // Fallback to the current TEST_MODEL, then any gpt-5*
       for (let i = 0; i < count && !selectedValue; i++) {
         const opt = options.nth(i);
         const label = ((await opt.textContent()) || '').trim();
         const value = (await opt.getAttribute('value')) || '';
-        if (/gpt-5\.4-nano/i.test(label) || /gpt-5\.4-nano/i.test(value)) { selectedValue = value || label; break; }
+        if (TEST_MODEL_REGEX.test(label) || TEST_MODEL_REGEX.test(value)) { selectedValue = value || label; break; }
       }
       for (let i = 0; i < count && !selectedValue; i++) {
         const opt = options.nth(i);
@@ -826,15 +920,22 @@ export async function operateQuickSettings(page: Page, opts: { mode?: 'ensure-op
       await expect(body).toBeHidden();
     }
   }
+  _profileEnd('operateQuickSettings');
 }
 
 export async function selectReasoningModelInQuickSettings(page: Page) {
-  // Open Quick Settings panel
-  // Delegate to generalized helper to avoid double-toggling
-  // Use gpt-5-nano for reasoning window tests — it reliably produces
-  // response.reasoning_text.delta SSE events. gpt-5.4-nano embeds reasoning
-  // inline in the response text and doesn't produce separate reasoning events.
-  await operateQuickSettings(page, { mode: 'ensure-open', model: /gpt-5-nano/i, closeAfter: false });
+  // Select TEST_MODEL with HIGH effort. Effort must be set explicitly because
+  // gpt-5.4-nano emits no reasoning events at effort='none'/'low', and even at
+  // 'medium' the API decides per-prompt whether to reason — short prompts
+  // ("Explain X briefly") can silently skip reasoning output. 'high' forces
+  // reasoning for any non-trivial prompt, which is what callers of this
+  // helper rely on.
+  await operateQuickSettings(page, {
+    mode: 'ensure-open',
+    model: TEST_MODEL_REGEX,
+    reasoningEffort: 'high',
+    closeAfter: false
+  });
 
   // After ensuring open, continue legacy selection flow (no-op if already selected)
 
@@ -864,7 +965,7 @@ export async function selectReasoningModelInQuickSettings(page: Page) {
     const opt = options.nth(i);
     const label = ((await opt.textContent()) || '').trim();
     const value = await opt.getAttribute('value');
-    if (/gpt-5-nano/i.test(label) || /gpt-5-nano/i.test(value || '')) {
+    if (TEST_MODEL_REGEX.test(label) || TEST_MODEL_REGEX.test(value || '')) {
       selectedValue = value || label;
       break;
     }
@@ -900,6 +1001,7 @@ export interface WaitForAssistantOptions {
 }
 
 export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOptions = {}) {
+  _profileStart('waitForAssistantDone');
   const {
     timeout = 60_000,  // Increased default but still leaves buffer before test timeout
     stabilizationTime = 500,  // Reduced since we're not relying on text stability
@@ -1091,8 +1193,10 @@ export async function waitForAssistantDone(page: Page, opts: WaitForAssistantOpt
     }
 
     debugInfo(`[WAIT-ASSISTANT] Stream complete after ${Date.now() - startTime}ms`);
+    _profileEnd('waitForAssistantDone');
 
   } catch (error) {
+    _profileEnd('waitForAssistantDone');
     // Enhanced error diagnostics
     try {
       if (!page.isClosed()) {
@@ -1129,6 +1233,7 @@ export interface SendMessageOptions {
 }
 
 export async function sendMessage(page: Page, text: string, opts: SendMessageOptions = {}) {
+  _profileStart('sendMessage');
   const {
     submitMethod = 'ctrl-enter',
     clearFirst = true,
@@ -1269,6 +1374,7 @@ export async function sendMessage(page: Page, text: string, opts: SendMessageOpt
       await expect(input).toHaveValue('', { timeout: 5000 });
     }
   }
+  _profileEnd('sendMessage');
 }
 
 export interface StreamCompleteOptions {
@@ -1281,6 +1387,7 @@ export interface StreamCompleteOptions {
 }
 
 export async function waitForStreamComplete(page: Page, opts: StreamCompleteOptions = {}) {
+  _profileStart('waitForStreamComplete');
   const {
     timeout = 60_000,
     waitForNetwork = true,
@@ -1322,6 +1429,7 @@ export async function waitForStreamComplete(page: Page, opts: StreamCompleteOpti
   if (waitForAssistant) {
     await waitForAssistantDone(page, { timeout: left(), expectedAssistantCount });
   }
+  _profileEnd('waitForStreamComplete');
 }
 
 

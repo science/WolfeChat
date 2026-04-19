@@ -655,11 +655,11 @@ export async function sendVisionMessage(
 // Choose a sensible default Responses-capable model
 function getDefaultResponsesModel() {
   const m = get(selectedModel);
-  // If no model is set, or it's an old/incompatible model, use gpt-5-nano as default for tests
-  // This includes older models which are not compatible with Responses API
+  // If no model is set, or it's an old/incompatible model, use a current
+  // reasoning-capable model. Older ChatCompletions-only models can't hit
+  // the Responses API at all.
   if (!m || /gpt-3\.5|gpt-4(\.|$)/.test(m)) {
-    // Use gpt-5-nano as the default for better test compatibility
-    return 'gpt-5-nano';
+    return 'gpt-5.4-nano';
   }
   return m;
 }
@@ -904,6 +904,22 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
     const currentTitle = (conv.title ?? '').trim().toLowerCase();
     if (currentTitle && currentTitle !== 'new conversation') return;
 
+    // Respect the user's title-generation setting. If disabled, resolver
+    // returns null and we leave the conversation as "New Conversation".
+    // Dynamic import to keep openaiService free of managers-layer coupling.
+    const { getEffectiveTitleModel, getTitleReasoningOptions } =
+      await import('../lib/titleModelUtils.js');
+    const { isAnthropicModel } = await import('./anthropicService.js');
+    const model = getEffectiveTitleModel(conv.id);
+    if (!model) return;
+
+    // This is a safety-net path for OpenAI only. If the user picked an Anthropic
+    // title model, the primary createTitle() in conversationManager handles it —
+    // we just return here rather than duplicating the SDK dispatch.
+    if (isAnthropicModel(model)) return;
+
+    const reasoningOpts = getTitleReasoningOptions(model);
+
     const sys: any = {
       role: 'system',
       content: 'You generate a short, clear chat title. Respond with only the title, no quotes, max 8 words, Title Case.'
@@ -916,8 +932,7 @@ async function maybeUpdateTitleAfterFirstMessage(convId: number, lastUserPrompt:
 
     const msgs: any[] = asst ? [sys, user, asst] : [sys, user];
     const input = buildResponsesInputFromMessages(msgs);
-    const model = 'gpt-4.1-nano';
-    const payload = buildResponsesPayload(model, input, false);
+    const payload = buildResponsesPayload(model, input, false, reasoningOpts);
 
     const key = get(openaiApiKey);
     const res = await fetch('https://api.openai.com/v1/responses', {

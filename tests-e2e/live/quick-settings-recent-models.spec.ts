@@ -2,6 +2,13 @@ import { test, expect } from '@playwright/test';
 import { bootstrapLiveAPI, operateQuickSettings, sendMessage, waitForStreamComplete } from './helpers';
 import { debugInfo, debugErr, debugWarn } from '../debug-utils';
 
+// This spec verifies the "recently used models" dropdown populates with
+// distinct model IDs, so it intentionally picks TWO different OpenAI models
+// rather than using TEST_MODEL + varied effort (the model id is what keys the
+// recent-models list). gpt-4.1-nano is retained here as the exception to the
+// "always TEST_MODEL" rule — minimal cost, short messages, and the test would
+// be meaningless without a second distinct id.
+
 test.describe('Live: Quick Settings model dropdown recent models functionality', () => {
   test.setTimeout(120_000);
 

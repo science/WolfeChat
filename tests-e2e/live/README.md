@@ -1,6 +1,14 @@
 # Playwright Live Suite
 Browser tests that call real external APIs; requires OPENAI_API_KEY.
 
+**Reasoning-UI specs migrated to replay:** the specs that exercise
+reasoning-window rendering, placement, auto-collapse, and delete/orphan
+cleanup now live under `tests-e2e/nonlive/` with pre-recorded SSE
+fixtures. See `tests-e2e/nonlive/MIGRATION_NOTES.md` for the full mapping
+and how to regenerate fixtures. The Anthropic mid-stream-abort reproducer
+in `reasoning-orphan-window-bug.spec.ts` is the only reasoning-UI spec
+that stays live.
+
 ## Running Live Tests
 
 ```bash
@@ -199,10 +207,13 @@ await page.locator('#api-key').fill(key); // Use setProviderApiKey() instead
 
 ### ✅ Use Provided Helpers
 ```javascript
+import { TEST_MODEL_REGEX } from './helpers';
+import { REASONING_OFF, REASONING_LIGHT, REASONING_HEAVY } from '../../src/tests/testModel';
+
 // PREFERRED - robust multi-signal completion detection
 await waitForAssistantDone(page);
 await setProviderApiKey(page, 'OpenAI', openaiKey);
-await operateQuickSettings(page, { model: /gpt-4\.1-nano/i });
+await operateQuickSettings(page, { model: TEST_MODEL_REGEX, reasoningEffort: REASONING_OFF });
 ```
 
 ### ⚠️ Critical Model Selection Patterns
@@ -210,19 +221,30 @@ await operateQuickSettings(page, { model: /gpt-4\.1-nano/i });
 // ❌ WRONG - matches TTS models like "gpt-audio"
 model: /gpt/i
 
-// ✅ CORRECT - specific chat model
-model: /gpt-4\.1-nano/i
+// ✅ CORRECT - use the central TEST_MODEL_REGEX
+model: TEST_MODEL_REGEX
 
-// ✅ CORRECT - reasoning model
-model: /gpt-5\.4-nano/i
-
-// ✅ CORRECT - Claude model
+// ✅ CORRECT - Claude model (when you specifically need Anthropic)
 model: /claude-3\.5-sonnet/i
 ```
 
-### Standard Test Models
-- **Non-reasoning tests**: `gpt-4.1-nano` - Fast, reliable, cost-effective
-- **Reasoning tests**: `gpt-5.4-nano` - Supports reasoning features with minimal cost
+### Standard Test Model
+
+All OpenAI live tests target a **single** model — `TEST_MODEL` from
+`src/tests/testModel.ts`, currently `gpt-5.4-nano`. Vary `reasoningEffort`
+instead of picking different models:
+
+| Need | Pass |
+|---|---|
+| non-reasoning behavior | `reasoningEffort: REASONING_OFF` (`'none'`) |
+| reasoning panel appears | `reasoningEffort: REASONING_LIGHT` (`'medium'`) |
+| stress reasoning path | `reasoningEffort: REASONING_HEAVY` (`'high'`) |
+
+Never pick `gpt-4.1-nano` for live API targets — it's more expensive than
+`gpt-5.4-nano` and `TEST_MODEL + REASONING_OFF` is observationally
+identical for anything the tests assert on. Narrow exceptions (clearly
+documented inline) are the two tests that need two *distinct* model
+IDs to verify recent-models / payload-model behaviour.
 
 ### Error Handling
 All helpers provide detailed diagnostics on timeout. Enable debugging:

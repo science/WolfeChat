@@ -1,6 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { operateQuickSettings, bootstrapLiveAPI } from './helpers';
 
+// This spec mocks /v1/responses and asserts payload.model reflects the dropdown
+// selection — it doesn't hit the live API. It intentionally picks TWO different
+// OpenAI model IDs (not TEST_MODEL + varied effort) because the assertion is
+// about the model string in the outgoing request body. gpt-4.1-nano is retained
+// here as the second distinct id for the same reason as in
+// quick-settings-recent-models.spec.ts.
+
 // Utility to build a minimal SSE stream body the app can parse
 function sseBody(text: string) {
   return [

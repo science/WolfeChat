@@ -6,14 +6,16 @@ import {
   waitForAssistantDone,
   operateQuickSettings,
   enableTokenDisplay,
-  getTokenCount
+  getTokenCount,
+  TEST_MODEL_REGEX
 } from './helpers';
+import { REASONING_OFF, REASONING_LIGHT } from '../../src/tests/testModel';
 
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
 const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
 (test as any)[hasOpenAIKey ? 'describe' : 'skip']('Token Counting - OpenAI', () => {
-  test('should count tokens correctly for gpt-5.4-nano with reasoning', async ({ page }) => {
+  test('should count tokens correctly for TEST_MODEL with reasoning', async ({ page }) => {
     test.setTimeout(120000);
 
     // Enable token display via localStorage BEFORE navigating
@@ -23,11 +25,11 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     await bootstrapLiveAPI(page, 'OpenAI');
 
-    // Select gpt-5.4-nano with reasoning settings
+    // Select TEST_MODEL with LIGHT (medium) reasoning effort
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-5\.4-nano/i,
-      reasoningEffort: 'low',
+      model: TEST_MODEL_REGEX,
+      reasoningEffort: REASONING_LIGHT,
       verbosity: 'medium',
       closeAfter: true
     });
@@ -49,10 +51,10 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // If token counting works, we should see > 30 tokens
     expect(tokenCount).toBeGreaterThan(30);
 
-    console.log(`✓ Token count for gpt-5.4-nano reasoning: ${tokenCount} tokens`);
+    console.log(`✓ Token count for TEST_MODEL with reasoning: ${tokenCount} tokens`);
   });
 
-  test('should count tokens correctly for gpt-4.1-nano (non-reasoning)', async ({ page }) => {
+  test('should count tokens correctly for TEST_MODEL without reasoning', async ({ page }) => {
     test.setTimeout(120000);
 
     // Enable token display via localStorage BEFORE navigating
@@ -62,10 +64,13 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     await bootstrapLiveAPI(page, 'OpenAI');
 
-    // Use default gpt-4.1-nano model
+    // TEST_MODEL with reasoning OFF — same model as the reasoning test above,
+    // but effort='none' suppresses reasoning events (observationally equivalent
+    // to a non-reasoning model for anything the token-count assertion checks).
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /gpt-4\.1-nano/i,
+      model: TEST_MODEL_REGEX,
+      reasoningEffort: REASONING_OFF,
       closeAfter: true
     });
 
@@ -86,7 +91,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // If fixed, we should see 30+ tokens
     expect(tokenCount).toBeGreaterThan(30);
 
-    console.log(`✓ Token count for gpt-4.1-nano: ${tokenCount} tokens`);
+    console.log(`✓ Token count for TEST_MODEL no reasoning: ${tokenCount} tokens`);
   });
 });
 
@@ -128,10 +133,17 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
   test('should count tokens correctly for Claude Sonnet with reasoning', async ({ page }) => {
     test.setTimeout(120000);
 
-    // Enable token display via localStorage BEFORE navigating
+    // Enable token display via localStorage BEFORE navigating.
+    // Also disable auto title generation — title-gen fires a parallel Anthropic
+    // request using the conversation's model, and under load that can pull
+    // completion signals forward before the main reasoning stream has finished,
+    // leaving tokenCount at 0 even though the main stream will eventually finish.
     await page.goto('/');
-    await page.evaluate(() => localStorage.setItem('show_tokens', 'true'));
-    await page.reload(); // Reload to pick up localStorage change
+    await page.evaluate(() => {
+      localStorage.setItem('show_tokens', 'true');
+      localStorage.setItem('title_generation_enabled', 'false');
+    });
+    await page.reload();
 
     await bootstrapBothProviders(page);
 
@@ -147,8 +159,16 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
 
     await waitForAssistantDone(page, { timeout: 60000 });
 
-    // Get the token count
-    const tokenCount = await getTokenCount(page);
+    // Extra settle: Claude Sonnet reasoning streams continue after the UI completion
+    // signals fire, but token counting only happens on stream 'done'. Poll up to 30s
+    // for a non-zero count to land, rather than reading immediately.
+    let tokenCount = 0;
+    const tokenDeadline = Date.now() + 30000;
+    while (Date.now() < tokenDeadline) {
+      tokenCount = await getTokenCount(page);
+      if (tokenCount > 0) break;
+      await page.waitForTimeout(500);
+    }
 
     // For Claude Sonnet with reasoning:
     // - Input tokens: ~30-50 tokens
