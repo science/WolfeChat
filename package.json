@@ -10,6 +10,8 @@
     "test": "node run-tests.mjs",
     "test:browser": "npx playwright test --project=nonlive",
     "test:browser-live": "npx playwright test --project=live",
+    "test:stability": "npx playwright test --project=live --repeat-each=3",
+    "test:stability-nonlive": "npx playwright test --project=nonlive --repeat-each=3",
     "test:regression": "npx playwright test --project=live-regression",
     "pretest:live": "vite build",
     "test:live": "node run-tests.mjs --live",

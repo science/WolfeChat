@@ -5,7 +5,11 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 5_000 },
   retries: process.env.CI ? 2 : 0,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }],
+    ['./tests-e2e/profile-reporter.ts', { outputFile: 'test-results/perf.json' }],
+  ],
   use: {
     headless: true,
     viewport: { width: 1280, height: 800 },
