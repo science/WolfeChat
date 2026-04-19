@@ -37,6 +37,17 @@ export default defineConfig({
       workers: 1,
       dependencies: ['live'],
     },
+    // Record project: matches specs in nonlive/ too, for use with RECORD=1
+    // to regenerate fixtures against the live API. Do NOT run this in normal
+    // suites — it's an on-demand tool only.
+    {
+      name: 'record',
+      testMatch: ['tests-e2e/nonlive/**/*.spec.ts', 'tests-e2e/live/**/*.spec.ts'],
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
+      timeout: 180_000,
+      fullyParallel: false,
+      workers: 1,
+    },
   ],
   webServer: {
     command: 'npm run dev',

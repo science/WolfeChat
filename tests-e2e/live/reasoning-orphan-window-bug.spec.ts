@@ -286,61 +286,10 @@ test.describe('Orphaned Reasoning Window Bug', () => {
     debugInfo('Test completed');
   });
 
-  test('OpenAI: stopping stream, deleting message, sending new message should show only ONE reasoning window', async ({ page }) => {
-    // Same test but for OpenAI to verify it works there
-    await bootstrapLiveAPI(page, 'OpenAI');
-
-    await operateQuickSettings(page, {
-      mode: 'ensure-open',
-      model: /gpt-5\.4-nano/i,
-      reasoningEffort: 'high',
-      closeAfter: true
-    });
-    debugInfo('Selected gpt-5-nano with high reasoning');
-
-    await clearAllReasoning(page);
-
-    const sendButton = page.locator('button[aria-label="Send"]');
-    const stopIcon = sendButton.locator('img[alt="Wait"]');
-    const sendIcon = sendButton.locator('img[alt="Send"]');
-
-    // Send first message
-    await sendMessage(page, 'Explain the Monty Hall problem step by step.');
-    debugInfo('Sent message');
-
-    await expect(stopIcon).toBeVisible({ timeout: 10000 });
-    await waitForReasoningToStart(page);
-
-    const windowsBeforeStop = await getReasoningWindows(page);
-    debugInfo(`Before stop: ${windowsBeforeStop.length} windows`);
-
-    // Stop the stream
-    await sendButton.click({ force: true });
-    await expect(sendIcon).toBeVisible({ timeout: 5000 });
-    debugInfo('Stopped stream');
-
-    // Delete messages
-    await page.waitForTimeout(500);
-    await deleteAllBelowForMessage(page, 0);
-
-    const windowsAfterDelete = await getReasoningWindows(page);
-    debugInfo(`After delete: ${windowsAfterDelete.length} windows`);
-    expect(windowsAfterDelete.length).toBe(0);
-
-    // Send new message. Use a prompt substantial enough to reliably trigger
-    // reasoning events — "What is 2+2?" is too trivial and gpt-5.4-nano will
-    // often skip reasoning output for it, causing waitForReasoningToStart to
-    // time out under load.
-    await sendMessage(page, 'Find the smallest prime number greater than 100 and explain step by step why it is prime.');
-    await expect(stopIcon).toBeVisible({ timeout: 10000 });
-    await waitForReasoningToStart(page);
-
-    // Check for orphaned windows
-    const windowsAfterNewMessage = await getReasoningWindows(page);
-    const visibleWindows = await countVisibleReasoningWindows(page);
-    debugInfo(`After new message: ${windowsAfterNewMessage.length} windows, ${visibleWindows} visible`);
-
-    expect(visibleWindows).toBe(1);
-    expect(windowsAfterNewMessage.length).toBe(1);
-  });
+  // OpenAI half of this spec migrated to
+  // tests-e2e/nonlive/reasoning-orphan-window-openai.spec.ts as a
+  // complete-stream+delete+new-message invariant (replay cannot reproduce
+  // mid-stream abort because the fixture is fulfilled as a single buffered
+  // body). The Anthropic mid-stream case above stays live because it is
+  // the specific bug reproducer.
 });

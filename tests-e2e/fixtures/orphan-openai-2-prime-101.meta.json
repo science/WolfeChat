@@ -1,0 +1,8 @@
+{
+  "url": "https://api.openai.com/v1/responses",
+  "method": "POST",
+  "mimeType": "text/event-stream; charset=utf-8",
+  "recordedAt": "2026-04-19T03:50:24.251Z",
+  "bytes": 145765,
+  "promptPreview": "orphan-openai two reasoning messages (#2)"
+}

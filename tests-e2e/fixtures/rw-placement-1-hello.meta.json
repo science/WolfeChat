@@ -1,0 +1,8 @@
+{
+  "url": "https://api.openai.com/v1/responses",
+  "method": "POST",
+  "mimeType": "text/event-stream; charset=utf-8",
+  "recordedAt": "2026-04-19T03:37:44.219Z",
+  "bytes": 6808,
+  "promptPreview": "T1 hello+monte-hall (#1)"
+}

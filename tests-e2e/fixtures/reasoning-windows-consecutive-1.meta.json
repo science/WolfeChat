@@ -1,0 +1,8 @@
+{
+  "url": "https://api.openai.com/v1/responses",
+  "method": "POST",
+  "mimeType": "text/event-stream; charset=utf-8",
+  "recordedAt": "2026-04-18T19:35:59.636Z",
+  "bytes": 387435,
+  "promptPreview": "Fibonacci memoization walkthrough (#1)"
+}

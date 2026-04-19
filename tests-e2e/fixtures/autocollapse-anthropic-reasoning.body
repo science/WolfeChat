@@ -1,0 +1,48 @@
+event: message_start
+data: {"type":"message_start","message":{"model":"claude-sonnet-4-5-20250929","id":"msg_01VdP936ksn41T3tJJwakbwx","type":"message","role":"assistant","content":[],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":79,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":0},"output_tokens":8,"service_tier":"standard","inference_geo":"not_available"}}         }
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""}   }
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"The user is asking me to calculate "}          }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"1+1 and show my thinking step by step. This is a very simple arithmetic problem.\n\nStep by step:\n- Start"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":" with 1\n- Add another 1\n- 1 + 1 = 2\n\nI should keep my response straightforward and professional, without enthusi"}               }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"astic language at the beginning or end."}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"EugDCmQIDBgCKkDmkTjnC/D98tVlCqu9xJZStyYopEcAkxteGlAy5zhC/nUx5/QAGFZ23EeqUyxsbb/8GQAlAKbPKI3JBJuPS2WnMhpjbGF1ZGUtc29ubmV0LTQtNS0yMDI1MDkyOTgAEgwdwFWeqATpljvtt6kaDKPkRWRvj/q6pKYUsCIwuipouSnYTnxbKJg/arf/UuZUld/8eqvCTHz4qP09eLR1pa9WcgvRMGHR6UsMg310KrECwS7FMQsU6qoeqBa1dpQ+jKPXVGOaOHtwjkuSF6SUl2df+0C00Ac3USUjJmC0uHfWjg1tp5dQjRRhKNqs97n/aIP05JWvRRfAneKfobWaHJIfE72YeKCpOd5ZqmBgVnkMLRjD9fQG6wEwmyx88K6+ha2pvv9787TvcLEXCtzgBgRltRPFUTndLcmVK/j1cevYIpMB6wz6SjUvbB7RHDDRSnaHuTUCVZeYnt9PfjBN7m8IFsCBfkzk5e5L8QQc+pEL02rmIL7+48Ae9QqQMn8N3SC93d37kRhTIjq2/WxDP4e+j0WUrtoHvEVPU+99M5cPZPmr0jG4+oq/+YvkcSfTNUwADNKC8h2htfeYlOvfuHamMAfs4xxZpbFUr9F68lXCxvrkRpVqHMaItCBV1wS2hE8YAQ=="}  }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0     }
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}          }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"To solve 1+1:\n\n**Step 1:** Start with the"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":" first number: 1\n\n**Step 2:** Add the second number: 1\n\n**Step 3:** Combine them: 1 + 1 = 2\n\nThe answer is **"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"2**."}       }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1              }
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null,"stop_details":null},"usage":{"input_tokens":79,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":150}}
+
+event: message_stop
+data: {"type":"message_stop"     }
+

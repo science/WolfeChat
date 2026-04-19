@@ -1,0 +1,8 @@
+{
+  "url": "https://api.anthropic.com/v1/messages",
+  "method": "POST",
+  "mimeType": "text/event-stream; charset=utf-8",
+  "recordedAt": "2026-04-19T03:53:24.140Z",
+  "bytes": 3408,
+  "promptPreview": "autocollapse Anthropic what is 1+1"
+}

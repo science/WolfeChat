@@ -1,0 +1,8 @@
+{
+  "url": "https://api.openai.com/v1/responses",
+  "method": "POST",
+  "mimeType": "text/event-stream; charset=utf-8",
+  "recordedAt": "2026-04-18T19:31:33.655Z",
+  "bytes": 102952,
+  "promptPreview": "Three creative uses for a paperclip"
+}
