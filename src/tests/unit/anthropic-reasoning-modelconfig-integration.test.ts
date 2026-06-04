@@ -182,3 +182,131 @@ registerTest({
     debugInfo('✓ Custom budget override works correctly');
   }
 });
+
+// Test: Future Claude models produce adaptive thinking payload (no budget_tokens)
+registerTest({
+  id: 'future-model-adaptive-payload',
+  name: 'Future Claude models should produce thinking.type=adaptive with no budget_tokens',
+  fn: async () => {
+    const { addThinkingConfigurationWithBudget } = await import('../../services/anthropicReasoning.js');
+
+    const futureModels = ['claude-opus-4-9', 'claude-opus-5', 'claude-sonnet-5', 'claude-opus-9-9'];
+
+    for (const model of futureModels) {
+      const params = { model, max_tokens: 64000, messages: [{ role: 'user', content: 'test' }] };
+
+      const configured = addThinkingConfigurationWithBudget(params, { thinkingEnabled: true });
+      if (!configured.thinking) {
+        throw new Error(`Thinking config should be added for future model ${model}`);
+      }
+      if (configured.thinking.type !== 'adaptive') {
+        throw new Error(`${model}: expected thinking.type 'adaptive', got '${configured.thinking.type}'`);
+      }
+      if (configured.thinking.display !== 'summarized') {
+        throw new Error(`${model}: expected thinking.display 'summarized', got '${configured.thinking.display}'`);
+      }
+      if ('budget_tokens' in configured.thinking) {
+        throw new Error(`${model}: adaptive thinking must not include budget_tokens`);
+      }
+
+      const disabled = addThinkingConfigurationWithBudget(params, { thinkingEnabled: false });
+      if (disabled.thinking) {
+        throw new Error(`${model}: thinking should be omitted when thinkingEnabled is false`);
+      }
+    }
+
+    debugInfo('✓ Future Claude models produce adaptive thinking payload');
+  }
+});
+
+// Test: Legacy models produce manual thinking payload (type=enabled + budget_tokens)
+registerTest({
+  id: 'legacy-models-manual-payload',
+  name: 'Legacy reasoning models should produce thinking.type=enabled with budget_tokens',
+  fn: async () => {
+    const { addThinkingConfigurationWithBudget } = await import('../../services/anthropicReasoning.js');
+    const { getThinkingBudget } = await import('../../services/anthropicModelConfig.js');
+
+    const legacyModels = [
+      'claude-opus-4-5-20251101',  // pre-adaptive (4.5 < 4.6): Anthropic 400s on adaptive here
+      'claude-opus-4-1-20250805',
+      'claude-opus-4-20250514',
+      'claude-sonnet-4-5-20250929',
+      'claude-sonnet-4-20250514',
+      'claude-3-7-sonnet-20250219'
+    ];
+
+    for (const model of legacyModels) {
+      const params = { model, max_tokens: 64000, messages: [{ role: 'user', content: 'test' }] };
+      const configured = addThinkingConfigurationWithBudget(params, { thinkingEnabled: true });
+
+      if (!configured.thinking) {
+        throw new Error(`Thinking config should be added for legacy model ${model}`);
+      }
+      if (configured.thinking.type !== 'enabled') {
+        throw new Error(`${model}: expected thinking.type 'enabled', got '${configured.thinking.type}'`);
+      }
+      const expected = getThinkingBudget(model);
+      if (configured.thinking.budget_tokens !== expected) {
+        throw new Error(`${model}: expected budget_tokens ${expected}, got ${configured.thinking.budget_tokens}`);
+      }
+    }
+
+    debugInfo('✓ Legacy models produce manual thinking payload');
+  }
+});
+
+// Test: Opus 4.8 yields adaptive thinking payload (regression — locks the original 400 bug)
+registerTest({
+  id: 'opus-4-8-adaptive-thinking-payload',
+  name: 'Opus 4.8 should produce thinking.type=adaptive with display=summarized and no budget_tokens',
+  fn: async () => {
+    const { addThinkingConfigurationWithBudget } = await import('../../services/anthropicReasoning.js');
+
+    const params = {
+      model: 'claude-opus-4-8-20260601',
+      max_tokens: 128000,
+      messages: [{ role: 'user', content: 'test' }]
+    };
+
+    const configured = addThinkingConfigurationWithBudget(params, { thinkingEnabled: true });
+    if (!configured.thinking) {
+      throw new Error('Thinking config should be added for Opus 4.8 when thinkingEnabled is true');
+    }
+    if (configured.thinking.type !== 'adaptive') {
+      throw new Error(`Expected thinking.type 'adaptive', got '${configured.thinking.type}'`);
+    }
+    if (configured.thinking.display !== 'summarized') {
+      throw new Error(`Expected thinking.display 'summarized', got '${configured.thinking.display}'`);
+    }
+    if ('budget_tokens' in configured.thinking) {
+      throw new Error('Adaptive thinking must not include budget_tokens (API rejects it on Opus 4.8)');
+    }
+
+    const disabled = addThinkingConfigurationWithBudget(params, { thinkingEnabled: false });
+    if (disabled.thinking) {
+      throw new Error('Thinking config should be omitted when thinkingEnabled is false on Opus 4.8');
+    }
+
+    debugInfo('✓ Opus 4.8 produces correct adaptive thinking payload');
+  }
+});
+
+// Test: Non-reasoning Haiku models never get thinking config
+registerTest({
+  id: 'non-reasoning-haiku-no-thinking',
+  name: 'Haiku (non-reasoning) models should never get a thinking config',
+  fn: async () => {
+    const { addThinkingConfigurationWithBudget } = await import('../../services/anthropicReasoning.js');
+
+    for (const model of ['claude-3-haiku-20240307', 'claude-3-5-haiku-20241022']) {
+      const params = { model, max_tokens: 1000, messages: [{ role: 'user', content: 'test' }] };
+      const configured = addThinkingConfigurationWithBudget(params, { thinkingEnabled: true });
+      if (configured.thinking) {
+        throw new Error(`${model} (non-reasoning) should not get a thinking config`);
+      }
+    }
+
+    debugInfo('✓ Non-reasoning Haiku models skip thinking config');
+  }
+});

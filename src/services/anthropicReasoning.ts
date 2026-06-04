@@ -39,6 +39,8 @@ export function supportsAnthropicReasoning(model: string): boolean {
  */
 function buildThinkingPayload(model: string, budget: number): Record<string, unknown> {
   if (usesAdaptiveThinking(model)) {
+    // Adaptive mode ignores any token budget by design — the API rejects budget_tokens here.
+    // Do NOT re-introduce budget_tokens for adaptive models (it causes a 400).
     return { type: 'adaptive', display: 'summarized' };
   }
   return { type: 'enabled', budget_tokens: budget };
