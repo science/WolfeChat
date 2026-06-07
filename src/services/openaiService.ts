@@ -231,7 +231,7 @@ export async function sendTTSMessage(text: string, model: string, voice: string,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${get(apiKey)}`,
+        Authorization: `Bearer ${get(openaiApiKey)}`,
       },
       body: JSON.stringify(payload),
     });
