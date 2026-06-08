@@ -1526,12 +1526,26 @@ function detectProvider(modelId: string): 'openai' | 'anthropic' | 'unknown' {
       lower.includes('dall-e') || lower.includes('whisper') ||
       lower.includes('tts') || lower.includes('text-embedding') ||
       lower.includes('omni-moderation') || lower.includes('codex') ||
-      lower.includes('chatgpt') || lower.includes('computer-use-preview') ||
+      lower.includes('chat') || lower.includes('computer-use-preview') ||
       lower.includes('sora')) {
     return 'openai';
   }
 
   return 'unknown';
+}
+
+/**
+ * Map a dropdown optgroup label to a provider. The app groups models under provider optgroups
+ * ("OpenAI" / "Anthropic") based on which API it fetched them from — that grouping is
+ * authoritative, so we trust it over name-based detection (which can't classify opaque OpenAI
+ * aliases like "chat-latest"). Returns undefined for non-provider groups (e.g. "Recently used"),
+ * where callers fall back to detectProvider().
+ */
+function providerFromLabel(label: string): 'openai' | 'anthropic' | undefined {
+  const l = (label || '').trim().toLowerCase();
+  if (l === 'openai') return 'openai';
+  if (l === 'anthropic') return 'anthropic';
+  return undefined;
 }
 
 /**
@@ -1683,13 +1697,18 @@ export async function getModelDropdownState(
         const options = optgroup.locator('option');
         const optionCount = await options.count();
 
+        // Inside a provider optgroup the label is authoritative (the app fetched these from that
+        // provider's API). Trust it over name-based detection; fall back only for other groups
+        // such as "Recently used".
+        const labelProvider = providerFromLabel(label);
+
         for (let j = 0; j < optionCount; j++) {
           const option = options.nth(j);
           const value = await option.getAttribute('value') || '';
           const text = await option.textContent() || '';
 
           if (value && text) {
-            const provider = detectProvider(value);
+            const provider = labelProvider ?? detectProvider(value);
             groupModels.push({
               id: value,
               displayText: text.trim(),
@@ -1798,9 +1817,11 @@ export async function getModelDropdownState(
       (!!result.providers.openai?.hasOptgroup || !!result.providers.anthropic?.hasOptgroup) ||
       (result.totalModels > 0); // Flat list is also properly organized
 
-    // Step 1.8: Detect selected model provider
+    // Step 1.8: Detect selected model provider — prefer the grouping already derived from the
+    // dropdown (optgroup-authoritative), falling back to name-based detection.
     if (result.selectedModel) {
-      result.selectedModelProvider = detectProvider(result.selectedModel);
+      const known = result.allModels.find((m) => m.id === result.selectedModel);
+      result.selectedModelProvider = known?.provider ?? detectProvider(result.selectedModel);
     }
 
     // Step 1.9: Capture HTML if requested (for debugging)
