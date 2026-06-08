@@ -103,7 +103,7 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
     await bootstrapLiveAPI(page, 'Anthropic');
 
     // Select Claude Haiku model (does NOT support reasoning)
-    await operateQuickSettings(page, { model: /claude-3-haiku-20240307/i });
+    await operateQuickSettings(page, { model: /claude-haiku-4-5-20251001/i });
     debugInfo('🔧 Selected Claude Haiku model (no reasoning support)');
 
     // Send a simple message
@@ -149,7 +149,7 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
     await bootstrapLiveAPI(page, 'Anthropic');
 
     // Select Claude Haiku for faster streaming
-    await operateQuickSettings(page, { model: /claude-3-haiku-20240307/i });
+    await operateQuickSettings(page, { model: /claude-haiku-4-5-20251001/i });
 
     // Send a message that will produce a longer response
     const testMessage = 'Count from 1 to 10, one number per line.';
@@ -211,7 +211,7 @@ test.describe('Anthropic SDK Streaming with Reasoning', () => {
     await bootstrapLiveAPI(page, 'Anthropic');
 
     // Select Claude Haiku for testing
-    await operateQuickSettings(page, { model: /claude-3-haiku-20240307/i });
+    await operateQuickSettings(page, { model: /claude-haiku-4-5-20251001/i });
 
     // Send a message that will produce a long response
     const testMessage = 'Write a detailed 500-word essay about artificial intelligence.';

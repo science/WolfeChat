@@ -52,7 +52,7 @@ test.describe('Anthropic System Prompt Integration', () => {
 
     // Select Claude model
     await operateQuickSettings(page, {
-      model: /claude-3-haiku-20240307/i,
+      model: /claude-haiku-4-5-20251001/i,
       closeAfter: true
     });
 
@@ -112,7 +112,7 @@ test.describe('Anthropic System Prompt Integration', () => {
 
     // Select Claude model
     await operateQuickSettings(page, {
-      model: /claude-3-haiku-20240307/i,
+      model: /claude-haiku-4-5-20251001/i,
       closeAfter: true
     });
 

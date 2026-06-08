@@ -109,7 +109,7 @@ const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
     // Select Claude Haiku
     await operateQuickSettings(page, {
       mode: 'ensure-open',
-      model: /claude-3-haiku-20240307/i,
+      model: /claude-haiku-4-5-20251001/i,
       closeAfter: true
     });
 

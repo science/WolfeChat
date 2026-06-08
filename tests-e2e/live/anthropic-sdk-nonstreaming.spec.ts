@@ -2,7 +2,7 @@
  * Live E2E Test: Anthropic SDK Non-Streaming
  *
  * Tests the SDK-based non-streaming implementation with real API calls
- * Uses claude-3-haiku-20240307 for cost-effective testing
+ * Uses claude-haiku-4-5-20251001 for cost-effective testing
  */
 
 import { test, expect } from '@playwright/test';
@@ -26,7 +26,7 @@ test.describe('Anthropic SDK Non-Streaming', () => {
     await page.reload();
   });
 
-  test('should send non-streaming message via SDK with claude-3-haiku', async ({ page }) => {
+  test('should send non-streaming message via SDK with claude-haiku-4-5', async ({ page }) => {
     debugInfo('🧪 Starting SDK non-streaming test with Claude Haiku');
 
     await page.waitForLoadState('networkidle');
@@ -35,7 +35,7 @@ test.describe('Anthropic SDK Non-Streaming', () => {
     await bootstrapLiveAPI(page, 'Anthropic');
 
     // Select Claude Haiku model for cost-effective testing
-    await operateQuickSettings(page, { model: /claude-3-haiku-20240307/i });
+    await operateQuickSettings(page, { model: /claude-haiku-4-5-20251001/i });
     debugInfo('🔧 Selected Claude Haiku model');
 
     // Send a simple test message
@@ -85,7 +85,7 @@ test.describe('Anthropic SDK Non-Streaming', () => {
     await bootstrapLiveAPI(page, 'Anthropic');
 
     // Select a valid model for this test
-    await operateQuickSettings(page, { model: /claude-3-haiku-20240307/i });
+    await operateQuickSettings(page, { model: /claude-haiku-4-5-20251001/i });
 
     // Send a message that should work
     const testMessage = 'Test error handling';
