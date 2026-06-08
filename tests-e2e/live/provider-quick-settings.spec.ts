@@ -60,8 +60,15 @@ test.describe.configure({ mode: 'serial' });
       // Now configure Anthropic
       await setProviderApiKey(page, 'Anthropic', anthropicKey);
 
-      // Test Claude model selection works
-      await operateQuickSettings(page, { mode: 'ensure-open', model: /claude/i });
+      // Test Claude model selection works. After configuring the second provider, the Anthropic
+      // models load asynchronously into the QuickSettings dropdown — selecting before they appear
+      // makes operateQuickSettings find no /claude/i match and silently fall back to a gpt model
+      // (the root cause of this test's prior flake). Retry the selection until Claude actually sticks.
+      await expect(async () => {
+        await operateQuickSettings(page, { mode: 'ensure-open', model: /claude/i });
+        const sel = await getModelDropdownState(page, { waitForModels: true });
+        expect(sel.selectedModel, 'Claude model should be selected once Anthropic models load').toMatch(/claude/i);
+      }).toPass({ timeout: 10000 });
 
       // Get final state with both providers.
       // Use expect.toPass() to retry — after configuring a second provider,
