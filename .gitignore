@@ -14,6 +14,8 @@ node_modules
 /playwright-report
 /test-results
 /.test-build
+# Stray screenshots from ad-hoc test debugging (real artifacts go to test-results/ or /tmp/)
+/*.png
 
 
 dist-ssr
