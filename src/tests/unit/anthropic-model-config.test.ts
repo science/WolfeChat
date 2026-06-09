@@ -227,23 +227,25 @@ registerTest({
     const { getModelConfig, supportsReasoning, getThinkingBudget, getMaxOutputTokens } =
       await import('../../services/anthropicModelConfig.js');
 
+    const { usesAdaptiveThinking } = await import('../../services/anthropicModelConfig.js');
+
     const unknownModel = 'totally-unknown-model-xyz';
     const config = getModelConfig(unknownModel);
 
-    // Verify safe defaults
+    // Non-Claude unknown ids stay conservative (small limit, no reasoning) — we have no basis to
+    // assume frontier capability for a non-Anthropic id routed through this Anthropic config.
     if (config.maxOutputTokens !== 4096) {
       throw new Error(`Expected conservative default maxOutputTokens 4096, got ${config.maxOutputTokens}`);
     }
     if (config.supportsReasoning) {
-      throw new Error('Unknown models should default to NO reasoning support');
+      throw new Error('Unknown non-Claude models should default to NO reasoning support');
     }
     if (config.thinkingBudgetTokens !== 0) {
       throw new Error(`Expected thinkingBudgetTokens 0 for unknown model, got ${config.thinkingBudgetTokens}`);
     }
 
-    // Forward-default must be scoped to claude opus/sonnet only — a non-Claude id (or a
-    // Claude family we don't forward-default, e.g. haiku) must stay conservative.
-    for (const nonClaude of ['gpt-5', 'some-random-model', 'claude-haiku-9']) {
+    // Conservative defaults apply ONLY to non-Claude ids.
+    for (const nonClaude of ['gpt-5', 'some-random-model']) {
       const c = getModelConfig(nonClaude);
       if (c.supportsReasoning) {
         throw new Error(`${nonClaude} should NOT default to reasoning support`);
@@ -251,6 +253,21 @@ registerTest({
       if (c.maxOutputTokens !== 4096) {
         throw new Error(`${nonClaude} should keep conservative 4096 max tokens, got ${c.maxOutputTokens}`);
       }
+    }
+
+    // An UNKNOWN claude-* id (no table/version/store match) is now treated optimistically as a
+    // frontier model — provider frontier limits + adaptive reasoning — rather than crippled to
+    // the 4096 floor. claude-haiku-9 has no table entry, parses as family 'haiku' (so the
+    // opus/sonnet version-derived branch skips it), and isn't in the test store → frontier.
+    const haiku9 = getModelConfig('claude-haiku-9');
+    if (haiku9.maxOutputTokens !== 128000) {
+      throw new Error(`Unknown claude id should get frontier 128000 max tokens, got ${haiku9.maxOutputTokens}`);
+    }
+    if (!haiku9.supportsReasoning) {
+      throw new Error('Unknown claude id should default to reasoning support');
+    }
+    if (!usesAdaptiveThinking('claude-haiku-9')) {
+      throw new Error('Unknown claude id should default to adaptive thinking (else manual budget would 400)');
     }
 
     debugInfo('✓ Unknown model safety test passed');
@@ -382,5 +399,93 @@ registerTest({
     }
 
     debugInfo('✓ Opus 4.0-vs-4.x edge case holds');
+  }
+});
+
+// Test: Real /v1/models metadata drives config for models not in the table.
+// These tests mutate the shared modelsStore, so they save & restore it to avoid leaking
+// Anthropic entries into other tests (which assume the runner's OpenAI-only seed).
+registerTest({
+  id: 'store-metadata-overrides-version-guess',
+  name: 'Fetched /v1/models metadata is used (and beats the version-derived guess)',
+  fn: async () => {
+    const { get } = await import('svelte/store');
+    const { modelsStore } = await import('../../stores/modelStore.js');
+    const { getMaxOutputTokens, supportsReasoning, usesAdaptiveThinking, getModelConfig } =
+      await import('../../services/anthropicModelConfig.js');
+
+    const saved = get(modelsStore);
+    try {
+      // A model not in MODEL_CONFIGS. Version-derived would give 64000; real metadata says 200000.
+      modelsStore.set([
+        { id: 'claude-opus-5', provider: 'anthropic', maxOutputTokens: 200000, maxInputTokens: 1000000, reasoningSupported: true, adaptiveSupported: true }
+      ]);
+
+      if (getMaxOutputTokens('claude-opus-5') !== 200000) {
+        throw new Error(`Store metadata should win: expected 200000, got ${getMaxOutputTokens('claude-opus-5')}`);
+      }
+      if (!supportsReasoning('claude-opus-5') || !usesAdaptiveThinking('claude-opus-5')) {
+        throw new Error('Store entry with adaptive capability should yield reasoning + adaptive');
+      }
+      // Date-suffixed query resolves against the stored base id.
+      if (getMaxOutputTokens('claude-opus-5-20260101') !== 200000) {
+        throw new Error('Date-suffixed id should match the stored base id metadata');
+      }
+
+      // A store entry reporting NO reasoning is respected (capability false ≠ absent).
+      modelsStore.set([
+        { id: 'claude-tiny-1', provider: 'anthropic', maxOutputTokens: 8192, reasoningSupported: false, adaptiveSupported: false }
+      ]);
+      const tiny = getModelConfig('claude-tiny-1');
+      if (tiny.supportsReasoning || tiny.maxOutputTokens !== 8192 || tiny.thinkingBudgetTokens !== 0) {
+        throw new Error(`Store non-reasoning entry mishandled: ${JSON.stringify(tiny)}`);
+      }
+      if (usesAdaptiveThinking('claude-tiny-1')) {
+        throw new Error('A store-reported non-reasoning model must not use adaptive thinking');
+      }
+    } finally {
+      modelsStore.set(saved);
+    }
+
+    debugInfo('✓ Store metadata drives config and beats version guess');
+  }
+});
+
+// Test: Frontier fallback for an unknown claude family — dynamic from store, constant when empty.
+registerTest({
+  id: 'unknown-claude-frontier-fallback',
+  name: 'Unknown claude family falls back to the provider frontier (dynamic, then constant)',
+  fn: async () => {
+    const { get } = await import('svelte/store');
+    const { modelsStore } = await import('../../stores/modelStore.js');
+    const { getMaxOutputTokens, supportsReasoning, usesAdaptiveThinking } =
+      await import('../../services/anthropicModelConfig.js');
+
+    const saved = get(modelsStore);
+    try {
+      // Empty store → constant frontier floor (128000), reasoning + adaptive on.
+      modelsStore.set([]);
+      if (getMaxOutputTokens('claude-aria-7') !== 128000) {
+        throw new Error(`Empty store should yield constant 128000 frontier, got ${getMaxOutputTokens('claude-aria-7')}`);
+      }
+      if (!supportsReasoning('claude-aria-7') || !usesAdaptiveThinking('claude-aria-7')) {
+        throw new Error('Frontier fallback must enable reasoning + adaptive thinking');
+      }
+
+      // Dynamic frontier = max output across the provider's fetched models (here 256000).
+      // 'claude-aria-7' itself is NOT in the store, so it takes the computed frontier, not a
+      // per-model value.
+      modelsStore.set([
+        { id: 'claude-opus-4-8', provider: 'anthropic', maxOutputTokens: 128000 },
+        { id: 'claude-zenith-1', provider: 'anthropic', maxOutputTokens: 256000 }
+      ]);
+      if (getMaxOutputTokens('claude-aria-7') !== 256000) {
+        throw new Error(`Dynamic frontier should be 256000, got ${getMaxOutputTokens('claude-aria-7')}`);
+      }
+    } finally {
+      modelsStore.set(saved);
+    }
+
+    debugInfo('✓ Unknown claude family uses provider frontier fallback');
   }
 });

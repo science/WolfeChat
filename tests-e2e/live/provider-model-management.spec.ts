@@ -235,9 +235,11 @@ test.describe.configure({ mode: 'serial' });
 
     // Send another test message
     await sendMessage(page, 'Test with Anthropic');
-    // Use waitForStreamComplete for provider-agnostic waiting
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000); // Extra stabilization for Anthropic
+    // Wait for the SECOND assistant message to appear and finish. A fixed timeout was too fragile,
+    // and waitForAssistantDone alone can return on the already-complete first assistant message —
+    // adaptive-thinking models (e.g. claude-fable-5) reason before emitting any text.
+    await expect(page.locator('[role="listitem"][data-message-role="assistant"]')).toHaveCount(2, { timeout: 55_000 });
+    await waitForAssistantDone(page);
 
     messages = await getVisibleMessages(page);
     const anthropicResponse = messages.filter(m => m.role === 'assistant')[1];

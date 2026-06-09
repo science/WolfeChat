@@ -28,12 +28,18 @@ export async function fetchAnthropicModels(apiKey: string): Promise<any[]> {
 
     const data = await response.json();
 
-    // Transform to match OpenAI's format for consistency
+    // Transform to match OpenAI's format for consistency, and CAPTURE the per-model limits and
+    // capabilities the API returns so getModelConfig can use real values for models we don't yet
+    // hardcode. Use `?? undefined` so "field absent" stays distinct from an explicit `false`.
     return data.data.map(model => ({
       id: model.id,
       provider: 'anthropic',
       created: new Date(model.created_at).getTime() / 1000, // Convert to Unix timestamp
-      display_name: model.display_name
+      display_name: model.display_name,
+      maxOutputTokens: model.max_tokens ?? undefined,
+      maxInputTokens: model.max_input_tokens ?? undefined,
+      reasoningSupported: model.capabilities?.thinking?.supported ?? undefined,
+      adaptiveSupported: model.capabilities?.thinking?.types?.adaptive?.supported ?? undefined
     }));
   } catch (error) {
     log.error("Failed to fetch Anthropic models:", error);

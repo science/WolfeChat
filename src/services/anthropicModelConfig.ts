@@ -8,20 +8,51 @@
  * thinking.budget_tokens to avoid 400 errors from the API.
  */
 
+import { get } from 'svelte/store';
 import { log } from '../lib/logger.js';
+import { modelsStore } from '../stores/modelStore.js';
+
+// Frontier safety floor — used only when the model store is empty/stale and we cannot
+// compute a real frontier from fetched /v1/models metadata. These mirror the current
+// frontier Anthropic models (opus 4.8 / fable / mythos: 128k output, 1M input).
+const FRONTIER_MAX_OUTPUT_TOKENS = 128000;
+const FRONTIER_MAX_INPUT_TOKENS = 1000000;
 
 // Model configuration interface
 interface ModelConfig {
   maxOutputTokens: number;
   supportsReasoning: boolean;
   thinkingBudgetTokens: number; // 25% of max for reasoning models, 0 for others
+  adaptive: boolean;            // true ⇒ thinking.type='adaptive'; false ⇒ manual budget_tokens
+  maxInputTokens?: number;      // captured for future context management; no consumer yet
 }
+
+// Table entries omit `adaptive` — it's derived from the version at the return path so the
+// table stays a plain limits/reasoning map and adaptive routing has a single source of truth.
+type ModelTableEntry = Pick<ModelConfig, 'maxOutputTokens' | 'supportsReasoning' | 'thinkingBudgetTokens'>;
 
 // Model patterns to configuration mapping
 // Based on official Anthropic documentation: https://docs.anthropic.com/claude/docs/about-claude/models
 // NOTE: Patterns are matched via startsWith in insertion order. More specific patterns
 // (e.g. 'claude-opus-4-7') must appear before less specific ones (e.g. 'claude-opus-4').
-const MODEL_CONFIGS: Record<string, ModelConfig> = {
+const MODEL_CONFIGS: Record<string, ModelTableEntry> = {
+  // Fable / Mythos class - Mythos-class premium models (claude-fable-5, claude-mythos-5, and
+  // future versions in the class). 128000 max tokens, adaptive-only thinking (the API rejects
+  // manual budget_tokens for these). Keyed by FAMILY PREFIX (not a pinned version) so the whole
+  // class - including future fable-6 / mythos-6 - inherits this with zero table edits, exactly
+  // like opus 4.6+ derives its config from the version. Adaptive vs manual is still decided by
+  // parseClaudeVersion (major >= 5 here, so always adaptive).
+  'claude-fable': {
+    maxOutputTokens: 128000,
+    supportsReasoning: true,
+    thinkingBudgetTokens: 0 // unused under adaptive thinking
+  },
+  'claude-mythos': {
+    maxOutputTokens: 128000,
+    supportsReasoning: true,
+    thinkingBudgetTokens: 0 // unused under adaptive thinking
+  },
+
   // Opus 4.8 family - 128000 max tokens. Adaptive thinking is derived (default for modern
   // models); these entries exist only to pin the 128k output ceiling.
   'claude-opus-4-8': {
@@ -106,20 +137,20 @@ const MODEL_CONFIGS: Record<string, ModelConfig> = {
  * Returns null for non-Claude / unrecognizable ids.
  */
 interface ClaudeVersion {
-  family: 'opus' | 'sonnet' | 'haiku';
+  family: 'opus' | 'sonnet' | 'haiku' | 'fable' | 'mythos';
   major: number;
   minor: number;
 }
 function parseClaudeVersion(modelName: string): ClaudeVersion | null {
   const m = (modelName || '').toLowerCase();
   // Flipped 3.x: claude-3-7-sonnet[-date]
-  let mt = /^claude-(\d+)-(\d+)-(opus|sonnet|haiku)\b/.exec(m);
+  let mt = /^claude-(\d+)-(\d+)-(opus|sonnet|haiku|fable|mythos)\b/.exec(m);
   if (mt) return { family: mt[3] as ClaudeVersion['family'], major: parseInt(mt[1], 10), minor: parseInt(mt[2], 10) };
   // Dotted: claude-sonnet-3.7 / claude-opus-4.5
-  mt = /^claude-(opus|sonnet|haiku)-(\d+)\.(\d+)/.exec(m);
+  mt = /^claude-(opus|sonnet|haiku|fable|mythos)-(\d+)\.(\d+)/.exec(m);
   if (mt) return { family: mt[1] as ClaudeVersion['family'], major: parseInt(mt[2], 10), minor: parseInt(mt[3], 10) };
   // Standard: claude-<family>-<major>[-<minor>][-<date>]
-  mt = /^claude-(opus|sonnet|haiku)-(\d+)(?:-(\d+))?/.exec(m);
+  mt = /^claude-(opus|sonnet|haiku|fable|mythos)-(\d+)(?:-(\d+))?/.exec(m);
   if (mt) {
     const next = mt[3];
     // A 6+ digit group right after the major is a release date, not a minor version.
@@ -167,7 +198,8 @@ export function getModelConfig(modelName: string): ModelConfig {
 
   const version = parseClaudeVersion(modelName);
 
-  // Find the first matching pattern
+  // 1. Explicit table match (most specific, deliberately pinned behavior). Wins over store
+  //    metadata so the table can encode decisions the API can't convey (e.g. opus 4.0–4.5 manual).
   for (const [pattern, config] of Object.entries(MODEL_CONFIGS)) {
     if (!modelName.startsWith(pattern)) continue;
     // The bare 'claude-opus-4' / 'claude-sonnet-4' entries describe ONLY the 4.0 release.
@@ -177,10 +209,26 @@ export function getModelConfig(modelName: string): ModelConfig {
     if (pattern === 'claude-opus-4' || pattern === 'claude-sonnet-4') {
       if (!(version && version.major === 4 && version.minor === 0)) continue;
     }
-    return config;
+    return { ...config, adaptive: versionSupportsAdaptiveThinking(modelName) };
   }
 
-  // Unknown but recognizable Claude opus/sonnet (major >= 4): derive config from the version.
+  // 2. Real metadata from the fetched /v1/models list (accurate for anything the API returned).
+  //    Beats the version guess below for newly-released models the user just refreshed.
+  const meta = lookupStoredAnthropicModel(modelName);
+  if (meta && typeof meta.maxOutputTokens === 'number' && meta.reasoningSupported !== undefined) {
+    const reasoning = !!meta.reasoningSupported;
+    const adaptive = reasoning && !!meta.adaptiveSupported;
+    return {
+      maxOutputTokens: meta.maxOutputTokens,
+      supportsReasoning: reasoning,
+      // Manual-mode reasoning models need a positive budget; adaptive/non-reasoning use 0.
+      thinkingBudgetTokens: reasoning && !adaptive ? Math.floor(meta.maxOutputTokens * 0.25) : 0,
+      adaptive,
+      maxInputTokens: typeof meta.maxInputTokens === 'number' ? meta.maxInputTokens : undefined
+    };
+  }
+
+  // 3. Unknown but recognizable Claude opus/sonnet (major >= 4): derive config from the version.
   // Adaptive (>= 4.6) ⇒ no manual budget; manual (4.0–4.5) ⇒ a positive budget so extended
   // thinking still works. Either way a new release needs no table entry to behave correctly.
   if (version && (version.family === 'opus' || version.family === 'sonnet') && version.major >= 4) {
@@ -189,17 +237,80 @@ export function getModelConfig(modelName: string): ModelConfig {
     return {
       maxOutputTokens: 64000,
       supportsReasoning: true,
-      thinkingBudgetTokens: adaptive ? 0 : 16000 // manual (<4.6) needs a positive budget
+      thinkingBudgetTokens: adaptive ? 0 : 16000, // manual (<4.6) needs a positive budget
+      adaptive
     };
   }
 
-  // Default configuration for genuinely unknown / non-Claude models
-  // Conservative defaults: small token limit, no reasoning
-  log.warn(`Unknown model: ${modelName}, using default configuration`);
+  // 4. Any other MODERN Claude id we don't recognize: assume it's a frontier model rather than
+  //    crippling it. Use the provider's frontier limits with reasoning + adaptive thinking ON, so a
+  //    brand-new model works well until it's explicitly added. (This is the former "Unknown
+  //    model … 4096" floor that made new models look broken.)
+  //    EXCLUDE legacy generations (Claude 1/2/3, e.g. claude-3-sonnet, claude-3.5-sonnet,
+  //    claude-instant): they are old and mostly non-reasoning; if not pinned in the table above,
+  //    they fall through to the conservative default — never frontier-optimism.
+  const isLegacyGeneration = /^claude-[0-3]([-.]|$)/.test(modelName) || modelName.startsWith('claude-instant');
+  if (modelName.startsWith('claude-') && !isLegacyGeneration) {
+    const frontier = getAnthropicFrontierConfig();
+    log.info(`Model ${modelName} not in fetched list; using Anthropic frontier defaults (maxOutputTokens=${frontier.maxOutputTokens}, adaptive thinking on)`);
+    return frontier;
+  }
+
+  // 5. Genuinely unknown / non-Claude / legacy model: conservative defaults (small limit, no reasoning).
+  log.info(`Unknown or legacy model: ${modelName}, using conservative defaults`);
   return {
     maxOutputTokens: 4096,
     supportsReasoning: false,
-    thinkingBudgetTokens: 0
+    thinkingBudgetTokens: 0,
+    adaptive: false
+  };
+}
+
+/**
+ * Look up a model's captured /v1/models metadata in the model store.
+ *
+ * Matches by exact id first, then the longest prefix in either direction so a date-suffixed id
+ * (`claude-fable-5-20260101`) resolves against a stored base id (`claude-fable-5`) and vice-versa.
+ * Returns undefined when the store is unavailable or has no Anthropic entry for this model.
+ */
+function lookupStoredAnthropicModel(modelName: string): any | undefined {
+  try {
+    const anthro = (get(modelsStore) || []).filter((m: any) => m && m.provider === 'anthropic' && typeof m.id === 'string');
+    let best: any | undefined;
+    for (const m of anthro) {
+      const id: string = m.id;
+      const matches = id === modelName || modelName.startsWith(id) || id.startsWith(modelName);
+      if (matches && (!best || id.length > best.id.length)) best = m;
+    }
+    return best;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The provider's frontier config — the max limits across the Anthropic models currently in the
+ * store ("the frontier model from that provider"), falling back to the FRONTIER_* safety constants
+ * when the store is empty or pre-dates metadata capture. Reasoning + adaptive thinking ON.
+ */
+function getAnthropicFrontierConfig(): ModelConfig {
+  let maxOutputTokens = FRONTIER_MAX_OUTPUT_TOKENS;
+  let maxInputTokens = FRONTIER_MAX_INPUT_TOKENS;
+  try {
+    const anthro = (get(modelsStore) || []).filter((m: any) => m && m.provider === 'anthropic');
+    const outs = anthro.map((m: any) => m.maxOutputTokens).filter((n: any) => typeof n === 'number');
+    const ins = anthro.map((m: any) => m.maxInputTokens).filter((n: any) => typeof n === 'number');
+    if (outs.length) maxOutputTokens = Math.max(maxOutputTokens, ...outs);
+    if (ins.length) maxInputTokens = Math.max(maxInputTokens, ...ins);
+  } catch {
+    // fall back to constants
+  }
+  return {
+    maxOutputTokens,
+    supportsReasoning: true,
+    thinkingBudgetTokens: 0, // adaptive ignores budget
+    adaptive: true,
+    maxInputTokens
   };
 }
 
@@ -240,14 +351,16 @@ export function getMaxOutputTokens(modelName: string): number {
  * Whether a model uses adaptive thinking (thinking.type='adaptive') instead of the legacy
  * manual mode (thinking.type='enabled' + budget_tokens).
  *
- * Decided by a VERSION THRESHOLD, not a model list: a reasoning-capable model uses adaptive iff
- * its version is >= 4.6 (the release where adaptive thinking landed) or it is a future major
- * version. Models 4.0–4.5 and 3.x are manual-only and 400 on adaptive. This routes new releases
- * correctly with zero code changes. See versionSupportsAdaptiveThinking for the cutover detail.
+ * Reads the threaded `adaptive` decision from getModelConfig rather than re-parsing the version,
+ * so EVERY resolution path agrees: table/version entries derive adaptive from the version
+ * threshold (>= 4.6 or any future major), store entries use the API's reported capability, and
+ * frontier/unknown Claude models default to adaptive. This is what lets a novel family (whose id
+ * can't be version-parsed) still emit thinking.type='adaptive' instead of a manual budget the API
+ * would reject with a 400.
  */
 export function usesAdaptiveThinking(modelName: string): boolean {
-  if (!supportsReasoning(modelName)) return false;     // non-reasoning → no thinking at all
-  return versionSupportsAdaptiveThinking(modelName);    // reasoning & >= 4.6 → adaptive
+  const config = getModelConfig(modelName);
+  return config.supportsReasoning && config.adaptive;
 }
 
 /**
