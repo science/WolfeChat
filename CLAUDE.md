@@ -299,6 +299,19 @@ const app = new App({...});
 
 ## Git Workflow
 
+This is a single-developer project. Local work happens directly on `main`; ephemeral feature branches are optional (nice-to-have, delete once merged). There are **no pull requests** — the old PR-from-`main`-to-`production` flow is deprecated. There is no need for a local `production` branch.
+
 - **NEVER push to remote origin (any branch) without explicit user permission**
 - Local commits are encouraged during incremental development - commit frequently as you work through features
 - Always ask before: `git push`, `git push origin`, `git push -u origin <branch>`, or any command that sends commits to remote
+
+### Branches & deployment
+
+- **`main`** is the single source of truth. Push it to `origin/main` (fast-forward).
+- **`production`** is a deploy trigger only and lives on GitHub, not locally. Pushing to it runs `.github/workflows/deploy-pages.yml` (`on: push: branches: [production]`), which builds and deploys GitHub Pages.
+- To deploy, fast-forward `production` to `main` directly — no PR, no local branch:
+  ```bash
+  git push origin main           # publish to main
+  git push origin main:production  # promote main -> production (triggers deploy)
+  ```
+- `production` always trails `main`, so promotion is a clean fast-forward. **Never force-push `production`.**
