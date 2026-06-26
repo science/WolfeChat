@@ -223,6 +223,10 @@ export async function bootstrapLiveAPI(page: Page, provider: 'OpenAI' | 'Anthrop
     : process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error(`${provider} API key env not set for live tests.`);
 
+  // Disable CSS transitions/animations to prevent Playwright 1.57+ actionability
+  // timeouts ("waiting for element to be stable") on buttons with transition classes
+  await page.addStyleTag({ content: '*, *::before, *::after { transition: none !important; animation: none !important; }' });
+
   await openSettings(page);
 
   // Select provider first
